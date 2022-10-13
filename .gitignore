@@ -1,1 +1,12 @@
 tmp/
+
+# Data
+data/raw/
+
+# Jupyter Notebooks
+.ipynb_checkpoints
+
+# Python
+*.py[cod]
+__pycache__/
+*$py.class
