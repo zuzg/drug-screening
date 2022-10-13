@@ -1,0 +1,11 @@
+name: drug-screening
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pandas
+  - plotly
+  - seaborn
+  - scikit-learn
+  - yaml
