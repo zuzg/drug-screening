@@ -4,6 +4,11 @@ from typing import Protocol, Callable
 from abc import ABC, abstractmethod
 
 
+class ClustererFinderException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class Clusterer(Protocol):
     def fit(self, data: np.ndarray) -> None:
         ...
@@ -20,6 +25,10 @@ class SingleDimensionalClustererFinder(ABC):
     def __init__(
         self, scoring_function: Callable[[np.array, np.array], float], max_k: int = 50
     ) -> None:
+        if max_k <= 1:
+            raise ClustererFinderException(
+                f"Max K must be greater than 1 (provided: {max_k})"
+            )
         self.scoring_function = scoring_function
         self.max_k = max_k
         self.best_score = -np.inf
@@ -32,6 +41,10 @@ class SingleDimensionalClustererFinder(ABC):
         ...
 
     def _prepare_series_for_prediction(self, series: np.array) -> np.array:
+        if len(series.shape) > 1:
+            raise ClustererFinderException(
+                f"Series must be one dimensional! (current series shape: {series.shape})"
+            )
         return np.sort(series)
 
     def _prepare_series_for_scoring(self, series: np.array) -> np.array:
