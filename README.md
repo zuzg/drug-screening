@@ -1,3 +1,7 @@
+![testing workflow](https://github.com/zuzg/drug-screening/actions/workflows/main.yml/badge.svg)
+
+[![badges-are-fun](https://img.shields.io/badge/badges_are-fun-deeppink.svg)](https://tenor.com/view/excited-ron-swanson-giggle-so-much-fun-gif-14647008)
+![fail](https://img.shields.io/badge/unless_they-fail-red.svg)
 # drug-screening
 ## About
 A project examining data from High Throughput Screening center in Poznan. HTS goal is to identify active compounds from hundreds of thousands.
