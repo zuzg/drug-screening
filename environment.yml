@@ -10,6 +10,6 @@ dependencies:
   - plotly
   - seaborn
   - scikit-learn
-  - yaml
+  - PyYAML==6.0
   - jenkspy
   - numpy
