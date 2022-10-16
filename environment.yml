@@ -13,3 +13,4 @@ dependencies:
   - yaml
   - jenkspy
   - numpy
+  - matplotlib

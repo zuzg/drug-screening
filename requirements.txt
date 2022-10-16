@@ -7,3 +7,4 @@ scikit-learn
 yaml
 jenkspy
 numpy
+matplotlib
