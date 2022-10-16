@@ -17,8 +17,8 @@ class KMeansSingleDimensionalClustererFinder(SingleDimensionalClustererFinder):
 
     def __init__(
         self,
-        random_seed: int,
         scoring_function: Callable[[np.array, np.array], float],
+        random_seed: int | None = None,
         max_k: int = 50,
     ) -> None:
         super().__init__(scoring_function, max_k)
