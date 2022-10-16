@@ -11,4 +11,5 @@ dependencies:
   - seaborn
   - scikit-learn
   - yaml
+  - jenkspy
   - numpy

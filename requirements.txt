@@ -5,4 +5,5 @@ plotly
 seaborn
 scikit-learn
 yaml
+jenkspy
 numpy
