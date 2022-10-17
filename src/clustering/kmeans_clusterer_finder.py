@@ -4,7 +4,7 @@ from typing import Callable
 
 from sklearn.cluster import KMeans
 
-from .single_dimentional_clusterer_finder import (
+from .single_dimensional_clusterer_finder import (
     SingleDimensionalClustererFinder,
     Clusterer,
 )

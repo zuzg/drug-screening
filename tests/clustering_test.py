@@ -5,7 +5,7 @@ from src.clustering import (
     KMeansSingleDimensionalClustererFinder,
     FisherJenksSingleDimensionalClustererFinder,
 )
-from src.clustering.single_dimentional_clusterer_finder import ClustererFinderException
+from src.clustering.single_dimensional_clusterer_finder import ClustererFinderException
 
 
 @pytest.mark.parametrize(
