@@ -78,7 +78,7 @@ class GeneralClustererFinder:
 
         :param verbose: if True, prints additional information
 
-        :return: list of labels denoting corresponding
+        :return: list of labels denoting the cluster of each data point
         """
         series_for_clusterer = self._prepare_series_for_prediction(series)
         series_for_scoring = self._prepare_series_for_scoring(series)
