@@ -85,7 +85,7 @@ class GeneralClustererFinder:
         for params in self.param_grid:
             self.clusterer.set_params(**params)
             self.clusterer.fit(series_for_clusterer)
-            labels = self.clusterer.predict(series_for_clusterer)
+            labels = self.clusterer.fit_predict(series_for_clusterer)
             score = self.scoring_function(series_for_scoring, labels)
             if verbose:
                 print(f"Params: {params} | Score: {score}")
