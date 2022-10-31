@@ -8,6 +8,7 @@ import pandas as pd
 def dummy_fixture_return_2():
     return 2
 
+
 @pytest.fixture
 def experiment_df():
     df = pd.DataFrame.from_dict({
