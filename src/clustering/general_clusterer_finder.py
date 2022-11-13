@@ -15,6 +15,9 @@ class Clusterer(Protocol):
     def predict(self, data: np.ndarray) -> np.ndarray:
         ...
 
+    def fit_predict(self, data: np.ndarray) -> np.ndarray:
+        ...
+
     def set_params(self, **params: dict) -> None:
         ...
 
@@ -67,7 +70,7 @@ class GeneralClustererFinder:
             self.best_params = params
             self.cached_best_prediction = prediction
 
-    def cluster_data_series(self, series: np.array, verbose: bool = False) -> np.array:
+    def cluster_data_series(self, series: np.array, verbose: bool = False, joint_fit_predict = False) -> np.array:
         """
         Performs Grid Search with passed Parameter Grid and Clustering Algorithm (Clusterer)
         on the given data series.
@@ -84,8 +87,11 @@ class GeneralClustererFinder:
         series_for_scoring = self._prepare_series_for_scoring(series)
         for params in self.param_grid:
             self.clusterer.set_params(**params)
-            self.clusterer.fit(series_for_clusterer)
-            labels = self.clusterer.fit_predict(series_for_clusterer)
+            if joint_fit_predict:
+                labels = self.clusterer.fit_predict(series_for_clusterer)
+            else:
+                self.clusterer.fit(series_for_clusterer)
+                labels = self.clusterer.predict(series_for_clusterer)
             score = self.scoring_function(series_for_scoring, labels)
             if verbose:
                 print(f"Params: {params} | Score: {score}")
