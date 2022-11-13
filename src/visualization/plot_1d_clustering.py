@@ -2,7 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # it return plot ready to show, x are data in form of lists of list where each list is one cluster, lines is for making vertical lines on plot
-def clustering_1D_visualization(x, lines=[]):
+def clustering_1D_visualization(x, lines=None):
+    if lines is None:
+        lines = []
 
     # create scatterplot
     for i in range(len(x)):
