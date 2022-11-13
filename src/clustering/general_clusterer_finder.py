@@ -9,10 +9,7 @@ class Clusterer(Protocol):
     Clusterer structure required by the GeneralCLustererFinder.
     """
 
-    def fit(self, data: np.ndarray) -> None:
-        ...
-
-    def predict(self, data: np.ndarray) -> np.ndarray:
+    def fit_predict(self, data: np.ndarray) -> np.ndarray:
         ...
 
     def set_params(self, **params: dict) -> None:
@@ -84,8 +81,7 @@ class GeneralClustererFinder:
         series_for_scoring = self._prepare_series_for_scoring(series)
         for params in self.param_grid:
             self.clusterer.set_params(**params)
-            self.clusterer.fit(series_for_clusterer)
-            labels = self.clusterer.predict(series_for_clusterer)
+            labels = self.clusterer.fit_predict(series_for_clusterer)
             score = self.scoring_function(series_for_scoring, labels)
             if verbose:
                 print(f"Params: {params} | Score: {score}")
