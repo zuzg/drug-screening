@@ -12,72 +12,69 @@ from matplotlib import pyplot as plt
 from jenkspy import JenksNaturalBreaks
 
 from src.clustering import SingleDimensionalClustererFinder, SklearnSingleDimensionalClustererFinder, GeneralClustererFinder
-from sklearn.cluster import AgglomerativeClustering
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import AgglomerativeClustering, DBSCAN, KMeans
+from sklearn.mixture import GaussianMixture
 import scipy.cluster.hierarchy as sch
 from sklearn.preprocessing import normalize
 
-def get_metric(name: str):
-    if(name == "silhouette"):
-        return metrics.silhouette_score
-    if(name == "davies_bouldin"):
-        return lambda *args, **kwargs: -metrics.davies_bouldin_score(*args, **kwargs)
+RANDOM_STATE = 31
+CLUSTERING_CONFIG = [
+    {
+        "name": "KMeans",
+        "clusterer": KMeans(),
+        "param_grid": ParameterGrid({
+            "n_clusters": range(2, 16),
+            "random_state": [RANDOM_STATE]
+        }),
+    },
+    {
+        "name": "GaussianMixture",
+        "clusterer": GaussianMixture(),
+        "param_grid": ParameterGrid({
+            "n_components": range(2, 16),
+            "random_state": [RANDOM_STATE]
+        }),
+    },
+    {
+        "name": "AHC",
+        "clusterer": AgglomerativeClustering(),
+        "param_grid": ParameterGrid({
+            "n_components": range(2, 10),
+            "linkage": ['ward', 'average'],
+            "random_state": [RANDOM_STATE]
+        }),
+    },
+    {
+        "name": "DBScan",
+        "clusterer": DBSCAN(),
+        "param_grid": ParameterGrid({
+            "eps": [0.1,0.2,0.3], 
+            "min_samples":[2,3],
+            "random_state": [RANDOM_STATE]
+        }),
+    }
+]
 
-
-def AHC_algorithm(data: np.array, metric = "silhouette") -> np.array:
-    """
-    Function executing AHC algorithm on one and multi dimensional data.
-
-    :param data: np.array values to be clustered
-
-    :param metric: str names of metrics ["silhouette", "davies_bouldin"]
-
-    :return: cluster indices for consecutive points
-    """
-    m = get_metric(metric)
-    AHC_params = ParameterGrid({"n_clusters": range(2, 10), "linkage":['ward', 'average']})
-
-    if(len(data.shape) == 1):
-        AHC_clusterer_finder = SklearnSingleDimensionalClustererFinder(
-            param_grid = AHC_params, 
-            scoring_function = m,
-            clusterer = AgglomerativeClustering(n_clusters=2)
+def evaluate_with_metric(data_series: np.ndarray, metric: Callable[[np.ndarray, np.ndarray], float], index: pd.Series) -> pd.DataFrame:
+    df = pd.DataFrame(index=index)
+    for config in CLUSTERING_CONFIG:
+        print(f"==== CLUSTERING WITH {config['name']} ====")
+        clusterer_finder = GeneralClustererFinder(
+            param_grid=config["param_grid"],
+            clusterer=config["clusterer"],
+            scoring_function=metric
         )
-    else:
-        data = normalize(data, axis=0, norm='max')
-        AHC_clusterer_finder = GeneralClustererFinder(
-            param_grid = AHC_params, 
-            scoring_function = m,
-            clusterer = AgglomerativeClustering()
-        )
+        clusterer_finder.cluster_data_series(data_series, verbose=True)
+        df[f"labels_{config['name']}"] = clusterer_finder.cached_best_prediction
+    return df
 
-    return AHC_clusterer_finder.cluster_data_series(data)
-
-def DB_scan_algorithm(data: np.array, metric = "silhouette") -> np.array:
-    """
-    Function executing DB_scan algorithm on one and multi dimensional data.
-
-    :param data: np.array values to be clustered
-
-    :param metric: str names of metrics ["silhouette", "davies_bouldin"]
-
-    :return: cluster indices for consecutive points
-    """
-    m = get_metric(metric)
-    DB_scan_params = ParameterGrid({"eps": [0.1,0.2,0.3], "min_samples":[2,3]})
-
-    if(len(data.shape) == 1):
-        DB_scan_clusterer_finder = SklearnSingleDimensionalClustererFinder(
-            param_grid = DB_scan_params, 
-            scoring_function = m,
-            clusterer = DBSCAN()
-        )
-    else:
-        data = normalize(data, axis=0, norm='max')
-        DB_scan_clusterer_finder = GeneralClustererFinder(
-            param_grid = DB_scan_params, 
-            scoring_function = m,
-            clusterer = DBSCAN()
-        )
-
-    return DB_scan_clusterer_finder.cluster_data_series(data)
+def summarize_clustering(values: np.ndarray, labels: np.ndarray) -> None:
+    all_labels = np.unique(labels).flatten()
+    for label in all_labels:
+        label_values = values[labels.flatten() == label]
+        print(f"Cluster {label}: {len(label_values)} values")
+        print(f"\tMean: {np.mean(label_values, axis=0)}")
+        print(f"\tStd: {np.std(label_values, axis=0)}")
+        print(f"\tMin: {np.min(label_values, axis=0)}")
+        print(f"\tMax: {np.max(label_values, axis=0)}")
+        print()
