@@ -2,41 +2,37 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 
-import seaborn as sns
 import pandas as pd
 import numpy as np
 
-from sklearn import metrics
+from typing import Callable
 from sklearn.model_selection import ParameterGrid
-from matplotlib import pyplot as plt
-from jenkspy import JenksNaturalBreaks
 
-from src.clustering import SingleDimensionalClustererFinder, SklearnSingleDimensionalClustererFinder, GeneralClustererFinder
+
+from src.clustering import GeneralClustererFinder
 from sklearn.cluster import AgglomerativeClustering, DBSCAN, KMeans
 from sklearn.mixture import GaussianMixture
-import scipy.cluster.hierarchy as sch
 from sklearn.preprocessing import normalize
 
 RANDOM_STATE = 31
-CLUSTERING_CONFIG = [
-    {
-        "name": "KMeans",
+CLUSTERING_CONFIG = {
+    "KMeans":{
         "clusterer": KMeans(),
         "param_grid": ParameterGrid({
             "n_clusters": range(2, 16),
             "random_state": [RANDOM_STATE]
         }),
     },
-    {
-        "name": "GaussianMixture",
+
+    "GaussianMixture": {
         "clusterer": GaussianMixture(),
         "param_grid": ParameterGrid({
             "n_components": range(2, 16),
             "random_state": [RANDOM_STATE]
         }),
     },
-    {
-        "name": "AHC",
+
+    "AgglomerativeClustering":{
         "clusterer": AgglomerativeClustering(),
         "param_grid": ParameterGrid({
             "n_components": range(2, 10),
@@ -44,8 +40,8 @@ CLUSTERING_CONFIG = [
             "random_state": [RANDOM_STATE]
         }),
     },
-    {
-        "name": "DBScan",
+
+    "DBSCAN": {
         "clusterer": DBSCAN(),
         "param_grid": ParameterGrid({
             "eps": [0.1,0.2,0.3], 
@@ -53,28 +49,47 @@ CLUSTERING_CONFIG = [
             "random_state": [RANDOM_STATE]
         }),
     }
-]
+}
 
-def evaluate_with_metric(data_series: np.ndarray, metric: Callable[[np.ndarray, np.ndarray], float], index: pd.Series) -> pd.DataFrame:
+def perform_clustering(data_series: np.ndarray, metric: Callable[[np.ndarray, np.ndarray], float], index: pd.Series, algorithms=None) -> pd.DataFrame:
+    """
+    Perform clustering with pre-specified clustering methods if no algorithm is specified, 
+    then all clustering algorithms from CLUSTERING_CONFIG will be executed
+
+    :param data_series: np.ndarray vith values to be clustered
+
+    :param metric: metric according to which the algorithms will be evaluated
+    
+    :param index: pd.Series of indices of elements to be clustered
+
+    :return: pd.DataFrame containing elements indices along with their clusteringusing different algorithms
+    """
     df = pd.DataFrame(index=index)
-    for config in CLUSTERING_CONFIG:
-        print(f"==== CLUSTERING WITH {config['name']} ====")
-        clusterer_finder = GeneralClustererFinder(
-            param_grid=config["param_grid"],
-            clusterer=config["clusterer"],
-            scoring_function=metric
-        )
-        clusterer_finder.cluster_data_series(data_series, verbose=True)
-        df[f"labels_{config['name']}"] = clusterer_finder.cached_best_prediction
+    
+    if algorithms is None:
+        for algorithm in CLUSTERING_CONFIG:
+            
+            clusterer_finder = GeneralClustererFinder(
+                param_grid=CLUSTERING_CONFIG[algorithm]["param_grid"],
+                clusterer=CLUSTERING_CONFIG[algorithm]["clusterer"],
+                scoring_function=metric
+            )
+            print(f"==== CLUSTERING WITH {algorithm} ====")
+            clusterer_finder.cluster_data_series(data_series, verbose=True)
+            df[f"labels_{algorithm}"] = clusterer_finder.cached_best_prediction
+    
+    else:
+        for algorithm in algorithms:
+            try:
+                clusterer_finder = GeneralClustererFinder(
+                    param_grid=CLUSTERING_CONFIG[algorithm]["param_grid"],
+                    clusterer=CLUSTERING_CONFIG[algorithm]["clusterer"],
+                    scoring_function=metric
+                )
+                print(f"==== CLUSTERING WITH {algorithm} ====")
+                clusterer_finder.cluster_data_series(data_series, verbose=True)
+                df[f"labels_{algorithm}"] = clusterer_finder.cached_best_prediction
+            except:
+                print(f'Clustering algorithm {algorithm} not found!')
+                continue
     return df
-
-def summarize_clustering(values: np.ndarray, labels: np.ndarray) -> None:
-    all_labels = np.unique(labels).flatten()
-    for label in all_labels:
-        label_values = values[labels.flatten() == label]
-        print(f"Cluster {label}: {len(label_values)} values")
-        print(f"\tMean: {np.mean(label_values, axis=0)}")
-        print(f"\tStd: {np.std(label_values, axis=0)}")
-        print(f"\tMin: {np.min(label_values, axis=0)}")
-        print(f"\tMax: {np.max(label_values, axis=0)}")
-        print()
