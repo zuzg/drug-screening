@@ -9,3 +9,4 @@ PyYAML==6.0
 jenkspy
 numpy
 dash
+dash-bootstrap-components
