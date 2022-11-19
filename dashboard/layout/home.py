@@ -31,8 +31,12 @@ home_layout = html.Div(
         ),
         html.Main(
             children=[
-                html.Div("Upload sheets to view data", id="output-data-upload"),
-            ]
+                html.Div(
+                    html.H2("Upload sheets to view data"),
+                    id="output-data-upload",
+                    className="p-4 text-center",
+                ),
+            ],
         ),
     ],
 )
