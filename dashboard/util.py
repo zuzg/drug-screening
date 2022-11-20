@@ -1,6 +1,5 @@
 import io
 import base64
-import typing
 
 import pandas as pd
 
