@@ -1,3 +1,7 @@
+"""
+Defines and registers callbacks for the dashboard.
+"""
+
 import typing
 import functools
 
@@ -16,12 +20,26 @@ def on_data_upload(
     contents: typing.Iterable,
     names: typing.Iterable[str],
 ) -> html.Div:
+    """
+    Callback on files being uploaded.
+    Currently supports:
+    - single experiment files with a VALUE column
+    - ROS1 and ROS2 passed togethter
+
+    :param global_state: global state of the application containing the dataframe
+    :param contents: collection of file contents
+    :param names: collection of file names
+    :raises PreventUpdate: if no files were uploaded
+    :return: html Div containing the heading and entire data vizualization
+    """
     if not contents:
         raise PreventUpdate
 
     dataframes = [parse_contents(c, n) for c, n in zip(contents, names)]
     processed_dataframe = dataframes[0]
     if len(dataframes) > 1:
+        # combine_experiments expects that DTT experiment is the first dataframe
+        # hence i f that is not the case we need to reverse the list
         if dataframes[0].columns[0][:3] == "HRP":
             dataframes.reverse()
         processed_dataframe = combine_experiments(dataframes)
@@ -35,9 +53,20 @@ def on_data_upload(
 
 
 def on_histogram_selection(global_state: GlobalState, relayoutData: dict) -> dict:
+    """
+    Callback on histogram selection (i.e. zooming in).
+    Limits the preview table records to the selected range.
+
+    :param global_state: global state of the application containing the dataframe
+    :param relayoutData: dictionary containing the new range
+    :raises PreventUpdate: if no relayoutData passed
+    :return: restricted dataframe as a dictionary
+    """
     if not relayoutData:
         raise PreventUpdate
     df = global_state.df
+    
+    # if range not specified include all entries from original dataframe
     if "xaxis.range[0]" in relayoutData:
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
@@ -46,10 +75,23 @@ def on_histogram_selection(global_state: GlobalState, relayoutData: dict) -> dic
 
 
 def on_scatterplot_selection(global_state: GlobalState, relayoutData: dict) -> dict:
+    """
+    Callback on scatterplot selection (i.e. zooming in).
+    Limits the preview table records to the selected range.
+    Assumes that the scatterplot is a 2D plot and that the x-axis is the first VALUE column.
+    (the y-axis is the second VALUE column).
+
+    :param global_state: global state of the application containing the dataframe
+    :param relayoutData: dictionary containing the new range
+    :raises PreventUpdate: if no relayoutData passed
+    :return: restricted dataframe as a dictionary
+    """
     if not relayoutData:
         raise PreventUpdate
     df = global_state.df
     columns = [col for col in df.columns if "VALUE" in col]
+
+    # if range not specified include all entries from original dataframe
     if "xaxis.range[0]" in relayoutData:
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
@@ -61,6 +103,12 @@ def on_scatterplot_selection(global_state: GlobalState, relayoutData: dict) -> d
 
 
 def register_callbacks(app: Dash, global_state: GlobalState) -> None:
+    """
+    Registers application callbacks.
+
+    :param app: dash application
+    :param global_state: global state of the application containing the dataframe
+    """
     app.callback(
         Output("output-data-upload", "children"),
         Input("upload-data", "contents"),

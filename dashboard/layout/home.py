@@ -1,3 +1,7 @@
+"""
+Contains the layout for the home page element.
+"""
+
 from dash import html, dcc
 
 home_layout = html.Div(
