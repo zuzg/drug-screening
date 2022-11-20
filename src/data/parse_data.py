@@ -1,5 +1,7 @@
+import copy
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from functools import reduce
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -11,10 +13,11 @@ def parse_data(filename: str) -> pd.DataFrame:
     :return: parsed DataFrame
     """
     df = pd.read_excel(f"../data/raw/{filename}")
-    del df['CONTROL OUTLIER']
-    print(f"Deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
-    df = df[df['Transfer Status'] == 'OK']
-
+    if('CONTROL OUTLIER' in df):
+        del df['CONTROL OUTLIER']
+    if('Transfer Status' in df and len(df[df['Transfer Status'] != 'OK'])!=0):
+        print(f"{filename} - deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
+        df = df[df['Transfer Status'] == 'OK']
     return df
 
 
@@ -40,7 +43,6 @@ def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 
     :return: one merged DataFrame
     """
-    #TODO generalize to more experiments
     new_dfs = []
     for df in dfs:
         new_dfs.append(parse_barcode(df))
@@ -50,6 +52,37 @@ def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
                         right_on = ['HRP - compound ID', 'Barcode_prefix', 'Barcode_suffix'])\
                         .rename(columns={'HRP - compound ID': 'Compound ID', 'VALUE_x': 'VALUE_DTT', 'VALUE_y': 'VALUE_HRP'})\
                         [['Compound ID', 'Barcode_prefix', 'Barcode_suffix', 'VALUE_DTT', 'VALUE_HRP']]
+
+    return df_merged
+
+
+def combine_assays(dfs: list[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Combine experiment assays by ID.
+
+    :param dfs: list of DataFrames to be mergedy by id
+
+    :return: one merged DataFrame with activations/inhibitions only
+    """
+    
+    new_dfs = copy.deepcopy(dfs)
+    for i in range(len(new_dfs)):
+        id = f"Assay {i+1} - cmpd Id"
+        if '% ACTIVATION' in new_dfs[i].columns.values:
+            new_dfs[i] = new_dfs[i][[id, '% ACTIVATION']]
+            new_dfs[i] = new_dfs[i].rename(columns={id: 'Compound ID', '% ACTIVATION': '% ACTIVATION ' + str(i+1)})
+        elif '% INHIBITION' in new_dfs[i].columns.values:
+            new_dfs[i] = new_dfs[i][[id, '% INHIBITION']]
+            new_dfs[i] = new_dfs[i].rename(columns={id: 'Compound ID', '% INHIBITION': '% INHIBITION ' + str(i)})
+        else:
+            print("raise bla bla") 
+
+    df_merged = reduce(lambda df_left, df_right: pd.merge(df_left, df_right, 
+                                              left_index=True, right_index=True, 
+                                              how='outer'), new_dfs)
+    df_merged = df_merged[df_merged.columns.drop(list(df_merged.filter(regex='Compound ID_')))]
+    first_column = df_merged.pop('Compound ID')
+    df_merged.insert(0, 'Compound ID', first_column)
 
     return df_merged
 
