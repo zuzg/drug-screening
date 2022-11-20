@@ -8,6 +8,6 @@ from .dynamic import register_callbacks
 
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 app.layout = home_layout
-register_callbacks(app)
+register_callbacks(app, global_state=[])
 
 app.run_server(debug=True)

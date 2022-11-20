@@ -37,6 +37,7 @@ home_layout = html.Div(
                     className="p-4 text-center",
                 ),
             ],
+            className="my-2 card shadow",
         ),
     ],
 )

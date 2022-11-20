@@ -14,7 +14,7 @@ def construct_combined(dataframes: typing.Iterable[pd.DataFrame]) -> html.Div:
     return html.Div(
         dash_table.DataTable(
             data=df.to_dict("records"),
-            style_table={"overflowY": "auto"},
+            style_table={"overflow": "auto"},
             page_size=10,
         ),
         className="border rounded",
@@ -25,26 +25,33 @@ def construct_single(dataframe: pd.DataFrame) -> html.Div:
     value_columns = [
         col for col in ["% ACTIVATION", "VALUE"] if col in dataframe.columns
     ]
-    if not value_columns:
-        raise ValueError("No VALUE or % ACTIVATION columns found.")
-    description_table = dash_table.DataTable(
-        data=dataframe.describe()[value_columns].T.to_dict("records"),
-        style_table={"overflowY": "auto"},
-    )
+    if "VALUE" not in dataframe.columns:
+        raise ValueError("Dataframe must have a VALUE column.")
+    description_table = html.Div(dash_table.DataTable(
+        data=(
+            dataframe.describe()[value_columns]
+            .round(3).T
+            .reset_index(level=0)
+            .to_dict("records")
+        ),
+        style_table={"overflow": "auto"},
+    ), className="border rounded")
     histogram = dcc.Graph(
-        figure=px.histogram(dataframe, x=value_columns[0], title="Attribute Histogram"),
+        figure=px.histogram(dataframe, x="VALUE", title="Attribute Histogram"),
         id="attribute-histogram",
     )
-    preview_table = dash_table.DataTable(
+    preview_table = html.Div(dash_table.DataTable(
         id="preview-table",
         data=dataframe.to_dict("records"),
-        style_table={"overflowY": "auto"},
+        style_table={"overflow": "auto"},
         page_size=10,
-    )
+    ), className="border rounded")
     return html.Div(children=[description_table, histogram, preview_table])
 
 
 def construct_from_dataframes(dataframes: typing.Iterable[pd.DataFrame]) -> html.Div:
     return (
-        construct_combined(dataframes) if len(dataframes) > 1 else construct_single(dataframes[0])
+        construct_combined(dataframes)
+        if len(dataframes) > 1
+        else construct_single(dataframes[0])
     )
