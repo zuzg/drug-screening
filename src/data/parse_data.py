@@ -1,9 +1,13 @@
 import copy
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, QuantileTransformer
 import umap
 from functools import reduce
+import os
+import sys
+if '../' not in sys.path:
+    sys.path.append('../')
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -93,6 +97,37 @@ def combine_assays(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     return df_merged
 
 
+def merge_all_assays() -> pd.DataFrame:
+    d = dict()
+
+    for file in os.listdir('../data/raw/'):
+        if file.startswith('Assay'):
+            d[file.replace('.xlsx', '')] = parse_data(file)
+    for assay in d:
+        d[assay] = d[assay].rename(str.upper, axis='columns')
+    for i in range(1, 9):
+        d[f'Assay {i}'] = d[f'Assay {i}'].add_suffix(f' {i}')
+    for i in range(1, 4):
+        d[f'Assay {i}']['ID'] = (d[f'Assay {i}'][f'ASSAY {i} - CMPD ID {i}'].astype(str) + d[f'Assay {i}']
+                                 [f'BARCODE ASSAY PLATE {i}'].str[:-2]) + d[f'Assay {i}'][f'BARCODE ASSAY PLATE {i}'].str[-1]
+
+    combined_df = pd.merge(d['Assay 1'], d['Assay 2'], on='ID')
+    combined_df = pd.merge(combined_df, d['Assay 3'], on='ID')
+    for i in range(4, 9):
+        combined_df = pd.merge(
+            combined_df, d[f'Assay {i}'], left_on='ASSAY 1 - CMPD ID 1', right_on=f'ASSAY {i} - CMPD ID {i}')
+    combined_df = combined_df.rename(
+        columns={'ASSAY 1 - CMPD ID 1': 'CMPD ID'})
+
+    colnames = ['CMPD ID']
+    colnames.extend([f'% ACTIVATION {i}' for i in range(1, 4)])
+    colnames.extend([f'% INHIBITION {i}' for i in range(4, 9)])
+    colnames.extend(['% ACTIVATION 8'])
+    res = combined_df[colnames]
+
+    return res
+
+
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
     """
     Function to normalize chosen columns within dataframe.
@@ -103,13 +138,14 @@ def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame
 
     :return: DataFrame with normalized columns
     """
-    scaler = MinMaxScaler()
+    scaler = StandardScaler()
     df[column_names] = scaler.fit_transform(df[column_names])
 
     return df
 
 
-def get_umap(df: pd.DataFrame, target: str, n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
+def get_umap(df: pd.DataFrame, target: str, scaler: object,
+             n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
     """
     Function to normalize chosen columns within dataframe.
 
@@ -117,13 +153,15 @@ def get_umap(df: pd.DataFrame, target: str, n_neighbors=10, n_components=2, min_
 
     :param target: names of column to be treated as target
 
+    :param scaler: object with which scaling will be performed
+
     :return: UMAP array, target y
     """
     df_na = df.dropna(inplace=False)
     X = df_na.drop(target, axis=1)
     y = df_na[target]
 
-    X_scaled = StandardScaler().fit_transform(X)
+    X_scaled = scaler.fit_transform(X)
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,

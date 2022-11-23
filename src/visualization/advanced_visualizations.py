@@ -64,3 +64,26 @@ def plot_umap(X_umap: np.ndarray, y: np.ndarray) -> None:
     plt.gca().set_aspect('equal', 'datalim')
     plt.title('UMAP projection of assays', fontsize=16)
     plt.show()
+
+
+def plot_multiple_umaps(X_umap: np.ndarray, y: np.ndarray, df: pd.DataFrame) -> None:
+    """
+    Show scatter plots for the UMAP data, colored by activation/inibition in each assay
+
+    :param X_umap: DataFrame to be visualized
+
+    :param y: name of feature for x-axis
+
+    :return: scatter plot for UMAPs
+    """
+    fig, axs = plt.subplots(nrows=2, ncols=4, figsize=(18, 12))
+    fig.suptitle('UMAP projection of assays', fontsize=16)
+
+    ids = range(1, 9)
+    for col, i, ax in zip(df.columns[1:], ids, axs.ravel()):
+        ax.scatter(
+            X_umap[:, 0],
+            X_umap[:, 1],
+            c=df[col], cmap='bwr', s=5)
+        ax.set_title(f"Assay {i}")
+    plt.show()
