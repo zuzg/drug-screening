@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.cm import ScalarMappable
 import pandas as pd
 import seaborn as sns
 
@@ -76,14 +77,17 @@ def plot_multiple_umaps(X_umap: np.ndarray, y: np.ndarray, df: pd.DataFrame) -> 
 
     :return: scatter plot for UMAPs
     """
-    fig, axs = plt.subplots(nrows=2, ncols=4, figsize=(18, 12))
+    fig, axs = plt.subplots(nrows=3, ncols=3, figsize=(18, 16))
     fig.suptitle('UMAP projection of assays', fontsize=16)
 
-    ids = range(1, 9)
-    for col, i, ax in zip(df.columns[1:], ids, axs.ravel()):
+    for col, i, ax in zip(df.columns[1:], range(9), axs.ravel()):
         ax.scatter(
             X_umap[:, 0],
             X_umap[:, 1],
-            c=df[col], cmap='bwr', s=5)
-        ax.set_title(f"Assay {i}")
+            c=df[col], cmap='coolwarm', s=5)
+        ax.set_title(col)
+        norm = plt.Normalize(df[col].min(), df[col].max())
+        sm = ScalarMappable(norm=norm, cmap='coolwarm')
+        sm.set_array([])
+        cbar = fig.colorbar(sm, ax=ax)
     plt.show()
