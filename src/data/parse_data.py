@@ -11,9 +11,11 @@ def parse_data(filename: str) -> pd.DataFrame:
     :return: parsed DataFrame
     """
     df = pd.read_excel(f"../data/raw/{filename}")
-    del df['CONTROL OUTLIER']
-    print(f"Deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
-    df = df[df['Transfer Status'] == 'OK']
+    if('CONTROL OUTLIER' in df):
+        del df['CONTROL OUTLIER']
+    if('Transfer Status' in df and len(df[df['Transfer Status'] != 'OK'])!=0):
+        print(f"{filename} - deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
+        df = df[df['Transfer Status'] == 'OK']
 
     return df
 
