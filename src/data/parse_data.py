@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
+from functools import reduce
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -28,9 +29,13 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
 
     :return: DataFrame with extracted barcode prefix and suffix
     """
+    bar_colname = 'Barcode assay plate'
+    temp = df.filter(like='BARCODE ASSAY PLATE').columns
+    if len(temp != 0):
+        bar_colname = temp[0]
+        
     new_df = df.copy(deep=True)
-    new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df['Barcode assay plate'].str.extract(pat='(.{13})([^0-9]*)(.*)')
-
+    new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
 
 
@@ -54,6 +59,68 @@ def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
                         [['Compound ID', 'Barcode_prefix', 'Barcode_suffix', 'VALUE_DTT', 'VALUE_HRP']]
 
     return df_merged
+
+def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
+    """
+    Combine assays by compound ID.
+
+    :param dfs: list of DataFrames and respective filenames
+
+    :param barcode: value indicating checking upon the barcode
+
+    :return: one merged DataFrame
+    """
+    d = dict()
+    barcode_files = list()
+    non_barcode_files = list()
+    res = pd.DataFrame()
+
+    for df, name in dataframes:
+        key = name.replace('.xlsx', '')
+        df =  df.rename(str.upper, axis='columns')
+        index_col = df.filter(like='CMPD ID').columns
+        assert(len(index_col) == 1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
+        
+        df.rename({index_col[0]: 'CMPD ID'}, axis=1, inplace=True)
+
+        # check upon the barcode
+        if barcode: 
+            df2 = parse_barcode(df)
+            if(set(df2['Barcode_suffix'].values) != {''}):
+                barcode_files.append(key)
+                df = df2
+            else:
+                non_barcode_files.append(key)
+
+        suffix = ' - ' + key
+        df = df.add_suffix(suffix)
+        df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        d[key] = df
+    
+    # create ID column for the assays containing barcode suffix
+    if barcode and len(barcode_files) != 0:
+        for bar_file in barcode_files:
+            d[bar_file]['ID'] = (d[bar_file][f'CMPD ID'].astype(str) + 
+                            d[bar_file][f'Barcode_prefix - {bar_file}']) + d[bar_file][f'Barcode_suffix - {bar_file}']
+        
+        bar_df = [d[b] for b in barcode_files]
+        non_bar_df = [d[nb] for nb in non_barcode_files]
+
+        res_barcode = reduce(lambda  left,right: pd.merge(left,right,on=['ID'],
+                                                how='outer'), bar_df)
+        
+        res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
+                                                    how='outer'), non_bar_df)
+            
+        res = res.merge(res_barcode, how='outer', on='CMPD ID')
+            
+
+    else:
+        res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
+                                                how='outer'), d.values())
+
+    return res
+
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
