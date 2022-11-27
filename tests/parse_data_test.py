@@ -12,7 +12,7 @@ def test_combining_experiments():
 
 def test_combine_experiments(combine_dataframes):
     merged_df = combine_assays(combine_dataframes)
-    assert merged_df.iloc['VALUE - Assay 1'][0] == 2345333
+    assert merged_df['VALUE - Assay 1'][0] == 2345333
 
 def test_combine_experiments_barcode(combine_dataframes):
     merged_df = combine_assays(combine_dataframes, barcode=True)
