@@ -68,7 +68,7 @@ def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     return df_merged
 
 
-def combine_assays(dfs: list[pd.DataFrame]) -> pd.DataFrame:
+def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
     """
     Combine experiment assays by ID.
 
@@ -158,6 +158,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
         
         res = res.groupby('CMPD ID').agg('max')
 
+    res = res.reset_index(level=0)
     return res
 
 
