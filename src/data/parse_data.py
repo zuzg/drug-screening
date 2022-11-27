@@ -109,7 +109,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
                                                 how='outer'), bar_df)
         
 
-        bar_cols = df.filter(like='Barcode_').columns
+        bar_cols = res.filter(like='Barcode_').columns
         res.drop(bar_cols, axis=1, inplace=True)
 
     else:
