@@ -58,26 +58,28 @@ def construct_description_table(df: pd.DataFrame, columns: list[str]) -> html.Di
     )
 
 
-def construct_combined(combined_dataframe: pd.DataFrame) -> html.Div:
+def construct_combined(
+    combined_dataframe: pd.DataFrame, crucial_columns: list[str]
+) -> html.Div:
     """
-    Construct a vizualization from combined dataframe.
-    Currently only supports a scatter plot, description and preview tables.
-    The combined dataframe must have at least two VALUE columns.
+    Construct a vizualization from combined dataframe.\
 
     :param combined_dataframe: merged dataframe of several experiments
-    :raises ValueError: if the dataframe does not have at least two VALUE columns
+    :param crucial_columns: list of column names to use for the vizualization
+    :raises ValueError: if the dataframe does not have at least two crucial columns
     :return: html Div element containing the visualization
     """
-    value_columns = [name for name in combined_dataframe.columns if "VALUE" in name]
-    if len(value_columns) < 2:
-        raise ValueError("Combined dataframe must have at least two VALUE columns.")
-    description_table = construct_description_table(combined_dataframe, value_columns)
+    if len(crucial_columns) < 2:
+        raise ValueError(
+            "Combined dataframe must have at least two crucial columns columns."
+        )
+    description_table = construct_description_table(combined_dataframe, crucial_columns)
     scatter = dcc.Graph(
         figure=px.scatter(
             combined_dataframe,
-            x=value_columns[0],
-            y=value_columns[1],
-            title="VALUE scatterplot",
+            x=crucial_columns[0],
+            y=crucial_columns[1],
+            title="Scatterplot",
         ),
         id="value-scatterplot",
     )
@@ -87,24 +89,21 @@ def construct_combined(combined_dataframe: pd.DataFrame) -> html.Div:
     return html.Div(children=[description_table, html.Hr(), scatter, preview_table])
 
 
-def construct_single(dataframe: pd.DataFrame) -> html.Div:
+def construct_single(dataframe: pd.DataFrame, crucial_columns: list[str]) -> html.Div:
     """
     Construct a vizualization from a single experiment.
     Currently only supports a histogram plot, description and preview tables.
-    The dataframe must have a VALUE column.
 
     :param dataframe: dataframe of a singular experiment
-    :raises ValueError: if the dataframe does not have a VALUE column
+    :param crucial_columns: list of column names to use for the vizualization
     :return: html Div element containing the visualization
     """
-    value_columns = [
-        col for col in ["% ACTIVATION", "VALUE"] if col in dataframe.columns
-    ]
-    if "VALUE" not in dataframe.columns:
-        raise ValueError("Dataframe must have a VALUE column.")
-    description_table = construct_description_table(dataframe, value_columns)
+    crucial_column = crucial_columns[0]
+    description_table = construct_description_table(dataframe, [crucial_column])
     histogram = dcc.Graph(
-        figure=px.histogram(dataframe, x="VALUE", title="VALUE Histogram"),
+        figure=px.histogram(
+            dataframe, x=crucial_column, title=f"{crucial_column} Histogram"
+        ),
         id="value-histogram",
     )
     preview_table = construct_preview_table(dataframe, "preview-table")
