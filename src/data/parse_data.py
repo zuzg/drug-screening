@@ -8,6 +8,7 @@ import os
 import sys
 if '../' not in sys.path:
     sys.path.append('../')
+from functools import reduce
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -36,10 +37,13 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
 
     :return: DataFrame with extracted barcode prefix and suffix
     """
+    bar_colname = 'Barcode assay plate'
+    temp = df.filter(like='BARCODE ASSAY PLATE').columns
+    if len(temp != 0):
+        bar_colname = temp[0]
+        
     new_df = df.copy(deep=True)
-    new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']
-           ] = new_df['Barcode assay plate'].str.extract(pat='(.{13})([^0-9]*)(.*)')
-
+    new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
 
 
@@ -96,36 +100,66 @@ def combine_assays(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 
     return df_merged
 
+def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
+    """
+    Combine assays by compound ID.
 
-def merge_all_assays() -> pd.DataFrame:
+    :param dfs: list of DataFrames and respective filenames
+
+    :param barcode: value indicating checking upon the barcode
+
+    :return: one merged DataFrame
+    """
     d = dict()
+    barcode_files = list()
+    non_barcode_files = list()
+    res = pd.DataFrame()
 
-    for file in os.listdir('../data/raw/'):
-        if file.startswith('Assay'):
-            d[file.replace('.xlsx', '')] = parse_data(file)
-    for assay in d:
-        d[assay] = d[assay].rename(str.upper, axis='columns')
-    for i in range(1, 9):
-        d[f'Assay {i}'] = d[f'Assay {i}'].add_suffix(f' {i}')
-    for i in range(1, 4):
-        d[f'Assay {i}']['ID'] = (d[f'Assay {i}'][f'ASSAY {i} - CMPD ID {i}'].astype(str) + d[f'Assay {i}']
-                                 [f'BARCODE ASSAY PLATE {i}'].str[:-2]) + d[f'Assay {i}'][f'BARCODE ASSAY PLATE {i}'].str[-1]
+    for df, name in dataframes:
+        key = name.replace('.xlsx', '')
+        df =  df.rename(str.upper, axis='columns')
+        index_col = df.filter(like='CMPD ID').columns
+        assert(len(index_col) == 1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
+        
+        df.rename({index_col[0]: 'CMPD ID'}, axis=1, inplace=True)
 
-    combined_df = pd.merge(d['Assay 1'], d['Assay 2'], on='ID')
-    combined_df = pd.merge(combined_df, d['Assay 3'], on='ID')
-    for i in range(4, 9):
-        combined_df = pd.merge(
-            combined_df, d[f'Assay {i}'], left_on='ASSAY 1 - CMPD ID 1', right_on=f'ASSAY {i} - CMPD ID {i}')
-    combined_df = combined_df.rename(
-        columns={'ASSAY 1 - CMPD ID 1': 'CMPD ID'})
+        # check upon the barcode
+        if barcode: 
+            df2 = parse_barcode(df)
+            if(set(df2['Barcode_suffix'].values) != {''}):
+                barcode_files.append(key)
+                df = df2
+            else:
+                non_barcode_files.append(key)
 
-    colnames = ['CMPD ID']
-    colnames.extend([f'% ACTIVATION {i}' for i in range(1, 4)])
-    colnames.extend([f'% INHIBITION {i}' for i in range(4, 9)])
-    colnames.extend(['% ACTIVATION 8'])
-    res = combined_df[colnames]
+        suffix = ' - ' + key
+        df = df.add_suffix(suffix)
+        df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        d[key] = df
+    
+    # create ID column for the assays containing barcode suffix
+    if barcode and len(barcode_files) != 0:
+        for bar_file in barcode_files:
+            d[bar_file]['ID'] = (d[bar_file][f'CMPD ID'].astype(str) + 
+                            d[bar_file][f'Barcode_prefix - {bar_file}']) + d[bar_file][f'Barcode_suffix - {bar_file}']
+        
+        bar_df = [d[b] for b in barcode_files]
+
+        res = reduce(lambda  left,right: pd.merge(left,right,on=['ID'],
+                                                how='outer'), bar_df)
+        
+
+        bar_cols = res.filter(like='Barcode_').columns
+        res.drop(bar_cols, axis=1, inplace=True)
+
+    else:
+        res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
+                                                how='outer'), d.values())
+        
+        res = res.groupby('CMPD ID').agg('max')
 
     return res
+
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:

@@ -20,3 +20,9 @@ conda env create -f environment.yml
 ```
 conda activate drug-screening
 ```
+### Starting the dashboard
+
+To start the dashboard enter the following command in the terminal (active in the root project directory) while the conda environment is active:
+```
+python -m dashboard
+```
