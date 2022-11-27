@@ -104,20 +104,19 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
                             d[bar_file][f'Barcode_prefix - {bar_file}']) + d[bar_file][f'Barcode_suffix - {bar_file}']
         
         bar_df = [d[b] for b in barcode_files]
-        non_bar_df = [d[nb] for nb in non_barcode_files]
 
-        res_barcode = reduce(lambda  left,right: pd.merge(left,right,on=['ID'],
+        res = reduce(lambda  left,right: pd.merge(left,right,on=['ID'],
                                                 how='outer'), bar_df)
         
-        res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
-                                                    how='outer'), non_bar_df)
-            
-        res = res.merge(res_barcode, how='outer', on='CMPD ID')
-            
+
+        bar_cols = df.filter(like='Barcode_').columns
+        res.drop(bar_cols, axis=1, inplace=True)
 
     else:
         res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
                                                 how='outer'), d.values())
+        
+        res = res.groupby('CMPD ID').agg('max')
 
     return res
 
