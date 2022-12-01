@@ -62,7 +62,7 @@ def construct_combined(
     combined_dataframe: pd.DataFrame, crucial_columns: list[str]
 ) -> html.Div:
     """
-    Construct a vizualization from combined dataframe.\
+    Construct a vizualization from combined dataframe.
 
     :param combined_dataframe: merged dataframe of several experiments
     :param crucial_columns: list of column names to use for the vizualization
