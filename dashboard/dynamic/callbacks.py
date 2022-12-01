@@ -11,7 +11,7 @@ from dash.dependencies import Input, Output, State
 
 from src.data.parse_data import combine_assays
 from .construct import construct_single, construct_combined
-from ..util import parse_contents
+from ..parse import parse_contents
 from ..state import GlobalState
 
 
