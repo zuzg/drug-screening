@@ -1,5 +1,13 @@
+import copy
+import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler, QuantileTransformer
+import umap
+from functools import reduce
+import os
+import sys
+if '../' not in sys.path:
+    sys.path.append('../')
 from functools import reduce
 
 
@@ -14,10 +22,10 @@ def parse_data(filename: str) -> pd.DataFrame:
     df = pd.read_excel(f"../data/raw/{filename}")
     if('CONTROL OUTLIER' in df):
         del df['CONTROL OUTLIER']
-    if('Transfer Status' in df and len(df[df['Transfer Status'] != 'OK'])!=0):
-        print(f"{filename} - deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
+    if('Transfer Status' in df and len(df[df['Transfer Status'] != 'OK']) != 0):
+        print(
+            f"{filename} - deleted {len(df[df['Transfer Status'] != 'OK'])} rows with invalid Transfer Status")
         df = df[df['Transfer Status'] == 'OK']
-
     return df
 
 
@@ -47,16 +55,48 @@ def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
 
     :return: one merged DataFrame
     """
-    #TODO generalize to more experiments
     new_dfs = []
     for df in dfs:
         new_dfs.append(parse_barcode(df))
 
     df_merged = pd.merge(*new_dfs,
-                        left_on=['DTT  - compound ID', 'Barcode_prefix', 'Barcode_suffix'],
-                        right_on = ['HRP - compound ID', 'Barcode_prefix', 'Barcode_suffix'])\
-                        .rename(columns={'HRP - compound ID': 'Compound ID', 'VALUE_x': 'VALUE_DTT', 'VALUE_y': 'VALUE_HRP'})\
-                        [['Compound ID', 'Barcode_prefix', 'Barcode_suffix', 'VALUE_DTT', 'VALUE_HRP']]
+                         left_on=['DTT  - compound ID',
+                                  'Barcode_prefix', 'Barcode_suffix'],
+                         right_on=['HRP - compound ID', 'Barcode_prefix', 'Barcode_suffix'])\
+        .rename(columns={'HRP - compound ID': 'Compound ID', 'VALUE_x': 'VALUE_DTT', 'VALUE_y': 'VALUE_HRP'})[['Compound ID', 'Barcode_prefix', 'Barcode_suffix', 'VALUE_DTT', 'VALUE_HRP']]
+
+    return df_merged
+
+
+def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
+    """
+    Combine experiment assays by ID.
+
+    :param dfs: list of DataFrames to be mergedy by id
+
+    :return: one merged DataFrame with activations/inhibitions only
+    """
+    new_dfs = copy.deepcopy(dfs)
+    for i in range(len(new_dfs)):
+        id = f"Assay {i+1} - cmpd Id"
+        if '% ACTIVATION' in new_dfs[i].columns.values:
+            new_dfs[i] = new_dfs[i][[id, '% ACTIVATION']]
+            new_dfs[i] = new_dfs[i].rename(
+                columns={id: 'Compound ID', '% ACTIVATION': '% ACTIVATION ' + str(i+1)})
+        elif '% INHIBITION' in new_dfs[i].columns.values:
+            new_dfs[i] = new_dfs[i][[id, '% INHIBITION']]
+            new_dfs[i] = new_dfs[i].rename(
+                columns={id: 'Compound ID', '% INHIBITION': '% INHIBITION ' + str(i+1)})
+        else:
+            raise Exception(f"No correct column in {i+1} file")
+
+    df_merged = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
+                                                          left_index=True, right_index=True,
+                                                          how='outer'), new_dfs)
+    df_merged = df_merged[df_merged.columns.drop(
+        list(df_merged.filter(regex='Compound ID_')))]
+    first_column = df_merged.pop('Compound ID')
+    df_merged.insert(0, 'Compound ID', first_column)
 
     return df_merged
 
@@ -118,6 +158,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
         
         res = res.groupby('CMPD ID').agg('max')
 
+    res = res.reset_index(level=0)
     return res
 
 
@@ -132,7 +173,35 @@ def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame
 
     :return: DataFrame with normalized columns
     """
-    scaler = MinMaxScaler()
+    scaler = StandardScaler()
     df[column_names] = scaler.fit_transform(df[column_names])
 
     return df
+
+
+def get_umap(df: pd.DataFrame, target: str, scaler: object,
+             n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
+    """
+    Function to normalize chosen columns within dataframe.
+
+    :param df: DataFrame with to perform UMAP
+
+    :param target: names of column to be treated as target
+
+    :param scaler: object with which scaling will be performed
+
+    :return: UMAP array, target y
+    """
+    df_na = df.dropna(inplace=False)
+    X = df_na.drop(target, axis=1)
+    y = df_na[target]
+
+    X_scaled = scaler.fit_transform(X)
+    umap_transformer = umap.UMAP(
+        n_neighbors=n_neighbors,
+        n_components=n_components,
+        min_dist=min_dist
+    )
+    X_umap = umap_transformer.fit_transform(X_scaled)
+
+    return X_umap, y
