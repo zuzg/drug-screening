@@ -31,6 +31,22 @@ def parse_data(filename: str) -> pd.DataFrame:
     return df
 
 
+def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Parse dataframe to extract compound's ID.
+    :param df: DataFrame with barcode
+    :return: DataFrame with extracted barcode prefix and suffix
+    """
+    bar_colname = 'Barcode assay plate'
+    temp = df.filter(like='BARCODE ASSAY PLATE').columns
+    if len(temp != 0):
+        bar_colname = temp[0]
+        
+    new_df = df.copy(deep=True)
+    new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
+    return new_df
+
+
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
     """
     Combine assays by compound ID.
