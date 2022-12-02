@@ -122,3 +122,38 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
         title=f'{str.upper(projection)} projection with respect to {feature}',
         width=width, height=height)
     return fig
+
+
+def plot_projection_3d(df: pd.DataFrame, feature: str, projection: str = 'umap', width:int=1000, height:int=800) -> px.scatter:
+    """
+    Plot in 3D selected projection and colour points with respect to selected feature.
+    
+    :param df: DataFrame to be visualized
+
+    :param feature: name of the column with respect to which the plot will be coloured
+    
+    :param projection: name of projection to be visualized
+
+    :param width: plot's width
+
+    :param height: plot's height
+
+    """
+    fig = px.scatter_3d(
+        df,  
+        x=f'{str.upper(projection)}_X',  
+        y=f'{str.upper(projection)}_Y',
+        z=f'{str.upper(projection)}_Z',
+        color=df[feature],
+        range_color=[0,df[feature].max()],
+        labels={
+            f'{str.upper(projection)}_X': 'X',
+            f'{str.upper(projection)}_Y': 'Y',
+            f'{str.upper(projection)}_Z': 'Z',
+            'CMPD ID':'Compound ID'
+        },
+        title=f'{str.upper(projection)} 3D projection with respect to {feature}',
+        width=width, height=height)
+    fig.update_traces(marker={'size':3})
+    return fig
+

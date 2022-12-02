@@ -216,17 +216,24 @@ def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
     return X_tsne
 
 
-def get_projections(df: pd.DataFrame) -> pd.DataFrame:
+def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
     """
     Add columns with projected values to exisisting dataframe
 
     :param df: DataFrame to peform projections
 
+    :param get_3d: if True it returns also the third dimension
+
     :return: dataframe with added projection columns
     """
-    df_umap = get_umap(df, 'CMPD ID', scaler=False)
-    df_pca = get_pca(df, 'CMPD ID', scaler=False)
-    df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
+    if get_3d:
+        df_umap = get_umap(df, 'CMPD ID', n_components=3, scaler=False)
+        df_pca = get_pca(df, 'CMPD ID', n_components=3, scaler=False)
+        df_tsne = get_tsne(df, 'CMPD ID', n_components=3, scaler=False)
+    else:
+        df_umap = get_umap(df, 'CMPD ID', scaler=False)
+        df_pca = get_pca(df, 'CMPD ID', scaler=False)
+        df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
     df_expanded = df.copy()
 
     df_expanded['UMAP_X'] = df_umap[:, 0]
@@ -235,5 +242,10 @@ def get_projections(df: pd.DataFrame) -> pd.DataFrame:
     df_expanded['PCA_Y'] = df_pca[:, 1]
     df_expanded['TSNE_X'] = df_tsne[:, 0]
     df_expanded['TSNE_Y'] = df_tsne[:, 1]
+
+    if get_3d:
+        df_expanded['UMAP_Z'] = df_umap[:, 2]
+        df_expanded['PCA_Z'] = df_pca[:, 2]
+        df_expanded['TSNE_Z'] = df_tsne[:, 2]
 
     return df_expanded
