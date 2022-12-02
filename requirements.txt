@@ -12,3 +12,4 @@ umap-learn
 dash
 dash-bootstrap-components
 nbformat>=4.2.0
+plotly
