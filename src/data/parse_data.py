@@ -47,13 +47,15 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     return new_df
 
 
-def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
+def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
     Combine assays by compound ID.
 
     :param dfs: list of DataFrames and respective filenames
 
     :param barcode: value indicating checking upon the barcode
+
+    :param agg_function: aggragation function to be applited incase of duplicated compound IDs
 
     :return: one merged DataFrame
     """
@@ -103,7 +105,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
         res = reduce(lambda left, right: pd.merge(left, right, on=['CMPD ID'],
                                                   how='outer'), d.values())
 
-        res = res.groupby('CMPD ID').agg('max')
+        res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
     return res
@@ -231,7 +233,7 @@ def get_projections(df: pd.DataFrame) -> pd.DataFrame:
     df_expanded['UMAP_Y'] = df_umap[:, 1]
     df_expanded['PCA_X'] = df_pca[:, 0]
     df_expanded['PCA_Y'] = df_pca[:, 1]
-    df_expanded['tSNE_X'] = df_tsne[:, 0]
-    df_expanded['tSNE_Y'] = df_tsne[:, 1]
+    df_expanded['TSNE_X'] = df_tsne[:, 0]
+    df_expanded['TSNE_Y'] = df_tsne[:, 1]
 
     return df_expanded
