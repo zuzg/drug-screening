@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import ScalarMappable
 import pandas as pd
 import seaborn as sns
-
+import plotly.express as px
 
 def histogram_control_value(df: pd.DataFrame, feature: str, control_pos: str, control_neg: str) -> sns.displot:
     """
@@ -91,3 +91,69 @@ def plot_projections(X_umap: np.ndarray, df: pd.DataFrame) -> None:
         sm.set_array([])
         cbar = fig.colorbar(sm, ax=ax)
     plt.show()
+
+def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap', width:int=800, height:int=600) -> px.scatter:
+    """
+    Plot selected projection and colour points with respect to selected feature.
+    
+    :param df: DataFrame to be visualized
+
+    :param feature: name of the column with respect to which the plot will be coloured
+    
+    :param projection: name of projection to be visualized
+
+    :param width: plot's width
+
+    :param height: plot's height
+
+    """
+    fig = px.scatter(
+        df,  
+        x=f'{str.upper(projection)}_X',  
+        y=f'{str.upper(projection)}_Y',
+        text='CMPD ID',
+        color=df[feature],
+        range_color=[0,df[feature].max()],
+        labels={
+            f'{str.upper(projection)}_X': 'X',
+            f'{str.upper(projection)}_Y': 'Y',
+            'CMPD ID':'Compound ID'
+        },
+        title=f'{str.upper(projection)} projection with respect to {feature}',
+        width=width, height=height)
+    return fig
+
+
+def plot_projection_3d(df: pd.DataFrame, feature: str, projection: str = 'umap', width:int=1000, height:int=800) -> px.scatter:
+    """
+    Plot in 3D selected projection and colour points with respect to selected feature.
+    
+    :param df: DataFrame to be visualized
+
+    :param feature: name of the column with respect to which the plot will be coloured
+    
+    :param projection: name of projection to be visualized
+
+    :param width: plot's width
+
+    :param height: plot's height
+
+    """
+    fig = px.scatter_3d(
+        df,  
+        x=f'{str.upper(projection)}_X',  
+        y=f'{str.upper(projection)}_Y',
+        z=f'{str.upper(projection)}_Z',
+        color=df[feature],
+        range_color=[0,df[feature].max()],
+        labels={
+            f'{str.upper(projection)}_X': 'X',
+            f'{str.upper(projection)}_Y': 'Y',
+            f'{str.upper(projection)}_Z': 'Z',
+            'CMPD ID':'Compound ID'
+        },
+        title=f'{str.upper(projection)} 3D projection with respect to {feature}',
+        width=width, height=height)
+    fig.update_traces(marker={'size':3})
+    return fig
+

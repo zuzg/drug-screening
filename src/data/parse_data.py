@@ -47,13 +47,15 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     return new_df
 
 
-def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
+def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
     Combine assays by compound ID.
 
     :param dfs: list of DataFrames and respective filenames
 
     :param barcode: value indicating checking upon the barcode
+
+    :param agg_function: aggragation function to be applited incase of duplicated compound IDs
 
     :return: one merged DataFrame
     """
@@ -103,7 +105,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
         res = reduce(lambda left, right: pd.merge(left, right, on=['CMPD ID'],
                                                   how='outer'), d.values())
 
-        res = res.groupby('CMPD ID').agg('max')
+        res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
     return res
@@ -214,24 +216,36 @@ def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
     return X_tsne
 
 
-def get_projections(df: pd.DataFrame) -> pd.DataFrame:
+def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
     """
     Add columns with projected values to exisisting dataframe
 
     :param df: DataFrame to peform projections
 
+    :param get_3d: if True it returns also the third dimension
+
     :return: dataframe with added projection columns
     """
-    df_umap = get_umap(df, 'CMPD ID', scaler=False)
-    df_pca = get_pca(df, 'CMPD ID', scaler=False)
-    df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
+    if get_3d:
+        df_umap = get_umap(df, 'CMPD ID', n_components=3, scaler=False)
+        df_pca = get_pca(df, 'CMPD ID', n_components=3, scaler=False)
+        df_tsne = get_tsne(df, 'CMPD ID', n_components=3, scaler=False)
+    else:
+        df_umap = get_umap(df, 'CMPD ID', scaler=False)
+        df_pca = get_pca(df, 'CMPD ID', scaler=False)
+        df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
     df_expanded = df.copy()
 
     df_expanded['UMAP_X'] = df_umap[:, 0]
     df_expanded['UMAP_Y'] = df_umap[:, 1]
     df_expanded['PCA_X'] = df_pca[:, 0]
     df_expanded['PCA_Y'] = df_pca[:, 1]
-    df_expanded['tSNE_X'] = df_tsne[:, 0]
-    df_expanded['tSNE_Y'] = df_tsne[:, 1]
+    df_expanded['TSNE_X'] = df_tsne[:, 0]
+    df_expanded['TSNE_Y'] = df_tsne[:, 1]
+
+    if get_3d:
+        df_expanded['UMAP_Z'] = df_umap[:, 2]
+        df_expanded['PCA_Z'] = df_pca[:, 2]
+        df_expanded['TSNE_Z'] = df_tsne[:, 2]
 
     return df_expanded
