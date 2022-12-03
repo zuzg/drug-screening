@@ -1,7 +1,9 @@
 import copy
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler, StandardScaler, QuantileTransformer
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
 import umap
 from functools import reduce
 import os
@@ -32,9 +34,7 @@ def parse_data(filename: str) -> pd.DataFrame:
 def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     """
     Parse dataframe to extract compound's ID.
-
     :param df: DataFrame with barcode
-
     :return: DataFrame with extracted barcode prefix and suffix
     """
     bar_colname = 'Barcode assay plate'
@@ -46,59 +46,6 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
 
-
-def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
-    """
-    Combine experiment dataframes by ID.
-
-    :param dfs: list of DataFrames to be mergedy by barcode
-
-    :return: one merged DataFrame
-    """
-    new_dfs = []
-    for df in dfs:
-        new_dfs.append(parse_barcode(df))
-
-    df_merged = pd.merge(*new_dfs,
-                         left_on=['DTT  - compound ID',
-                                  'Barcode_prefix', 'Barcode_suffix'],
-                         right_on=['HRP - compound ID', 'Barcode_prefix', 'Barcode_suffix'])\
-        .rename(columns={'HRP - compound ID': 'Compound ID', 'VALUE_x': 'VALUE_DTT', 'VALUE_y': 'VALUE_HRP'})[['Compound ID', 'Barcode_prefix', 'Barcode_suffix', 'VALUE_DTT', 'VALUE_HRP']]
-
-    return df_merged
-
-
-def combine_experiments(dfs: list[pd.DataFrame]) -> pd.DataFrame:
-    """
-    Combine experiment assays by ID.
-
-    :param dfs: list of DataFrames to be mergedy by id
-
-    :return: one merged DataFrame with activations/inhibitions only
-    """
-    new_dfs = copy.deepcopy(dfs)
-    for i in range(len(new_dfs)):
-        id = f"Assay {i+1} - cmpd Id"
-        if '% ACTIVATION' in new_dfs[i].columns.values:
-            new_dfs[i] = new_dfs[i][[id, '% ACTIVATION']]
-            new_dfs[i] = new_dfs[i].rename(
-                columns={id: 'Compound ID', '% ACTIVATION': '% ACTIVATION ' + str(i+1)})
-        elif '% INHIBITION' in new_dfs[i].columns.values:
-            new_dfs[i] = new_dfs[i][[id, '% INHIBITION']]
-            new_dfs[i] = new_dfs[i].rename(
-                columns={id: 'Compound ID', '% INHIBITION': '% INHIBITION ' + str(i+1)})
-        else:
-            raise Exception(f"No correct column in {i+1} file")
-
-    df_merged = reduce(lambda df_left, df_right: pd.merge(df_left, df_right,
-                                                          left_index=True, right_index=True,
-                                                          how='outer'), new_dfs)
-    df_merged = df_merged[df_merged.columns.drop(
-        list(df_merged.filter(regex='Compound ID_')))]
-    first_column = df_merged.pop('Compound ID')
-    df_merged.insert(0, 'Compound ID', first_column)
-
-    return df_merged
 
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False) -> pd.DataFrame:
     """
@@ -117,14 +64,15 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
 
     for df, name in dataframes:
         key = name.replace('.xlsx', '')
-        df =  df.rename(str.upper, axis='columns')
+        df = df.rename(str.upper, axis='columns')
         index_col = df.filter(like='CMPD ID').columns
-        assert(len(index_col) == 1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
-        
+        assert(len(index_col) ==
+               1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
+
         df.rename({index_col[0]: 'CMPD ID'}, axis=1, inplace=True)
 
         # check upon the barcode
-        if barcode: 
+        if barcode:
             df2 = parse_barcode(df)
             if(set(df2['Barcode_suffix'].values) != {''}):
                 barcode_files.append(key)
@@ -136,31 +84,29 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False)
         df = df.add_suffix(suffix)
         df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
         d[key] = df
-    
+
     # create ID column for the assays containing barcode suffix
     if barcode and len(barcode_files) != 0:
         for bar_file in barcode_files:
-            d[bar_file]['ID'] = (d[bar_file][f'CMPD ID'].astype(str) + 
-                            d[bar_file][f'Barcode_prefix - {bar_file}']) + d[bar_file][f'Barcode_suffix - {bar_file}']
-        
+            d[bar_file]['ID'] = (d[bar_file][f'CMPD ID'].astype(str) +
+                                 d[bar_file][f'Barcode_prefix - {bar_file}']) + d[bar_file][f'Barcode_suffix - {bar_file}']
+
         bar_df = [d[b] for b in barcode_files]
 
-        res = reduce(lambda  left,right: pd.merge(left,right,on=['ID'],
-                                                how='outer'), bar_df)
-        
+        res = reduce(lambda left, right: pd.merge(left, right, on=['ID'],
+                                                  how='outer'), bar_df)
 
         bar_cols = res.filter(like='Barcode_').columns
         res.drop(bar_cols, axis=1, inplace=True)
 
     else:
-        res = reduce(lambda  left,right: pd.merge(left,right,on=['CMPD ID'],
-                                                how='outer'), d.values())
-        
+        res = reduce(lambda left, right: pd.merge(left, right, on=['CMPD ID'],
+                                                  how='outer'), d.values())
+
         res = res.groupby('CMPD ID').agg('max')
 
     res = res.reset_index(level=0)
     return res
-
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
@@ -179,10 +125,28 @@ def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame
     return df
 
 
+def get_activation_inhibition(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Helper function to filter only activation and inhibition values.
+
+    :param df: DataFrame with to be filtered
+
+    :return: filtered dataframe
+    """
+    new_df = df.copy()
+    columns = ['CMPD ID']
+    columns.extend(list(new_df.filter(like='% ACTIVATION - ').columns))
+    columns.extend(list(new_df.filter(like='% INHIBITION - ').columns))
+    new_df = new_df[columns]
+    new_df.dropna(inplace=True)
+
+    return new_df
+
+
 def get_umap(df: pd.DataFrame, target: str, scaler: object,
              n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
     """
-    Function to normalize chosen columns within dataframe.
+    Get UMAP projection for given dataframe.
 
     :param df: DataFrame with to perform UMAP
 
@@ -190,18 +154,84 @@ def get_umap(df: pd.DataFrame, target: str, scaler: object,
 
     :param scaler: object with which scaling will be performed
 
-    :return: UMAP array, target y
+    :return: UMAP array
     """
     df_na = df.dropna(inplace=False)
     X = df_na.drop(target, axis=1)
-    y = df_na[target]
-
-    X_scaled = scaler.fit_transform(X)
+    if scaler:
+        X = scaler.fit_transform(X)
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,
         min_dist=min_dist
     )
-    X_umap = umap_transformer.fit_transform(X_scaled)
+    X_umap = umap_transformer.fit_transform(X)
 
-    return X_umap, y
+    return X_umap
+
+
+def get_pca(df: pd.DataFrame, target: str, scaler: object, n_components=2) -> np.ndarray:
+    """
+    Get PCA projection for given dataframe.
+
+    :param df: DataFrame with to perform PCA
+
+    :param target: names of column to be treated as target
+
+    :param scaler: object with which scaling will be performed
+
+    :return: PCA array
+    """
+    X = df.drop(target, axis=1)
+    if scaler:
+        X = scaler.fit_transform(X)
+    pca = PCA(n_components=n_components)
+    X_pca = pca.fit_transform(X)
+
+    return X_pca
+
+
+def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
+             learning_rate='auto', init='random', perplexity=3) -> np.ndarray:
+    """
+    Get t-SNE projection for given dataframe.
+
+    :param df: DataFrame with to perform t-SNE
+
+    :param target: names of column to be treated as target
+
+    :param scaler: object with which scaling will be performed
+
+    :return: t-SNE array
+    """
+    X = df.drop(target, axis=1)
+    if scaler:
+        X = scaler.fit_transform(X)
+    tsne = TSNE(n_components=n_components,
+                learning_rate=learning_rate, init=init, perplexity=perplexity)
+    X_tsne = tsne.fit_transform(X)
+
+    return X_tsne
+
+
+def get_projections(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add columns with projected values to exisisting dataframe
+
+    :param df: DataFrame to peform projections
+
+    :return: dataframe with added projection columns
+    """
+    df_umap = get_umap(df, 'CMPD ID', scaler=False)
+    df_pca = get_pca(df, 'CMPD ID', scaler=False)
+    df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
+    df_expanded = df.copy()
+
+    df_expanded['UMAP_X'] = df_umap[:, 0]
+    df_expanded['UMAP_Y'] = df_umap[:, 1]
+    df_expanded['PCA_X'] = df_pca[:, 0]
+    df_expanded['PCA_Y'] = df_pca[:, 1]
+    df_expanded['tSNE_X'] = df_tsne[:, 0]
+    df_expanded['tSNE_Y'] = df_tsne[:, 1]
+
+    return df_expanded

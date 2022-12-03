@@ -67,7 +67,7 @@ def plot_umap(X_umap: np.ndarray, y: np.ndarray) -> None:
     plt.show()
 
 
-def plot_multiple_umaps(X_umap: np.ndarray, y: np.ndarray, df: pd.DataFrame) -> None:
+def plot_projections(X_umap: np.ndarray, df: pd.DataFrame) -> None:
     """
     Show scatter plots for the UMAP data, colored by activation/inibition in each assay
 
