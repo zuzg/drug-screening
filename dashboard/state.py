@@ -2,6 +2,8 @@ import pandas as pd
 
 from dataclasses import dataclass, field
 
+from src.data.parse_data import get_projections
+
 
 @dataclass
 class GlobalState:
@@ -27,6 +29,7 @@ class GlobalState:
             if ("% ACTIVATION" in column or "% INHIBITION" in column)
             and "(" not in column  # filters out stuff like std(% ACTIVATION) etc
         ]
+        self.projections_df = get_projections(self.strict_df, get_3d=False)
 
     @property
     def strict_df(self) -> pd.DataFrame:
@@ -36,4 +39,4 @@ class GlobalState:
         :return: dataframe with only the crucial columns
         """
 
-        return self.df[self.crucial_columns]
+        return self.df[["CMPD ID"] + self.crucial_columns]
