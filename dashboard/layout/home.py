@@ -4,44 +4,78 @@ Contains the layout for the home page element.
 
 from dash import html, dcc
 
-home_layout = html.Div(
-    className="container",
+main_header = html.Header(
+    className="p-3 mb-3 text-bg-dark",
     children=[
-        html.Header(
-            className="my-4",
-            children=[
-                html.H1(children="Drug Screening Visualizer"),
-                html.Div(children="A convenient way to view your data"),
-            ],
-        ),
         html.Div(
-            children=[
-                html.Label(htmlFor="upload-data"),
-                dcc.Upload(
-                    id="upload-data",
-                    className="border border-dark rounded p-3",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A(
-                                "Select Files",
-                                className="text-primary text-decoration-underline",
-                            ),
-                        ]
-                    ),
-                    multiple=True,
-                ),
-            ]
-        ),
-        html.Main(
+            className="container-xxl",
             children=[
                 html.Div(
-                    html.H2("Upload sheets to view data"),
-                    id="output-data-upload",
-                    className="p-4 text-center",
-                ),
+                    className="d-flex flex-wrap align-items-center justify-content-between",
+                    children=[
+                        html.H1("Drug Screening Dashboard"),
+                        html.Div(
+                            className="text-end",
+                            children=[
+                                dcc.Upload(
+                                    "Upload",
+                                    className="btn btn-warning",
+                                    id="upload-data",
+                                    multiple=True,
+                                    accept=".xls, .xlsx",
+                                )
+                            ],
+                        ),
+                    ],
+                )
             ],
-            className="my-2 card shadow",
+        )
+    ],
+)
+
+general_info_panel = html.Article(
+    className="col border-end w-50",
+    children=[
+        html.H2("General Info", className="border-bottom"),
+        html.Div(id="description-table-slot"),
+        html.Div(id="basic-plot-slot"),
+    ],
+)
+
+projection_details_panel = html.Article(
+    className="col w-50",
+    children=[
+        html.H2("Data Projection", className="border-bottom"),
+        html.Div(id="projection-plot-slot"),
+    ],
+)
+
+preview_table_panel = html.Article(
+    className="mt-3",
+    children=[
+        html.H2("Selected Data Preview", className="border-bottom"),
+        html.Div(id="preview-table-slot"),
+    ],
+)
+
+main_container = html.Main(
+    className="container-xl flex-grow-1",
+    children=[
+        html.Div(
+            className="row",
+            children=[
+                general_info_panel,
+                projection_details_panel,
+                preview_table_panel,
+            ],
         ),
+    ],
+)
+
+home_layout = html.Div(
+    className="content",
+    children=[
+        main_header,
+        main_container,
     ],
 )

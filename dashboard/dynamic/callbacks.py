@@ -10,7 +10,9 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
 from src.data.parse_data import combine_assays
-from .construct import construct_single, construct_combined
+
+from .tables import table_from_df
+from .figures import scatterplot_from_df, make_projection_plot
 from ..parse import parse_contents
 from ..state import GlobalState
 
@@ -19,7 +21,7 @@ def on_data_upload(
     global_state: GlobalState,
     contents: typing.Iterable,
     names: typing.Iterable[str],
-) -> html.Div:
+) -> tuple[html.Div, html.Div]:
     """
     Callback on files being uploaded.
     Merges received dataframes and updates the global state.
@@ -40,11 +42,16 @@ def on_data_upload(
 
     global_state.set_dataframe(processed_dataframe)
 
-    construct = construct_single if len(dataframes) == 1 else construct_combined
-    data_visualization = construct(global_state.df, global_state.crucial_columns)
+    basic_plot = scatterplot_from_df(global_state.strict_df, *global_state.crucial_columns[:2], "Compounds experimens results", "basic-plot")
+    description_table = table_from_df(
+        global_state.strict_summary_df, "description-table"
+    )
+    preview_table = table_from_df(global_state.df, "preview-table")
+    projection_plot = make_projection_plot(
+        global_state.projections_df, global_state.crucial_columns[0], "umap"
+    )
 
-    heading = html.H2(f"Data Preview for {', '.join(names)}", className="mb-5")
-    return html.Div(children=[heading, data_visualization])
+    return description_table, basic_plot, preview_table, projection_plot
 
 
 def on_histogram_selection(global_state: GlobalState, relayoutData: dict) -> dict:
@@ -105,7 +112,12 @@ def register_callbacks(app: Dash, global_state: GlobalState) -> None:
     :param global_state: global state of the application containing the dataframe
     """
     app.callback(
-        Output("output-data-upload", "children"),
+        [
+            Output("description-table-slot", "children"),
+            Output("basic-plot-slot", "children"),
+            Output("preview-table-slot", "children"),
+            Output("projection-plot-slot", "children"),
+        ],
         Input("upload-data", "contents"),
         State("upload-data", "filename"),
     )(functools.partial(on_data_upload, global_state))

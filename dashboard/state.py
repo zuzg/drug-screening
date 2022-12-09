@@ -40,3 +40,13 @@ class GlobalState:
         """
 
         return self.df[["CMPD ID"] + self.crucial_columns]
+
+    @property
+    def strict_summary_df(self) -> pd.DataFrame:
+        """
+        Returns the formatted statistical summary dataframe of value columns.
+
+        :return: summary dataframe
+        """
+
+        return self.strict_df.describe().round(3).T.reset_index(level=0)
