@@ -16,3 +16,9 @@
     justify-content: center;
     align-items: center;
 }
+
+.controls-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-gap: 2rem;
+}

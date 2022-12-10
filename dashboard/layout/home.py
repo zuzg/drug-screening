@@ -40,7 +40,22 @@ general_info_panel = html.Article(
         dcc.Loading(
             type="default",
             className="loading-modal",
-            children=[html.Div(id="description-table-slot")],
+            children=[html.Div(id="description-table-slot", className="mb-1")],
+        ),
+        html.Div(
+            className="controls-container",
+            children=[
+                dcc.Dropdown(
+                    placeholder="Select X-axis attribute",
+                    id="x-axis-dropdown",
+                    clearable=False,
+                ),
+                dcc.Dropdown(
+                    placeholder="Select Y-axis attribute",
+                    id="y-axis-dropdown",
+                    clearable=False,
+                ),
+            ],
         ),
         html.Div(id="basic-plot-slot"),
     ],
@@ -50,6 +65,22 @@ projection_details_panel = html.Article(
     className="col w-50",
     children=[
         html.H2("Data Projection", className="border-bottom"),
+        html.Div(
+            className="controls-container",
+            children=[
+                dcc.Dropdown(
+                    id="projection-type-dropdown",
+                    options=["UMAP", "PCA", "TSNE"],
+                    value="UMAP",
+                    clearable=False,
+                ),
+                dcc.Dropdown(
+                    placeholder="Select colormap attribute",
+                    id="colormap-attribute-dropdown",
+                    clearable=False,
+                ),
+            ],
+        ),
         html.Div(id="projection-plot-slot"),
     ],
 )

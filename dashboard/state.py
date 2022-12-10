@@ -49,4 +49,9 @@ class GlobalState:
         :return: summary dataframe
         """
 
-        return self.strict_df.describe().round(3).T.reset_index(level=0)
+        return (
+            self.strict_df[self.crucial_columns]
+            .describe()
+            .round(3)
+            .T.reset_index(level=0)
+        )
