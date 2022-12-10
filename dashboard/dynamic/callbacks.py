@@ -59,9 +59,9 @@ def on_data_upload(
     return description_table, basic_plot, preview_table, projection_plot
 
 
-def on_histogram_selection(global_state: GlobalState, relayoutData: dict) -> dict:
+def on_projection_plot_selection(global_state: GlobalState, relayoutData: dict) -> dict:
     """
-    Callback on histogram selection (i.e. zooming in).
+    Callback on projection selection (i.e. zooming in).
     Limits the preview table records to the selected range.
 
     :param global_state: global state of the application containing the dataframe
@@ -71,42 +71,18 @@ def on_histogram_selection(global_state: GlobalState, relayoutData: dict) -> dic
     """
     if not relayoutData:
         raise PreventUpdate
-    df = global_state.df
 
-    # if range not specified include all entries from original dataframe
+    df = global_state.projections_df
     if "xaxis.range[0]" in relayoutData:
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
-        df = df[df[global_state.crucial_columns[0]].between(x_min, x_max)]
-    return df.to_dict("records")
-
-
-def on_scatterplot_selection(global_state: GlobalState, relayoutData: dict) -> dict:
-    """
-    Callback on scatterplot selection (i.e. zooming in).
-    Limits the preview table records to the selected range.
-    Assumes that the scatterplot is a 2D plot and that the x-axis is the first VALUE column.
-    (the y-axis is the second VALUE column).
-
-    :param global_state: global state of the application containing the dataframe
-    :param relayoutData: dictionary containing the new range
-    :raises PreventUpdate: if no relayoutData passed
-    :return: restricted dataframe as a dictionary
-    """
-    if not relayoutData:
-        raise PreventUpdate
-
-    df = global_state.df
-
-    # if range specified restrict entries to ones having values in range
-    if "xaxis.range[0]" in relayoutData:
-        x_min = relayoutData["xaxis.range[0]"]
-        x_max = relayoutData["xaxis.range[1]"]
-        df = df[df[global_state.crucial_columns[0]].between(x_min, x_max)]
+        df = df[df["UMAP_X"].between(x_min, x_max)]
         y_min = relayoutData["yaxis.range[0]"]
         y_max = relayoutData["yaxis.range[1]"]
-        df = df[df[global_state.crucial_columns[1]].between(y_min, y_max)]
-    return df.to_dict("records")
+        df = df[df["UMAP_Y"].between(y_min, y_max)]
+    return global_state.df[global_state.df["CMPD ID"].isin(df["CMPD ID"])].to_dict(
+        "records"
+    )
 
 
 def register_callbacks(app: Dash, global_state: GlobalState) -> None:
@@ -128,5 +104,5 @@ def register_callbacks(app: Dash, global_state: GlobalState) -> None:
     )(functools.partial(on_data_upload, global_state))
     app.callback(
         Output("preview-table", "data"),
-        Input("basic-plot", "relayoutData"),
-    )(functools.partial(on_scatterplot_selection, global_state))
+        Input("projection-plot", "relayoutData"),
+    )(functools.partial(on_projection_plot_selection, global_state))
