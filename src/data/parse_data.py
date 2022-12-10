@@ -46,6 +46,41 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
 
+def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean') -> pd.DataFrame:
+    """
+    Combine control values for given assay files.
+
+    :param dfs: list of DataFrames and respective filenames
+
+    :param agg_function: aggragation function to be applited on controls
+
+    :return: one merged DataFrame
+    """
+    d = dict()
+    res = pd.DataFrame()
+    for df, name in dataframes:
+        key = name.replace('.xlsx', '')
+        df = df.rename(str.upper, axis='columns')
+        index_col = df.filter(like='CMPD ID').columns
+        assert(len(index_col) ==
+               1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
+
+        df.rename({index_col[0]: 'CMPD ID'}, axis=1, inplace=True)
+        suffix = ' - ' + key
+        df = df.add_suffix(suffix)
+        df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        if((df['CMPD ID'] == 'CTRL NEG').any() or (df['CMPD ID'] == 'CTRL POS').any()):
+            mask = (df['CMPD ID'] == 'CTRL NEG') | (df['CMPD ID'] == 'CTRL POS')
+            temp = df[mask]
+            temp = temp.groupby('CMPD ID').agg(agg_function, numeric_only=True)
+            d[key] = temp
+    
+    if len(d) != 0:
+        res = reduce(lambda left, right: pd.merge(left, right, on=['CMPD ID'],
+                                                  how='inner'), d.values())
+    res = res.reset_index(level=0)
+    return res
+
 
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
@@ -85,6 +120,10 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         suffix = ' - ' + key
         df = df.add_suffix(suffix)
         df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        if((df['CMPD ID'] == 'CTRL NEG').any() or (df['CMPD ID'] == 'CTRL POS').any()):
+            df = df.drop(df[df['CMPD ID'] == 'CTRL NEG'].index)
+            df = df.drop(df[df['CMPD ID'] == 'CTRL POS'].index)
+
         d[key] = df
 
     # create ID column for the assays containing barcode suffix
