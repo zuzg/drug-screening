@@ -37,7 +37,11 @@ general_info_panel = html.Article(
     className="col border-end w-50",
     children=[
         html.H2("General Info", className="border-bottom"),
-        html.Div(id="description-table-slot"),
+        dcc.Loading(
+            type="default",
+            className="loading-modal",
+            children=[html.Div(id="description-table-slot")],
+        ),
         html.Div(id="basic-plot-slot"),
     ],
 )
