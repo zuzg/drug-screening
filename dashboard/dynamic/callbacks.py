@@ -45,9 +45,12 @@ def on_data_upload(
     processed_dataframe = combine_assays(zip(dataframes, names))
 
     # Workaround for the bug in the parse_data module
-    processed_dataframe = processed_dataframe[
-        processed_dataframe["CMPD ID"].str.isnumeric() != False
-    ]
+    try:
+        processed_dataframe = processed_dataframe[
+            processed_dataframe["CMPD ID"].str.isnumeric() != False
+        ]
+    except AttributeError:
+        pass
     global_state.set_dataframe(processed_dataframe)
 
     description_table = table_from_df(
