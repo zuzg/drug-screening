@@ -25,7 +25,11 @@ def make_projection_plot(
     """
     return dcc.Graph(
         figure=plot_projection_2d(
-            projection_df, colormap_feature, projection=projection_type
+            projection_df,
+            colormap_feature,
+            projection=projection_type,
+            width=None,
+            height=None,
         ),
         id="projection-plot",
     )
