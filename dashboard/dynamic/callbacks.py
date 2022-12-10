@@ -42,7 +42,12 @@ def on_data_upload(
 
     global_state.set_dataframe(processed_dataframe)
 
-    basic_plot = scatterplot_from_df(global_state.strict_df, *global_state.crucial_columns[:2], "Compounds experimens results", "basic-plot")
+    basic_plot = scatterplot_from_df(
+        global_state.strict_df,
+        *global_state.crucial_columns[:2],
+        "Compounds experimens results",
+        "basic-plot"
+    )
     description_table = table_from_df(
         global_state.strict_summary_df, "description-table"
     )
