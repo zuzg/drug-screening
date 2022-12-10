@@ -128,9 +128,5 @@ def register_callbacks(app: Dash, global_state: GlobalState) -> None:
     )(functools.partial(on_data_upload, global_state))
     app.callback(
         Output("preview-table", "data"),
-        Input("value-histogram", "relayoutData"),
-    )(functools.partial(on_histogram_selection, global_state))
-    app.callback(
-        Output("preview-table-combined", "data"),
-        Input("value-scatterplot", "relayoutData"),
+        Input("basic-plot", "relayoutData"),
     )(functools.partial(on_scatterplot_selection, global_state))
