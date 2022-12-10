@@ -5,7 +5,7 @@ Defines and registers callbacks for the dashboard.
 import typing
 import functools
 
-from dash import html, Dash
+from dash import html, Dash, dcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
@@ -21,25 +21,30 @@ def on_data_upload(
     global_state: GlobalState,
     contents: typing.Iterable,
     names: typing.Iterable[str],
-) -> tuple[html.Div, html.Div]:
+) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
     """
-    Callback on files being uploaded.
-    Merges received dataframes and updates the global state.
+    Callback on data upload.
+    Parses the uploaded data and updates the global state.
+    Updates the description table, preview table, and dropdowns.
+    Only accepts two or more files.
 
-    :param global_state: global state of the application containing the dataframe
-    :param contents: collection of file contents
-    :param names: collection of file names
+    :param global_state: global state of the dashboard
+    :param contents: list of uploaded file contents
+    :param names: list of uploaded file names
     :raises PreventUpdate: if no files were uploaded
-    :return: html Div containing the heading and entire data vizualization
+    :raises ValueError: if only one file was uploaded
+    :return: tuple of updated elements
     """
     if not contents:
         raise PreventUpdate
 
     dataframes = [parse_contents(c, n) for c, n in zip(contents, names)]
-    processed_dataframe = dataframes[0]
-    if len(dataframes) > 1:
-        processed_dataframe = combine_assays(zip(dataframes, names))
+    if len(dataframes) <= 1:
+        raise ValueError("Only one file was uploaded.")
 
+    processed_dataframe = combine_assays(zip(dataframes, names))
+
+    # Workaround for the bug in the parse_data module
     processed_dataframe = processed_dataframe[
         processed_dataframe["CMPD ID"].str.isnumeric() != False
     ]
@@ -54,12 +59,12 @@ def on_data_upload(
     return (
         description_table,
         preview_table,
-        global_state.crucial_columns,
-        global_state.crucial_columns[0],
-        global_state.crucial_columns,
-        global_state.crucial_columns[0],
-        global_state.crucial_columns,
-        global_state.crucial_columns[0],
+        global_state.crucial_columns,  # x-axis dropdown options
+        global_state.crucial_columns[0],  # x-axis dropdown value
+        global_state.crucial_columns,  # y-axis dropdown options
+        global_state.crucial_columns[0],  # y-axis dropdown value
+        global_state.crucial_columns,  # colormap-feature dropdown options
+        global_state.crucial_columns[0],  # colormap-feature dropdown value
     )
 
 
@@ -72,7 +77,8 @@ def on_projection_plot_selection(
 
     :param global_state: global state of the application containing the dataframe
     :param relayoutData: dictionary containing the new range
-    :raises PreventUpdate: if no relayoutData passed
+    :param projection_type: type of the projection
+    :raises PreventUpdate: if no relayoutData or projection_type is provided
     :return: restricted dataframe as a dictionary
     """
     if not relayoutData or not projection_type:
@@ -91,13 +97,14 @@ def on_projection_plot_selection(
     )
 
 
-def on_axis_change(global_state: GlobalState, x_attr: str, y_attr: str) -> html.Div:
+def on_axis_change(global_state: GlobalState, x_attr: str, y_attr: str) -> dcc.Graph:
     """
-    Callback on x axis dropdown change.
+    Callback on axis dropdown change.
     Updates the basic plot.
 
     :param global_state: global state of the application containing the dataframe
-    :param value: new x axis column name
+    :param x_attr: new x axis attribute
+    :param y_attr: new y axis attribute
     :return: html Div containing the basic plot
     """
     if not x_attr or not y_attr:
@@ -113,7 +120,17 @@ def on_axis_change(global_state: GlobalState, x_attr: str, y_attr: str) -> html.
 
 def on_projection_settings_change(
     global_state: GlobalState, projection_type: str, colormap_attr: str
-):
+) -> dcc.Graph:
+    """
+    Callback on projection settings change.
+    Updates the projection plot.
+
+    :param global_state: global state of the application containing the dataframe
+    :param projection_type: type of the projection to be visualized
+    :param colormap_attr: column to be used for coloring the points
+    :raises PreventUpdate: if no projection_type or colormap_attr is provided
+    :return: dcc Graph object representing the projection plot
+    """
     if not projection_type or not colormap_attr:
         raise PreventUpdate
     return make_projection_plot(

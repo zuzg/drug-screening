@@ -1,6 +1,6 @@
 import pandas as pd
 
-from dash import html, dcc, dash_table
+from dash import html, dash_table
 
 
 def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
