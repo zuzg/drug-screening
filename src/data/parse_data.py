@@ -4,7 +4,8 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-import umap
+# import umap TODO
+import umap.umap_ as umap
 from functools import reduce
 import os
 import sys
@@ -150,42 +151,50 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
     res = res.reset_index(level=0)
     return res
 
-def generate_ctrl_rows(df):
-    assays_cols = list(df.filter(like='Assay').columns)
-    assays = sorted(list(set(int(x.split(' ')[-1]) for x in assays_cols)))
+def add_control_rows(df):
+    assays_cols = list(df.drop(columns=['CMPD ID']).columns)
+    assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
     bin_seq = generate_binary_strings(len(assays))
 
     ctrl_df = pd.DataFrame()
     for i, seq in enumerate(bin_seq):
-        neg_name_part = 'NEG'
-        pos_name_part = 'POS'
+        neg_name_part = 'NEG:'
+        pos_name_part = 'POS:'
 
         # it is assumed that 1 -> mean activation pos, 0 -> mean activation neg 
         for j, s in enumerate(seq):
             if s == '0':
-                neg_name_part += str(assays[j])
+                neg_name_part += str(assays[j]) +','
 
-                key = list(df.filter(like=f'% ACTIVATION - Assay {assays[j]}').columns)
+                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
 
-                key = list(df.filter(like=f'% INHIBITION - Assay {assays[j]}').columns)
+                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
                 if len(key) != 0:
-                    ctrl_df.loc[i, key[0]] = 1
+                    ctrl_df.loc[i, key[0]] = 100
             else:
-                pos_name_part += str(assays[j])
+                pos_name_part += str(assays[j]) +','
 
-                key = list(df.filter(like=f'% ACTIVATION - Assay {assays[j]}').columns)
+                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
                 if len(key) != 0:
-                    ctrl_df.loc[i, key[0]] = 1
+                    ctrl_df.loc[i, key[0]] = 100
 
-                key = list(df.filter(like=f'% INHIBITION - Assay {assays[j]}').columns)
+                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
-        name = 'CTRL' + '_' + pos_name_part + '_' + neg_name_part
-        ctrl_df.loc[i, 'CMPD ID'] = name
-    return ctrl_df
+        if pos_name_part[-1]==',':
+            pos_name_part = pos_name_part[:-1]
+        if neg_name_part[-1]==',':
+            neg_name_part = neg_name_part[:-1]
 
+        name = pos_name_part + ' ' + neg_name_part
+        ctrl_df.loc[i, 'CMPD ID'] = name
+    return pd.concat([df, ctrl_df])
+
+def split_compounds_controls(df):
+    mask = df['CMPD ID'].str.startswith('POS', na = False)
+    return df[~mask], df[mask]
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
     """
