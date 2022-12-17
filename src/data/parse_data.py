@@ -11,6 +11,7 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 from functools import reduce
+from src.data.utils import *
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -148,6 +149,42 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
 
     res = res.reset_index(level=0)
     return res
+
+def generate_ctrl_rows(df):
+    assays_cols = list(df.filter(like='Assay').columns)
+    assays = sorted(list(set(int(x.split(' ')[-1]) for x in assays_cols)))
+    bin_seq = generate_binary_strings(len(assays))
+
+    ctrl_df = pd.DataFrame()
+    for i, seq in enumerate(bin_seq):
+        neg_name_part = 'NEG'
+        pos_name_part = 'POS'
+
+        # it is assumed that 1 -> mean activation pos, 0 -> mean activation neg 
+        for j, s in enumerate(seq):
+            if s == '0':
+                neg_name_part += str(assays[j])
+
+                key = list(df.filter(like=f'% ACTIVATION - Assay {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 0
+
+                key = list(df.filter(like=f'% INHIBITION - Assay {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 1
+            else:
+                pos_name_part += str(assays[j])
+
+                key = list(df.filter(like=f'% ACTIVATION - Assay {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 1
+
+                key = list(df.filter(like=f'% INHIBITION - Assay {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 0
+        name = 'CTRL' + '_' + pos_name_part + '_' + neg_name_part
+        ctrl_df.loc[i, 'CMPD ID'] = name
+    return ctrl_df
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
