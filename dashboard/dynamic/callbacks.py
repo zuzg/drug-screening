@@ -9,7 +9,7 @@ from dash import html, Dash, dcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-from src.data.parse_data import combine_assays
+from src.data.parse_data import combine_assays, add_ecbd_links
 
 from .tables import table_from_df
 from .figures import scatterplot_from_df, make_projection_plot
@@ -57,6 +57,7 @@ def on_data_upload(
         global_state.strict_summary_df,
         "description-table",
     )
+    global_state.df = add_ecbd_links(global_state.df)
     preview_table = table_from_df(global_state.df, "preview-table")
 
     return (
