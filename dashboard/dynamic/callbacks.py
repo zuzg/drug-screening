@@ -10,7 +10,7 @@ from dash import html, Dash, dcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-from src.data.parse_data import combine_assays, get_projections
+from src.data.parse_data import combine_assays, get_projections, add_ecbd_links
 
 from .tables import table_from_df
 from .figures import scatterplot_from_df, make_projection_plot
@@ -62,7 +62,8 @@ def on_data_upload(
     )
     projection_df = get_projections(strict_df, get_3d=False)
     serialized_projection_df = projection_df.to_json(date_format="iso", orient="split")
-    preview_table = table_from_df(projection_df, "preview-table")
+    projection_with_ecbd_links_df = add_ecbd_links(projection_df)
+    preview_table = table_from_df(projection_with_ecbd_links_df, "preview-table")
 
     return (
         description_table,
