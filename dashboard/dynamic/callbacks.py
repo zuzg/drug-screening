@@ -61,8 +61,10 @@ def on_data_upload(
         "description-table",
     )
     projection_df = get_projections(strict_df, get_3d=False)
-    serialized_projection_df = projection_df.to_json(date_format="iso", orient="split")
     projection_with_ecbd_links_df = add_ecbd_links(projection_df)
+    serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
+        date_format="iso", orient="split"
+    )
     preview_table = table_from_df(projection_with_ecbd_links_df, "preview-table")
 
     return (
@@ -74,7 +76,7 @@ def on_data_upload(
         crucial_columns[0],  # y-axis dropdown value
         crucial_columns,  # colormap-feature dropdown options
         crucial_columns[0],  # colormap-feature dropdown value
-        serialized_projection_df,  # sent to data holder
+        serialized_projection_with_ecbd_links_df,  # sent to data holder
     )
 
 
@@ -102,7 +104,7 @@ def on_projection_plot_selection(
         y_min = relayoutData["yaxis.range[0]"]
         y_max = relayoutData["yaxis.range[1]"]
         df = df[df[f"{projection_type}_Y"].between(y_min, y_max)]
-    return df[df["CMPD ID"].isin(df["CMPD ID"])].to_dict("records")
+    return df[df["CMPD ID"].isin(df["CMPD ID"])].round(3).to_dict("records")
 
 
 def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
