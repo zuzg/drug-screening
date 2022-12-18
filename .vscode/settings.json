@@ -3,5 +3,7 @@
         "."
     ],
     "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true
+    "python.testing.pytestEnabled": true,
+    "appService.defaultWebAppToDeploy": "/subscriptions/50040406-b0ee-4ff2-bb96-40cadfa18efc/resourceGroups/drug-screening/subscriptions/50040406-b0ee-4ff2-bb96-40cadfa18efc/resourceGroups/drug-screening/providers/Microsoft.Web/sites/drug-screening-dashboard",
+    "appService.deploySubpath": "."
 }
