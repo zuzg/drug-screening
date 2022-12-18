@@ -23,8 +23,8 @@ def on_data_upload(
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
     """
     Callback on data upload.
-    Parses the uploaded data and updates the global state.
-    Updates the description table, preview table, and dropdowns.
+    Parses the uploaded data and updates the description table, preview table, and dropdowns.
+    Creates projection dataframe and passes it to client-side data-holder.
     Only accepts two or more files.
 
     :param contents: list of uploaded file contents
@@ -61,7 +61,7 @@ def on_data_upload(
         "description-table",
     )
     projection_df = get_projections(strict_df, get_3d=False)
-
+    serialized_projection_df = projection_df.to_json(date_format="iso", orient="split")
     preview_table = table_from_df(projection_df, "preview-table")
 
     return (
@@ -73,7 +73,7 @@ def on_data_upload(
         crucial_columns[0],  # y-axis dropdown value
         crucial_columns,  # colormap-feature dropdown options
         crucial_columns[0],  # colormap-feature dropdown value
-        projection_df.to_json(date_format="iso", orient="split"),
+        serialized_projection_df,  # sent to data holder
     )
 
 
@@ -150,7 +150,6 @@ def register_callbacks(app: Dash) -> None:
     Registers application callbacks.
 
     :param app: dash application
-    :param global_state: global state of the application containing the dataframe
     """
     app.callback(
         [
