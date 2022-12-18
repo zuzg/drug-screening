@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-import umap 
+import umap
 from functools import reduce
 import os
 import sys
@@ -46,6 +46,7 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     new_df = df.copy(deep=True)
     new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
+
 
 def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean') -> pd.DataFrame:
     """
@@ -150,7 +151,8 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
     res = res.reset_index(level=0)
     return res
 
-def add_control_rows(df: pd.DataFrame):
+
+def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add control rows to a DataFrame.
 
@@ -198,7 +200,8 @@ def add_control_rows(df: pd.DataFrame):
         ctrl_df.loc[i, 'CMPD ID'] = name
     return pd.concat([df, ctrl_df])
 
-def split_compounds_controls(df: pd.DataFrame):
+
+def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits a DataFrame into two with only compounds and control values respectively.
 
@@ -209,7 +212,8 @@ def split_compounds_controls(df: pd.DataFrame):
     mask = df['CMPD ID'].str.startswith('POS', na = False)
     return df[~mask], df[mask]
 
-def split_controls_pos_neg(df, assay_name):
+
+def split_controls_pos_neg(df: pd.DataFrame, assay_name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Splits a DataFrame into two with only positive controls and negative controls respectively.
 
@@ -228,6 +232,7 @@ def split_controls_pos_neg(df, assay_name):
         elif assay_name in cmpd_id[1]:
             neg.append(row['CMPD ID'])
     return df[df['CMPD ID'].isin(pos)], df[df['CMPD ID'].isin(neg)]
+
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
     """

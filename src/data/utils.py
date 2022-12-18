@@ -1,11 +1,4 @@
-def generate_binary_strings(bit_count):
-    binary_strings = []
-    def genbin(n, bs=''):
-        if len(bs) == n:
-            binary_strings.append(bs)
-        else:
-            genbin(n, bs + '0')
-            genbin(n, bs + '1')
+import itertools
 
-    genbin(bit_count)
-    return binary_strings
+def generate_binary_strings(bit_count: int) -> list[str]:
+    return ["".join(num_bin) for num_bin in itertools.product("01", repeat=bit_count)]
