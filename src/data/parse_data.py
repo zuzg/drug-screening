@@ -4,8 +4,7 @@ import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-# import umap TODO
-import umap.umap_ as umap
+import umap 
 from functools import reduce
 import os
 import sys
@@ -158,8 +157,8 @@ def add_control_rows(df):
 
     ctrl_df = pd.DataFrame()
     for i, seq in enumerate(bin_seq):
-        neg_name_part = 'NEG:'
-        pos_name_part = 'POS:'
+        neg_name_part = 'NEG: '
+        pos_name_part = 'POS: '
 
         # it is assumed that 1 -> mean activation pos, 0 -> mean activation neg 
         for j, s in enumerate(seq):
@@ -188,13 +187,26 @@ def add_control_rows(df):
         if neg_name_part[-1]==',':
             neg_name_part = neg_name_part[:-1]
 
-        name = pos_name_part + ' ' + neg_name_part
+        name = pos_name_part + ';' + neg_name_part
         ctrl_df.loc[i, 'CMPD ID'] = name
     return pd.concat([df, ctrl_df])
 
 def split_compounds_controls(df):
     mask = df['CMPD ID'].str.startswith('POS', na = False)
     return df[~mask], df[mask]
+
+def split_controls_pos_neg(df, assay_name):
+    pos = list()
+    neg = list()
+    for index, row in df.iterrows():
+        cmpd_id = row['CMPD ID']
+        # example: POS:Assay 5;NEG:Assay 2
+        cmpd_id = cmpd_id.split(';')
+        if assay_name in cmpd_id[0]:
+            pos.append(row['CMPD ID'])
+        elif assay_name in cmpd_id[1]:
+            neg.append(row['CMPD ID'])
+    return df[df['CMPD ID'].isin(pos)], df[df['CMPD ID'].isin(neg)]
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
     """
