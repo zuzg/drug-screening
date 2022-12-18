@@ -372,3 +372,18 @@ def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
         df_expanded['TSNE_Z'] = df_tsne[:, 2]
 
     return df_expanded
+
+
+def add_ecbd_links(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Mock connection with European Chemical Biology Database - add link to the compound page
+
+    :param df: DataFrame to add links
+
+    :return: dataframe with added EOS columns
+    """
+    eos = [f"[EOS{i}](https://ecbd.eu/compound/EOS{i})" for i in range(1, len(df)+1)]
+    new_df = df.copy()
+    new_df.insert(1, "EOS", eos)
+
+    return new_df
