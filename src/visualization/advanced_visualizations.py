@@ -127,7 +127,17 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
                     feature:':.3f'})
     return fig
 
-def projection_2d_add_controls(fig: px.scatter, controls: tuple, projection: str = 'umap'):
+def projection_2d_add_controls(fig: px.scatter, controls: tuple(pd.DataFrame, pd.DataFrame), projection: str = 'umap'):
+    """
+    Add control values to the plot of selected projection.
+    
+    :param fig: projection plot
+
+    :param controls: data frames with projected control values (positive and negative respectively)
+    
+    :param projection: name of projection to be visualized
+
+    """
     fig.add_scatter(x=controls[0][f'{str.upper(projection)}_X'],
                 y=controls[0][f'{str.upper(projection)}_Y'], 
                 mode='markers',

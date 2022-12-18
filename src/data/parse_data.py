@@ -150,7 +150,14 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
     res = res.reset_index(level=0)
     return res
 
-def add_control_rows(df):
+def add_control_rows(df: pd.DataFrame):
+    """
+    Add control rows to a DataFrame.
+
+    :param df: DataFrame prepared i.e. with inhibition and activation columns in various assyas
+
+    :return: DataFrame with control values
+    """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
     assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
     bin_seq = generate_binary_strings(len(assays))
@@ -191,11 +198,25 @@ def add_control_rows(df):
         ctrl_df.loc[i, 'CMPD ID'] = name
     return pd.concat([df, ctrl_df])
 
-def split_compounds_controls(df):
+def split_compounds_controls(df: pd.DataFrame):
+    """
+    Splits a DataFrame into two with only compounds and control values respectively.
+
+    :param df: DataFrame with control values added.
+
+    :return: two data frames with only compounds and only control values.
+    """
     mask = df['CMPD ID'].str.startswith('POS', na = False)
     return df[~mask], df[mask]
 
 def split_controls_pos_neg(df, assay_name):
+    """
+    Splits a DataFrame into two with only positive controls and negative controls respectively.
+
+    :param df: DataFrame with control values.
+
+    :return: two data frames with only positive controls and negative controls.
+    """
     pos = list()
     neg = list()
     for index, row in df.iterrows():
