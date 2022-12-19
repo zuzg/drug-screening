@@ -34,7 +34,6 @@ main_header = html.Header(
 )
 
 general_info_panel = html.Article(
-    className="col border-end w-50",
     children=[
         html.H2("General Info", className="border-bottom"),
         dcc.Loading(
@@ -45,6 +44,8 @@ general_info_panel = html.Article(
         html.Div(
             className="controls-container",
             children=[
+                html.H3("X-axis attribute", className="border-bottom"),
+                html.H3("Y-axis attribute", className="border-bottom"),
                 dcc.Dropdown(
                     placeholder="Select X-axis attribute",
                     id="x-axis-dropdown",
@@ -68,6 +69,8 @@ projection_details_panel = html.Article(
         html.Div(
             className="controls-container",
             children=[
+                html.H3("Method of projection", className="border-bottom"),
+                html.H3("Colormap attribute", className="border-bottom"),
                 dcc.Dropdown(
                     id="projection-type-dropdown",
                     options=["UMAP", "PCA", "TSNE"],
@@ -86,7 +89,7 @@ projection_details_panel = html.Article(
 )
 
 preview_table_panel = html.Article(
-    className="mt-3",
+    className="col border-end w-50",
     children=[
         html.H2("Selected Data Preview", className="border-bottom"),
         html.Div(id="preview-table-slot"),
@@ -99,9 +102,9 @@ main_container = html.Main(
         html.Div(
             className="row",
             children=[
-                general_info_panel,
-                projection_details_panel,
                 preview_table_panel,
+                projection_details_panel,
+                general_info_panel,
             ],
         ),
     ],

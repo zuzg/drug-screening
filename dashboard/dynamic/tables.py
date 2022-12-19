@@ -16,10 +16,25 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
     return html.Div(
         children=[
             dash_table.DataTable(
-                data=df.to_dict("records"),
-                style_table={"overflow": "auto"},
-                page_size=10,
                 id=table_id,
+                columns=[
+                    {"name": i, "id": i, "deletable": True, "selectable": True}
+                    for i in df.columns
+                ],
+                data=df.to_dict("records"),
+                editable=False,
+                filter_action="native",
+                sort_action="native",
+                sort_mode="multi",
+                column_selectable="single",
+                row_selectable="multi",
+                row_deletable=True,
+                selected_columns=[],
+                selected_rows=[],
+                page_action="native",
+                page_current=0,
+                page_size=10,
+                style_table={"overflow": "auto"},
             ),
         ],
         className="border rounded",
