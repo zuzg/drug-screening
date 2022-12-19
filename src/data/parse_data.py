@@ -11,6 +11,7 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 from functools import reduce
+from src.data.utils import *
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -45,6 +46,42 @@ def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
     new_df = df.copy(deep=True)
     new_df[['Barcode_prefix', 'Barcode_exp', 'Barcode_suffix']] = new_df[bar_colname].str.extract(pat='(.{13})([^0-9]*)(.*)')
     return new_df
+
+
+def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean') -> pd.DataFrame:
+    """
+    Combine control values for given assay files.
+
+    :param dfs: list of DataFrames and respective filenames
+
+    :param agg_function: aggragation function to be applited on controls
+
+    :return: one merged DataFrame
+    """
+    d = dict()
+    res = pd.DataFrame()
+    for df, name in dataframes:
+        key = name.replace('.xlsx', '')
+        df = df.rename(str.upper, axis='columns')
+        index_col = df.filter(like='CMPD ID').columns
+        assert(len(index_col) ==
+               1), f"More than 1/no column(s) having 'CMPD ID' n file: {name}"
+
+        df.rename({index_col[0]: 'CMPD ID'}, axis=1, inplace=True)
+        suffix = ' - ' + key
+        df = df.add_suffix(suffix)
+        df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        if((df['CMPD ID'] == 'CTRL NEG').any() or (df['CMPD ID'] == 'CTRL POS').any()):
+            mask = (df['CMPD ID'] == 'CTRL NEG') | (df['CMPD ID'] == 'CTRL POS')
+            temp = df[mask]
+            temp = temp.groupby('CMPD ID').agg(agg_function, numeric_only=True)
+            d[key] = temp
+    
+    if len(d) != 0:
+        res = reduce(lambda left, right: pd.merge(left, right, on=['CMPD ID'],
+                                                  how='inner'), d.values())
+    res = res.reset_index(level=0)
+    return res
 
 
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
@@ -85,6 +122,10 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         suffix = ' - ' + key
         df = df.add_suffix(suffix)
         df.rename({'CMPD ID'+suffix: 'CMPD ID'}, axis=1, inplace=True)
+        if((df['CMPD ID'] == 'CTRL NEG').any() or (df['CMPD ID'] == 'CTRL POS').any()):
+            df = df.drop(df[df['CMPD ID'] == 'CTRL NEG'].index)
+            df = df.drop(df[df['CMPD ID'] == 'CTRL POS'].index)
+
         d[key] = df
 
     # create ID column for the assays containing barcode suffix
@@ -109,6 +150,88 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
 
     res = res.reset_index(level=0)
     return res
+
+
+def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add control rows to a DataFrame.
+
+    :param df: DataFrame prepared i.e. with inhibition and activation columns in various assyas
+
+    :return: DataFrame with control values
+    """
+    assays_cols = list(df.drop(columns=['CMPD ID']).columns)
+    assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
+    bin_seq = generate_binary_strings(len(assays))
+
+    ctrl_df = pd.DataFrame()
+    for i, seq in enumerate(bin_seq):
+        neg_name_part = 'NEG: '
+        pos_name_part = 'POS: '
+
+        # it is assumed that 1 -> mean activation pos, 0 -> mean activation neg 
+        for j, s in enumerate(seq):
+            if s == '0':
+                neg_name_part += str(assays[j]) +','
+
+                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 0
+
+                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 100
+            else:
+                pos_name_part += str(assays[j]) +','
+
+                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 100
+
+                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                if len(key) != 0:
+                    ctrl_df.loc[i, key[0]] = 0
+        if pos_name_part[-1]==',':
+            pos_name_part = pos_name_part[:-1]
+        if neg_name_part[-1]==',':
+            neg_name_part = neg_name_part[:-1]
+
+        name = pos_name_part + ';' + neg_name_part
+        ctrl_df.loc[i, 'CMPD ID'] = name
+    return pd.concat([df, ctrl_df])
+
+
+def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits a DataFrame into two with only compounds and control values respectively.
+
+    :param df: DataFrame with control values added.
+
+    :return: two data frames with only compounds and only control values.
+    """
+    mask = df['CMPD ID'].str.startswith('POS', na = False)
+    return df[~mask], df[mask]
+
+
+def split_controls_pos_neg(df: pd.DataFrame, assay_name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """
+    Splits a DataFrame into two with only positive controls and negative controls respectively.
+
+    :param df: DataFrame with control values.
+
+    :return: two data frames with only positive controls and negative controls.
+    """
+    pos = list()
+    neg = list()
+    for index, row in df.iterrows():
+        cmpd_id = row['CMPD ID']
+        # example: POS:Assay 5;NEG:Assay 2
+        cmpd_id = cmpd_id.split(';')
+        if assay_name in cmpd_id[0]:
+            pos.append(row['CMPD ID'])
+        elif assay_name in cmpd_id[1]:
+            neg.append(row['CMPD ID'])
+    return df[df['CMPD ID'].isin(pos)], df[df['CMPD ID'].isin(neg)]
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
@@ -249,3 +372,18 @@ def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
         df_expanded['TSNE_Z'] = df_tsne[:, 2]
 
     return df_expanded
+
+
+def add_ecbd_links(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Mock connection with European Chemical Biology Database - add link to the compound page
+
+    :param df: DataFrame to add links
+
+    :return: dataframe with added EOS columns
+    """
+    eos = [f"[EOS{i}](https://ecbd.eu/compound/EOS{i})" for i in range(1, len(df)+1)]
+    new_df = df.copy()
+    new_df.insert(1, "EOS", eos)
+
+    return new_df

@@ -120,7 +120,44 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
             'CMPD ID':'Compound ID'
         },
         title=f'{str.upper(projection)} projection with respect to {feature}',
-        width=width, height=height)
+        width=width, height=height,
+        hover_data={'CMPD ID':True,
+                    f'{str.upper(projection)}_X':':.3f',
+                    f'{str.upper(projection)}_Y':':.3f',
+                    feature:':.3f'})
+    return fig
+
+def projection_2d_add_controls(fig: px.scatter, controls: tuple[pd.DataFrame, pd.DataFrame], projection: str = 'umap') -> px.scatter:
+    """
+    Add control values to the plot of selected projection.
+    
+    :param fig: projection plot
+
+    :param controls: data frames with projected control values (positive and negative respectively)
+    
+    :param projection: name of projection to be visualized
+
+    """
+    fig.add_scatter(x=controls[0][f'{str.upper(projection)}_X'],
+                y=controls[0][f'{str.upper(projection)}_Y'], 
+                mode='markers',
+                marker=dict(size=12, color="LightSeaGreen"),
+                name='CONTROL POS',
+                text = controls[0]['CMPD ID'].str.split(';'),
+                hovertemplate="<b>%{text[0]}</b><br>" +
+                "<b>%{text[1]}</b><br>" +
+                "X: %{x:.4f}<br>Y: %{y:.4f}<br>" )
+    fig.add_scatter(x=controls[1]['UMAP_X'],
+                y=controls[1]['UMAP_Y'], 
+                mode='markers',
+                marker=dict(size=12, color="orangered"),
+                name='CONTROL NEG',
+                text = controls[1]['CMPD ID'].str.split(';'),
+                hovertemplate="<b>%{text[0]}</b><br>" +
+                "<b>%{text[1]}</b><br>" +
+                "X: %{x:.3f}<br>Y: %{y:.3f}<br>" )
+
+    fig.update_layout(legend=dict(yanchor="top", y=0.0, xanchor="left", x=0.0))
     return fig
 
 
@@ -156,4 +193,3 @@ def plot_projection_3d(df: pd.DataFrame, feature: str, projection: str = 'umap',
         width=width, height=height)
     fig.update_traces(marker={'size':3})
     return fig
-
