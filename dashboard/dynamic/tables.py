@@ -13,6 +13,12 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
     :param table_id: id of the table
     :return: html Div element containing the table and heading
     """
+
+    columns = []
+    for i in df.columns:
+        if i in ["CMPD ID"]:
+            columns.append({"name": i, "id": i, "deletable": True, "selectable": True})
+
     return html.Div(
         children=[
             dash_table.DataTable(
@@ -33,7 +39,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
                 selected_rows=[],
                 page_action="native",
                 page_current=0,
-                page_size=10,
+                page_size=15,
                 style_table={"overflow": "auto"},
             ),
         ],
