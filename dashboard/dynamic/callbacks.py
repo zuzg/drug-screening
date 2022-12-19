@@ -12,7 +12,7 @@ from dash.dependencies import Input, Output, State
 
 from src.data.parse_data import combine_assays, get_projections, add_ecbd_links
 
-from .tables import table_from_df
+from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
 from ..parse import parse_contents, get_crucial_column_names
 
@@ -65,7 +65,9 @@ def on_data_upload(
     serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
         date_format="iso", orient="split"
     )
-    preview_table = table_from_df(projection_with_ecbd_links_df, "preview-table")
+    preview_table = table_from_df_with_selected_columns(
+        projection_with_ecbd_links_df, "preview-table"
+    )
 
     return (
         description_table,
