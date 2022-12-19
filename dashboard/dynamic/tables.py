@@ -99,7 +99,12 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                 page_action="native",
                 page_current=0,
                 page_size=15,
-                style_table={"overflow": "auto"},
+                style_cell={"overflow": "auto"},
+                style_header={
+                    "whiteSpace": "normal",
+                    "height": "auto",
+                    "maxWidth": "30px",
+                },
                 css=[dict(selector="p", rule="margin: 0; text-align: right")],
             ),
         ],
