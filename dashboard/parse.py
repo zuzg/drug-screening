@@ -21,3 +21,18 @@ def parse_contents(contents: str, filename: str) -> pd.DataFrame:
     decoded = base64.b64decode(content_string)
 
     return pd.read_excel(io.BytesIO(decoded)).round(3)
+
+
+def get_crucial_column_names(column_names: list[str]) -> list[str]:
+    """
+    Returns the crucial column names from a list of column names.
+
+    :param column_names: list of column names
+    :return: list of crucial column names
+    """
+    return [
+        column
+        for column in column_names
+        if ("% ACTIVATION" in column or "% INHIBITION" in column)
+        and "(" not in column  # filters out stuff like std(% ACTIVATION) etc
+    ]

@@ -112,5 +112,6 @@ home_layout = html.Div(
     children=[
         main_header,
         main_container,
+        dcc.Store(id="data-holder", storage_type="session"),
     ],
 )
