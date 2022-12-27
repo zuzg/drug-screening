@@ -213,25 +213,51 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFra
     return df[~mask], df[mask]
 
 
-def split_controls_pos_neg(df: pd.DataFrame, assay_name: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+def split_controls_pos_neg(df: pd.DataFrame, assay_name: str) -> dict[pd.DataFrame]:
     """
-    Splits a DataFrame into two with only positive controls and negative controls respectively.
+    Splits a DataFrame into a dictionary of different categories of positive and negative controls with respect to yhe pre-defined assay.
 
     :param df: DataFrame with control values.
 
-    :return: two data frames with only positive controls and negative controls.
+    :param assay_name: Assay's file name.
+
+    :return: Dictionary of positive and negative controls.
     """
+    controls_categorized = dict()
+    dict_keys = ['all_pos', 'all_but_one_pos', 'pos', 'all_neg', 'all_but_one_neg', 'neg']
+
+    for k in dict_keys:
+        controls_categorized[k] = pd.DataFrame(columns=df.columns)
+    
     pos = list()
     neg = list()
     for index, row in df.iterrows():
         cmpd_id = row['CMPD ID']
         # example: POS:Assay 5;NEG:Assay 2
         cmpd_id = cmpd_id.split(';')
-        if assay_name in cmpd_id[0]:
-            pos.append(row['CMPD ID'])
-        elif assay_name in cmpd_id[1]:
-            neg.append(row['CMPD ID'])
-    return df[df['CMPD ID'].isin(pos)], df[df['CMPD ID'].isin(neg)]
+        if cmpd_id[1] == 'NEG: ' and assay_name in cmpd_id[0]:
+                controls_categorized['all_pos'] = pd.concat([controls_categorized['all_pos'], pd.DataFrame(row).T])
+            
+        elif cmpd_id[0] == 'POS: ' and assay_name in cmpd_id[1]:
+                controls_categorized['all_neg'] = pd.concat([controls_categorized['all_neg'], pd.DataFrame(row).T])
+
+        else:
+            assay_pos = cmpd_id[0][5:].split(',')
+            assay_neg = cmpd_id[1][5:].split(',')
+
+            if assay_name in assay_pos:
+                if len(assay_neg) == 1:
+                    controls_categorized['all_but_one_pos'] = pd.concat([controls_categorized['all_but_one_pos'], pd.DataFrame(row).T])
+                else:
+                    controls_categorized['pos'] = pd.concat([controls_categorized['pos'], pd.DataFrame(row).T])
+
+            elif assay_name in assay_neg:
+                if len(assay_pos) == 1:
+                    controls_categorized['all_but_one_neg'] = pd.concat([controls_categorized['all_but_one_neg'], pd.DataFrame(row).T])
+                else:
+                    controls_categorized['neg'] = pd.concat([controls_categorized['neg'], pd.DataFrame(row).T])
+
+    return controls_categorized
 
 
 def normalize_columns(df: pd.DataFrame, column_names: list[str]) -> pd.DataFrame:
