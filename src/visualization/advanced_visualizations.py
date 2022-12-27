@@ -141,7 +141,7 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
 
     """
     fig_controls = go.Figure(fig)
-    fig_controls.update_traces(marker={"opacity": 0.75})
+    fig_controls.update_traces(marker={"opacity": 0.5})
 
     control_styles = {
         'all_pos': ['#006203',12],
@@ -166,10 +166,9 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
     fig_controls.update_layout(
         legend=dict(
         title="CONTROLS",
-        yanchor="bottom",
-        y=0.01,
+        yanchor="top",
+        y=-0.15,
         xanchor="left",
-        x=0.01,
-        font=dict(size=10))
-    )
+        x=0
+        ))
     return fig_controls

@@ -213,16 +213,17 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFra
     return df[~mask], df[mask]
 
 
-def split_controls_pos_neg(df: pd.DataFrame, assay_name: str) -> dict[pd.DataFrame]:
+def split_controls_pos_neg(df: pd.DataFrame, column_name: str) -> dict[pd.DataFrame]:
     """
     Splits a DataFrame into a dictionary of different categories of positive and negative controls with respect to yhe pre-defined assay.
 
     :param df: DataFrame with control values.
 
-    :param assay_name: Assay's file name.
+    :param column_name: Column name with assay suffix.
 
     :return: Dictionary of positive and negative controls.
     """
+    assay_name = column_name.split('-')[-1][1:]
     controls_categorized = dict()
     dict_keys = ['all_pos', 'all_but_one_pos', 'pos', 'all_neg', 'all_but_one_neg', 'neg']
 
