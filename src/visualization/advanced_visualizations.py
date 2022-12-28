@@ -126,6 +126,8 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
                     f'{str.upper(projection)}_X':':.3f',
                     f'{str.upper(projection)}_Y':':.3f',
                     feature:':.3f'})
+
+    fig.update_layout(title_x=0.5)
     return fig
 
 
@@ -141,22 +143,22 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
 
     """
     fig_controls = go.Figure(fig)
-    fig_controls.update_traces(marker={"opacity": 0.5})
+    fig_controls.update_traces(marker={"opacity": 0.6})
 
     control_styles = {
-        'all_pos': ['#006203',12],
-        'all_but_one_pos': ['#0f9200',10],
-        'pos': ['#30cb00',8], 
-        'all_neg': ['#a70000',12],
-        'all_but_one_neg': ['#ff0000',10], 
-        'neg': ['#ff5252',8]
+        'all_neg': ['#de425b',12],
+        'all_but_one_neg': ['#eb7a52',10], 
+        'neg': ['#f8b267',8],
+        'all_pos': ['#488f31',12],
+        'all_but_one_pos': ['#8aac49',10],
+        'pos': ['#c6c96a',8]
     }
-    for key in controls.keys():
+    for key in control_styles.keys():
         fig_controls.add_scatter(
                     x=controls[key][f'{str.upper(projection)}_X'],
                     y=controls[key][f'{str.upper(projection)}_Y'], 
                     mode='markers',
-                    marker=dict(size=control_styles[key][1], color=control_styles[key][0]),
+                    marker=dict(size=control_styles[key][1], color=control_styles[key][0], symbol='star-diamond'),
                     name= str.upper(key).replace('_',' '),
                     text = controls[key]['CMPD ID'].str.split(';'),
                     hovertemplate="<b>%{text[0]}</b><br>" +
@@ -165,7 +167,7 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
                     "<extra></extra>")
     fig_controls.update_layout(
         legend=dict(
-        title="CONTROLS",
+        orientation="h",
         yanchor="top",
         y=-0.15,
         xanchor="left",
