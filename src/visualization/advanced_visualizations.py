@@ -149,10 +149,11 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
         'all_neg': ['#de425b',12],
         'all_but_one_neg': ['#eb7a52',10], 
         'neg': ['#f8b267',8],
-        'all_pos': ['#488f31',12],
+        'pos': ['#c6c96a',8],
         'all_but_one_pos': ['#8aac49',10],
-        'pos': ['#c6c96a',8]
+        'all_pos': ['#488f31',12]  
     }
+    
     for key in control_styles.keys():
         fig_controls.add_scatter(
                     x=controls[key][f'{str.upper(projection)}_X'],
@@ -167,10 +168,12 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
                     "<extra></extra>")
     fig_controls.update_layout(
         legend=dict(
-        orientation="h",
-        yanchor="top",
-        y=-0.15,
+        title="   CONTROLS",
+        yanchor="bottom",
+        y=0.01,
         xanchor="left",
-        x=0
-        ))
+        x=0.01,
+        font=dict(size=10),
+        bgcolor='rgba(255,255,255,0.5)'),
+        title_x=0.5)
     return fig_controls
