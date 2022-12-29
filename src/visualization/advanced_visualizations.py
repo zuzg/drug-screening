@@ -127,7 +127,12 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
                     f'{str.upper(projection)}_Y':':.3f',
                     feature:':.3f'})
 
-    fig.update_layout(title_x=0.5)
+    fig.update_layout(
+        title_x=0.5, 
+        coloraxis_colorbar=dict(
+            orientation='h', 
+            thickness=15)
+    )
     return fig
 
 
