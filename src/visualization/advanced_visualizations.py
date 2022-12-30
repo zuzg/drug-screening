@@ -150,16 +150,17 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
     fig_controls = go.Figure(fig)
     fig_controls.update_traces(marker={"opacity": 0.6})
 
+    categories = ['all_pos', 'all_but_one_pos', 'pos', 'neg', 'all_but_one_neg', 'all_neg']
     control_styles = {
-        'all_neg': ['#de425b',12],
-        'all_but_one_neg': ['#eb7a52',10], 
-        'neg': ['#f8b267',8],
+        'all_pos': ['#488f31',12],
+        'all_but_one_pos': ['#8aac49',10],  
         'pos': ['#c6c96a',8],
-        'all_but_one_pos': ['#8aac49',10],
-        'all_pos': ['#488f31',12]  
+        'neg': ['#f8b267',8],
+        'all_but_one_neg': ['#eb7a52',10],
+        'all_neg': ['#de425b',12], 
     }
     
-    for key in control_styles.keys():
+    for key in categories:
         fig_controls.add_scatter(
                     x=controls[key][f'{str.upper(projection)}_X'],
                     y=controls[key][f'{str.upper(projection)}_Y'], 
