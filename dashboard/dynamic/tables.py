@@ -54,8 +54,6 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     "name": column_name,
                     "type": "text",
                     "presentation": "markdown",
-                    "deletable": True,
-                    "selectable": True,
                 }
             )
         elif column_name == "CMPD ID":
@@ -63,8 +61,6 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                 {
                     "id": column_name,
                     "name": column_name,
-                    "deletable": True,
-                    "selectable": True,
                 }
             )
         elif (
@@ -76,8 +72,6 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                 {
                     "id": column_name,
                     "name": column_name,
-                    "deletable": True,
-                    "selectable": True,
                 }
             )
 
