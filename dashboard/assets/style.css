@@ -32,3 +32,14 @@ h3 {
     font-size: 20px;
     padding-top: 10px;
 }
+
+#preview-table-slot {
+    padding: 10px;
+}
+
+#description-table-slot {
+    padding-left: 15px;
+    padding-top: 5px;
+    padding-right: 15px;
+    padding-bottom: 5px;
+}
