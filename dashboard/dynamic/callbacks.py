@@ -10,7 +10,13 @@ from dash import html, Dash, dcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-from src.data.parse_data import combine_assays, get_projections, add_ecbd_links
+from src.data.parse_data import (
+    combine_assays,
+    get_projections,
+    add_ecbd_links,
+    add_control_rows,
+    split_compounds_controls,
+)
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
@@ -60,11 +66,16 @@ def on_data_upload(
         strict_summary_df,
         "description-table",
     )
+
+    strict_df = add_control_rows(strict_df)
     projection_df = get_projections(strict_df, get_3d=False)
+    projection_df, controls_df = split_compounds_controls(projection_df)
     projection_with_ecbd_links_df = add_ecbd_links(projection_df)
     serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
         date_format="iso", orient="split"
     )
+
+    serialized_controls_df = controls_df.to_json(date_format="iso", orient="split")
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )
@@ -79,6 +90,7 @@ def on_data_upload(
         crucial_columns,  # colormap-feature dropdown options
         crucial_columns[0],  # colormap-feature dropdown value
         serialized_projection_with_ecbd_links_df,  # sent to data holder
+        serialized_controls_df,  # sent to data holder
     )
 
 
@@ -131,7 +143,11 @@ def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
 
 
 def on_projection_settings_change(
-    projection_type: str, colormap_attr: str, projection_data: str
+    projection_type: str,
+    colormap_attr: str,
+    add_controls: bool,
+    projection_data: str,
+    controls_data: str,
 ) -> dcc.Graph:
     """
     Callback on projection settings change.
@@ -146,7 +162,11 @@ def on_projection_settings_change(
     if not projection_type or not colormap_attr:
         raise PreventUpdate
     return make_projection_plot(
-        pd.read_json(projection_data, orient="split"), colormap_attr, projection_type
+        pd.read_json(projection_data, orient="split"),
+        pd.read_json(controls_data, orient="split"),
+        colormap_attr,
+        projection_type,
+        add_controls,
     )
 
 
@@ -167,6 +187,7 @@ def register_callbacks(app: Dash) -> None:
             Output("colormap-attribute-dropdown", "options"),
             Output("colormap-attribute-dropdown", "value"),
             Output("data-holder", "data"),
+            Output("controls-holder", "data"),
         ],
         Input("upload-data", "contents"),
         State("upload-data", "filename"),
@@ -192,6 +213,8 @@ def register_callbacks(app: Dash) -> None:
         [
             Input("projection-type-dropdown", "value"),
             Input("colormap-attribute-dropdown", "value"),
+            Input("add-controls-checkbox", "value"),
         ],
         State("data-holder", "data"),
+        State("controls-holder", "data"),
     )(on_projection_settings_change)

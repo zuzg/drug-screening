@@ -84,6 +84,9 @@ projection_details_panel = html.Article(
                 ),
             ],
         ),
+        html.Div(
+            dcc.Checklist(id="add-controls-checkbox", options={True: ' Add control values'})
+        ),
         html.Div(id="projection-plot-slot"),
     ],
 )
@@ -116,5 +119,6 @@ home_layout = html.Div(
         main_header,
         main_container,
         dcc.Store(id="data-holder", storage_type="session"),
+        dcc.Store(id="controls-holder", storage_type="session"),
     ],
 )
