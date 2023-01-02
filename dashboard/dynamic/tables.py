@@ -28,6 +28,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
                 css=[dict(selector="p", rule="margin: 0; text-align: right")],
                 page_size=10,
                 id=table_id,
+                export_format="csv",
             ),
         ],
         className="border rounded",
@@ -56,18 +57,11 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     "presentation": "markdown",
                 }
             )
-        elif column_name == "CMPD ID":
-            style_link.append(
-                {
-                    "id": column_name,
-                    "name": column_name,
-                }
-            )
         elif (
             "% ACTIVATION" in column_name
             or "% INHIBITION" in column_name
             and "(" not in column_name
-        ):
+        ) or (column_name == "CMPD ID"):
             style_link.append(
                 {
                     "id": column_name,
@@ -100,6 +94,7 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     "maxWidth": "30px",
                 },
                 css=[dict(selector="p", rule="margin: 0; text-align: right")],
+                export_format="csv",
             ),
         ],
         className="border rounded",
