@@ -321,7 +321,7 @@ def get_umap(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: obje
         min_dist=min_dist
     )
     X_umap = umap_transformer.fit_transform(X)
-    X_ctrl = umap_transformer.fit_transform(X_ctrl)
+    X_ctrl = umap_transformer.transform(X_ctrl)
 
     return X_umap, X_ctrl
 
@@ -347,12 +347,12 @@ def get_pca(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: objec
         X_ctrl = scaler.fit_transform(X_ctrl)
     pca = PCA(n_components=n_components)
     X_pca = pca.fit_transform(X)
-    X_ctrl = pca.fit_transform(X_ctrl)
+    X_ctrl = pca.transform(X_ctrl)
 
     return X_pca, X_ctrl
 
 
-def get_tsne(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object, n_components=2,
+def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
              learning_rate='auto', init='random', perplexity=3) -> np.ndarray:
     """
     Get t-SNE projection for given dataframe.
@@ -367,17 +367,14 @@ def get_tsne(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: obje
     """
     df_na = df.dropna(inplace=False)
     X = df_na.drop(target, axis=1)
-    controls_na = controls.dropna(inplace=False)
-    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
-        X_ctrl = scaler.fit_transform(X_ctrl)
     tsne = TSNE(n_components=n_components,
                 learning_rate=learning_rate, init=init, perplexity=perplexity)
+    
     X_tsne = tsne.fit_transform(X)
-    X_ctrl = tsne.fit_transform(X_ctrl)
 
-    return X_tsne, X_ctrl
+    return X_tsne
 
 
 def get_projections(df: pd.DataFrame, controls: pd.DataFrame) -> pd.DataFrame:
@@ -392,24 +389,29 @@ def get_projections(df: pd.DataFrame, controls: pd.DataFrame) -> pd.DataFrame:
     """
     df_umap, controls_umap = get_umap(df, controls, 'CMPD ID', scaler=False)
     df_pca, controls_pca = get_pca(df, controls, 'CMPD ID', scaler=False)
-    df_tsne, controls_tsne = get_tsne(df, controls, 'CMPD ID', scaler=False)
-    df_expanded = df.copy()
-    controls_expanded = controls.copy()
+    points_all = pd.concat([df, controls])
+    df_tsne_all = get_tsne(points_all, 'CMPD ID', scaler=False)
 
     # CMPD ID
+    df_expanded = df.copy()
     df_expanded['UMAP_X'] = df_umap[:, 0]
     df_expanded['UMAP_Y'] = df_umap[:, 1]
     df_expanded['PCA_X'] = df_pca[:, 0]
     df_expanded['PCA_Y'] = df_pca[:, 1]
-    df_expanded['TSNE_X'] = df_tsne[:, 0]
-    df_expanded['TSNE_Y'] = df_tsne[:, 1]
+    points_all['TSNE_X'] = df_tsne_all[:, 0]
+    points_all['TSNE_Y'] = df_tsne_all[:, 1]
+    df_tsne, controls_tsne = split_compounds_controls(points_all)
+    df_expanded['TSNE_X'] = df_tsne['TSNE_X']
+    df_expanded['TSNE_Y'] = df_tsne['TSNE_Y']
+
     # CONTROLS
+    controls_expanded = controls.copy()
     controls_expanded['UMAP_X'] = controls_umap[:, 0]
     controls_expanded['UMAP_Y'] = controls_umap[:, 1]
     controls_expanded['PCA_X'] = controls_pca[:, 0]
     controls_expanded['PCA_Y'] = controls_pca[:, 1]
-    controls_expanded['TSNE_X'] = controls_tsne[:, 0]
-    controls_expanded['TSNE_Y'] = controls_tsne[:, 1]
+    controls_expanded['TSNE_X'] = controls_tsne['TSNE_X']
+    controls_expanded['TSNE_Y'] = controls_tsne['TSNE_Y']
 
     return df_expanded, controls_expanded
 
