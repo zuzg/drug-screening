@@ -152,7 +152,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
     return res
 
 
-def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
+def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add control rows to a DataFrame.
 
@@ -161,8 +161,8 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
-    bin_seq = generate_binary_strings(len(assays))
+    assays = sorted(list(set(x.split('-')[-1].lstrip() for x in assays_cols)))
+    bin_seq = generate_binary_strings(len(assays)) # to be changed if we stick to 4 categories
 
     ctrl_df = pd.DataFrame()
     for i, seq in enumerate(bin_seq):
@@ -198,7 +198,7 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
 
         name = pos_name_part + ';' + neg_name_part
         ctrl_df.loc[i, 'CMPD ID'] = name
-    return pd.concat([df, ctrl_df])
+    return ctrl_df
 
 
 def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -295,7 +295,7 @@ def get_activation_inhibition(df: pd.DataFrame) -> pd.DataFrame:
     return new_df
 
 
-def get_umap(df: pd.DataFrame, target: str, scaler: object,
+def get_umap(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object,
              n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
     """
     Get UMAP projection for given dataframe.
@@ -310,19 +310,23 @@ def get_umap(df: pd.DataFrame, target: str, scaler: object,
     """
     df_na = df.dropna(inplace=False)
     X = df_na.drop(target, axis=1)
+    controls_na = controls.dropna(inplace=False)
+    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
+        X_ctrl = scaler.fit_transform(X_ctrl)
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,
         min_dist=min_dist
     )
     X_umap = umap_transformer.fit_transform(X)
+    X_ctrl = umap_transformer.fit_transform(X_ctrl)
 
-    return X_umap
+    return X_umap, X_ctrl
 
 
-def get_pca(df: pd.DataFrame, target: str, scaler: object, n_components=2) -> np.ndarray:
+def get_pca(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object, n_components=2) -> np.ndarray:
     """
     Get PCA projection for given dataframe.
 
@@ -334,16 +338,21 @@ def get_pca(df: pd.DataFrame, target: str, scaler: object, n_components=2) -> np
 
     :return: PCA array
     """
-    X = df.drop(target, axis=1)
+    df_na = df.dropna(inplace=False)
+    X = df_na.drop(target, axis=1)
+    controls_na = controls.dropna(inplace=False)
+    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
+        X_ctrl = scaler.fit_transform(X_ctrl)
     pca = PCA(n_components=n_components)
     X_pca = pca.fit_transform(X)
+    X_ctrl = pca.fit_transform(X_ctrl)
 
-    return X_pca
+    return X_pca, X_ctrl
 
 
-def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
+def get_tsne(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object, n_components=2,
              learning_rate='auto', init='random', perplexity=3) -> np.ndarray:
     """
     Get t-SNE projection for given dataframe.
@@ -356,17 +365,22 @@ def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
 
     :return: t-SNE array
     """
-    X = df.drop(target, axis=1)
+    df_na = df.dropna(inplace=False)
+    X = df_na.drop(target, axis=1)
+    controls_na = controls.dropna(inplace=False)
+    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
+        X_ctrl = scaler.fit_transform(X_ctrl)
     tsne = TSNE(n_components=n_components,
                 learning_rate=learning_rate, init=init, perplexity=perplexity)
     X_tsne = tsne.fit_transform(X)
+    X_ctrl = tsne.fit_transform(X_ctrl)
 
-    return X_tsne
+    return X_tsne, X_ctrl
 
 
-def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
+def get_projections(df: pd.DataFrame, controls: pd.DataFrame) -> pd.DataFrame:
     """
     Add columns with projected values to exisisting dataframe
 
@@ -376,29 +390,28 @@ def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
 
     :return: dataframe with added projection columns
     """
-    if get_3d:
-        df_umap = get_umap(df, 'CMPD ID', n_components=3, scaler=False)
-        df_pca = get_pca(df, 'CMPD ID', n_components=3, scaler=False)
-        df_tsne = get_tsne(df, 'CMPD ID', n_components=3, scaler=False)
-    else:
-        df_umap = get_umap(df, 'CMPD ID', scaler=False)
-        df_pca = get_pca(df, 'CMPD ID', scaler=False)
-        df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
+    df_umap, controls_umap = get_umap(df, controls, 'CMPD ID', scaler=False)
+    df_pca, controls_pca = get_pca(df, controls, 'CMPD ID', scaler=False)
+    df_tsne, controls_tsne = get_tsne(df, controls, 'CMPD ID', scaler=False)
     df_expanded = df.copy()
+    controls_expanded = controls.copy()
 
+    # CMPD ID
     df_expanded['UMAP_X'] = df_umap[:, 0]
     df_expanded['UMAP_Y'] = df_umap[:, 1]
     df_expanded['PCA_X'] = df_pca[:, 0]
     df_expanded['PCA_Y'] = df_pca[:, 1]
     df_expanded['TSNE_X'] = df_tsne[:, 0]
     df_expanded['TSNE_Y'] = df_tsne[:, 1]
+    # CONTROLS
+    controls_expanded['UMAP_X'] = controls_umap[:, 0]
+    controls_expanded['UMAP_Y'] = controls_umap[:, 1]
+    controls_expanded['PCA_X'] = controls_pca[:, 0]
+    controls_expanded['PCA_Y'] = controls_pca[:, 1]
+    controls_expanded['TSNE_X'] = controls_tsne[:, 0]
+    controls_expanded['TSNE_Y'] = controls_tsne[:, 1]
 
-    if get_3d:
-        df_expanded['UMAP_Z'] = df_umap[:, 2]
-        df_expanded['PCA_Z'] = df_pca[:, 2]
-        df_expanded['TSNE_Z'] = df_tsne[:, 2]
-
-    return df_expanded
+    return df_expanded, controls_expanded
 
 
 def add_ecbd_links(df: pd.DataFrame) -> pd.DataFrame:
