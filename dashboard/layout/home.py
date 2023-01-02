@@ -81,6 +81,7 @@ projection_details_panel = html.Article(
                 ),
             ],
         ),
+        html.Div(id="projection-plot-slot"),
         dcc.Checklist(
                 id="add-controls-checkbox", 
                 # style={'paddingLeft': 10},
@@ -98,7 +99,6 @@ projection_details_panel = html.Article(
                     }
                 ]
         ),
-        html.Div(id="projection-plot-slot"),
     ],
 )
 
