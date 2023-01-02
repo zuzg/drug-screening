@@ -35,7 +35,11 @@ main_header = html.Header(
 
 general_info_panel = html.Article(
     children=[
-        html.H2("General Info", className="border-bottom"),
+        html.H2(
+            "General Info",
+            className="border-bottom",
+            style={"textAlign": "center"},
+        ),
         dcc.Loading(
             type="default",
             className="loading-modal",
@@ -44,8 +48,24 @@ general_info_panel = html.Article(
         html.Div(
             className="controls-container",
             children=[
-                html.H3("X-axis attribute", className="border-bottom"),
-                html.H3("Y-axis attribute", className="border-bottom"),
+                html.H3(
+                    "X-axis attribute",
+                    className="border-bottom",
+                    style={
+                        "fontSize": 25,
+                        "textAlign": "center",
+                        "padding-top": 10,
+                    },
+                ),
+                html.H3(
+                    "Y-axis attribute",
+                    className="border-bottom",
+                    style={
+                        "fontSize": 25,
+                        "textAlign": "center",
+                        "padding-top": 10,
+                    },
+                ),
                 dcc.Dropdown(
                     placeholder="Select X-axis attribute",
                     id="x-axis-dropdown",
@@ -65,12 +85,32 @@ general_info_panel = html.Article(
 projection_details_panel = html.Article(
     className="col w-50",
     children=[
-        html.H2("Data Projection", className="border-bottom"),
+        html.H2(
+            "Data Projection",
+            className="border-bottom",
+            style={"textAlign": "center"},
+        ),
         html.Div(
             className="controls-container",
             children=[
-                html.H3("Method of projection", className="border-bottom"),
-                html.H3("Colormap attribute", className="border-bottom"),
+                html.H3(
+                    "Method of projection",
+                    className="border-bottom",
+                    style={
+                        "fontSize": 25,
+                        "textAlign": "center",
+                        "padding-top": 10,
+                    },
+                ),
+                html.H3(
+                    "Colormap attribute",
+                    className="border-bottom",
+                    style={
+                        "fontSize": 25,
+                        "textAlign": "center",
+                        "padding-top": 10,
+                    },
+                ),
                 dcc.Dropdown(
                     id="projection-type-dropdown",
                     options=["UMAP", "PCA", "TSNE"],
@@ -85,7 +125,9 @@ projection_details_panel = html.Article(
             ],
         ),
         html.Div(
-            dcc.Checklist(id="add-controls-checkbox", options={True: ' Add control values'})
+            dcc.Checklist(
+                id="add-controls-checkbox", options={True: " Add control values"}
+            )
         ),
         html.Div(id="projection-plot-slot"),
     ],
@@ -94,7 +136,11 @@ projection_details_panel = html.Article(
 preview_table_panel = html.Article(
     className="col border-end w-50",
     children=[
-        html.H2("Selected Data Preview", className="border-bottom"),
+        html.H2(
+            "Selected Data Preview",
+            className="border-bottom",
+            style={"textAlign": "center"},
+        ),
         html.Div(id="preview-table-slot"),
     ],
 )
