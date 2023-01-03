@@ -161,7 +161,7 @@ def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = sorted(list(set(x.split('-')[-1].lstrip() for x in assays_cols)))
+    assays = sorted({x.split('-')[-1].lstrip() for x in assays_cols})
     bin_seq = generate_binary_strings(len(assays)) # to be changed if we stick to 4 categories
 
     ctrl_df = pd.DataFrame()

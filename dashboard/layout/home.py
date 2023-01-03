@@ -105,17 +105,13 @@ projection_details_panel = html.Article(
         html.Div(id="projection-plot-slot"),
         dcc.Checklist(
                 id="add-controls-checkbox", 
-                # style={'paddingLeft': 10},
                 options=[
                     {
                         "label": "   Control values",
-                        # html.Div(
-                        #     "Control values" ,style={'paddingLeft': 5}
-                        # ),
                         "value": "add_controls",
                     },
                     {
-                        "label": html.Img(src="/assets/images/colorblind.png", style={'paddingLeft': 5}),
+                        "label": html.Img(className="px-1", src="/assets/images/colorblind.png"),
                         "value": "cvd",
                     }
                 ]
