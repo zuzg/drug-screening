@@ -34,17 +34,27 @@ main_header = html.Header(
 )
 
 general_info_panel = html.Article(
-    className="col border-end w-50",
     children=[
-        html.H2("General Info", className="border-bottom"),
+        html.H2(
+            "General Info",
+            className="border-bottom text-center",
+        ),
         dcc.Loading(
             type="default",
             className="loading-modal",
-            children=[html.Div(id="description-table-slot", className="mb-1")],
+            children=[html.Div(id="description-table-slot", className="mb-1 p-2")],
         ),
         html.Div(
             className="controls-container",
             children=[
+                html.H3(
+                    "X-axis attribute",
+                    className="border-bottom text-center pt-1 fs-4",
+                ),
+                html.H3(
+                    "Y-axis attribute",
+                    className="border-bottom text-center pt-1 fs-4",
+                ),
                 dcc.Dropdown(
                     placeholder="Select X-axis attribute",
                     id="x-axis-dropdown",
@@ -64,10 +74,21 @@ general_info_panel = html.Article(
 projection_details_panel = html.Article(
     className="col w-50",
     children=[
-        html.H2("Data Projection", className="border-bottom"),
+        html.H2(
+            "Data Projection",
+            className="border-bottom text-center",
+        ),
         html.Div(
             className="controls-container",
             children=[
+                html.H3(
+                    "Method of projection",
+                    className="border-bottom text-center pt-1 fs-4",
+                ),
+                html.H3(
+                    "Colormap attribute",
+                    className="border-bottom text-center pt-1 fs-4",
+                ),
                 dcc.Dropdown(
                     id="projection-type-dropdown",
                     options=["UMAP", "PCA", "TSNE"],
@@ -82,17 +103,22 @@ projection_details_panel = html.Article(
             ],
         ),
         html.Div(
-            dcc.Checklist(id="add-controls-checkbox", options={True: ' Add control values'})
+            dcc.Checklist(
+                id="add-controls-checkbox", options={True: " Add control values"}
+            )
         ),
         html.Div(id="projection-plot-slot"),
     ],
 )
 
 preview_table_panel = html.Article(
-    className="mt-3",
+    className="col border-end w-50",
     children=[
-        html.H2("Selected Data Preview", className="border-bottom"),
-        html.Div(id="preview-table-slot"),
+        html.H2(
+            "Selected Data Preview",
+            className="border-bottom text-center",
+        ),
+        html.Div(id="preview-table-slot", className="p-2"),
     ],
 )
 
@@ -102,9 +128,9 @@ main_container = html.Main(
         html.Div(
             className="row",
             children=[
-                general_info_panel,
-                projection_details_panel,
                 preview_table_panel,
+                projection_details_panel,
+                general_info_panel,
             ],
         ),
     ],
