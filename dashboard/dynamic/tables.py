@@ -25,7 +25,12 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
                 columns=style_link,
                 data=df.to_dict("records"),
                 style_table={"overflow": "auto"},
-                css=[dict(selector="p", rule="margin: 0; text-align: right")],
+                css=[
+                    dict(
+                        selector="p",
+                        rule="margin: 0; text-align: right;",
+                    )
+                ],
                 page_size=10,
                 id=table_id,
                 export_format="csv",
@@ -93,7 +98,12 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     "height": "auto",
                     "maxWidth": "30px",
                 },
-                css=[dict(selector="p", rule="margin: 0; text-align: right")],
+                css=[
+                    dict(
+                        selector="p",
+                        rule="margin: 0; text-align: right;",
+                    )
+                ],
                 export_format="csv",
             ),
         ],

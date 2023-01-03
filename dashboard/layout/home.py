@@ -37,34 +37,23 @@ general_info_panel = html.Article(
     children=[
         html.H2(
             "General Info",
-            className="border-bottom",
-            style={"textAlign": "center"},
+            className="border-bottom text-center",
         ),
         dcc.Loading(
             type="default",
             className="loading-modal",
-            children=[html.Div(id="description-table-slot", className="mb-1")],
+            children=[html.Div(id="description-table-slot", className="mb-1 p-2")],
         ),
         html.Div(
             className="controls-container",
             children=[
                 html.H3(
                     "X-axis attribute",
-                    className="border-bottom",
-                    style={
-                        "fontSize": 25,
-                        "textAlign": "center",
-                        "padding-top": 10,
-                    },
+                    className="border-bottom text-center pt-1 fs-4",
                 ),
                 html.H3(
                     "Y-axis attribute",
-                    className="border-bottom",
-                    style={
-                        "fontSize": 25,
-                        "textAlign": "center",
-                        "padding-top": 10,
-                    },
+                    className="border-bottom text-center pt-1 fs-4",
                 ),
                 dcc.Dropdown(
                     placeholder="Select X-axis attribute",
@@ -87,29 +76,18 @@ projection_details_panel = html.Article(
     children=[
         html.H2(
             "Data Projection",
-            className="border-bottom",
-            style={"textAlign": "center"},
+            className="border-bottom text-center",
         ),
         html.Div(
             className="controls-container",
             children=[
                 html.H3(
                     "Method of projection",
-                    className="border-bottom",
-                    style={
-                        "fontSize": 25,
-                        "textAlign": "center",
-                        "padding-top": 10,
-                    },
+                    className="border-bottom text-center pt-1 fs-4",
                 ),
                 html.H3(
                     "Colormap attribute",
-                    className="border-bottom",
-                    style={
-                        "fontSize": 25,
-                        "textAlign": "center",
-                        "padding-top": 10,
-                    },
+                    className="border-bottom text-center pt-1 fs-4",
                 ),
                 dcc.Dropdown(
                     id="projection-type-dropdown",
@@ -138,10 +116,9 @@ preview_table_panel = html.Article(
     children=[
         html.H2(
             "Selected Data Preview",
-            className="border-bottom",
-            style={"textAlign": "center"},
+            className="border-bottom text-center",
         ),
-        html.Div(id="preview-table-slot"),
+        html.Div(id="preview-table-slot", className="p-2"),
     ],
 )
 
