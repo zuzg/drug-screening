@@ -84,6 +84,28 @@ def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean
     return res
 
 
+def rename_assay_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rename columns with assays activation/inhibition so the assay numbers are first
+
+    :param df: dataframe with columns to rename
+
+    :return: dataframe with renamed columns
+    """
+    df_renamed = df.copy()
+
+    for col_name in df_renamed.columns:
+        if ("% ACTIVATION" in col_name or "% INHIBITION" in col_name) and "(" not in col_name:
+            parts = col_name.split('-')
+            new_col_name = "".join([parts[1], ' - ', parts[0]]).strip()
+            df_renamed.rename(columns={col_name: new_col_name}, inplace=True)
+
+    df_renamed.sort_index(axis=1, inplace=True)
+    first_col = df_renamed.pop("CMPD ID")
+    df_renamed.insert(0, "CMPD ID", first_col)
+    return df_renamed
+
+
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
     Combine assays by compound ID.
@@ -149,6 +171,7 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
+    res = rename_assay_columns(res)
     return res
 
 
@@ -161,7 +184,7 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
+    assays = list(x.split('-')[0].lstrip() for x in assays_cols)
     bin_seq = generate_binary_strings(len(assays))
 
     ctrl_df = pd.DataFrame()
@@ -173,22 +196,18 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
         for j, s in enumerate(seq):
             if s == '0':
                 neg_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]}- % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]}- % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
             else:
                 pos_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]}- % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]}- % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
         if pos_name_part[-1]==',':
