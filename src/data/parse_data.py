@@ -171,7 +171,8 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
-    res = rename_assay_columns(res)
+    if not barcode:
+        res = rename_assay_columns(res)
     return res
 
 
