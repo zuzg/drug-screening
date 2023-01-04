@@ -334,7 +334,8 @@ def get_umap(df: pd.DataFrame, target: str, scaler: object,
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,
-        min_dist=min_dist
+        min_dist=min_dist,
+        random_state=23
     )
     X_umap = umap_transformer.fit_transform(X)
 
