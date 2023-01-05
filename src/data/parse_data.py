@@ -11,7 +11,7 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 from functools import reduce
-from src.data.utils import *
+from src.data.utils import generate_binary_strings, is_chemical_result
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -84,6 +84,28 @@ def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean
     return res
 
 
+def rename_assay_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rename columns with assays activation/inhibition so the assay numbers are first
+
+    :param df: dataframe with columns to rename
+
+    :return: dataframe with renamed columns
+    """
+    df_renamed = df.copy()
+
+    for col_name in df_renamed.columns:
+        if is_chemical_result(col_name):
+            parts = col_name.split('-')
+            new_col_name = "".join([parts[1], ' - ', parts[0]]).strip()
+            df_renamed.rename(columns={col_name: new_col_name}, inplace=True)
+
+    df_renamed.sort_index(axis=1, inplace=True)
+    first_col = df_renamed.pop("CMPD ID")
+    df_renamed.insert(0, "CMPD ID", first_col)
+    return df_renamed
+
+
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
     Combine assays by compound ID.
@@ -149,6 +171,8 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
+    if not barcode:
+        res = rename_assay_columns(res)
     return res
 
 
@@ -161,8 +185,8 @@ def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = sorted({x.split('-')[-1].lstrip() for x in assays_cols})
-    bin_seq = generate_binary_strings(len(assays)) # to be changed if we stick to 4 categories
+    assays = sorted({x.split('-')[0].strip() for x in assays_cols})
+    bin_seq = generate_binary_strings(len(assays))
 
     ctrl_df = pd.DataFrame()
     for i, seq in enumerate(bin_seq):
@@ -173,22 +197,18 @@ def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
         for j, s in enumerate(seq):
             if s == '0':
                 neg_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
             else:
                 pos_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
         if pos_name_part[-1]==',':
@@ -223,7 +243,7 @@ def split_controls_pos_neg(df: pd.DataFrame, column_name: str) -> dict[pd.DataFr
 
     :return: Dictionary of positive and negative controls.
     """
-    assay_name = column_name.split('-')[-1][1:]
+    assay_name = column_name.split('-')[0].strip()
     controls_categorized = dict()
     dict_keys = ['all_pos', 'all_but_one_pos', 'pos', 'all_neg', 'all_but_one_neg', 'neg']
 
@@ -287,8 +307,8 @@ def get_activation_inhibition(df: pd.DataFrame) -> pd.DataFrame:
     """
     new_df = df.copy()
     columns = ['CMPD ID']
-    columns.extend(list(new_df.filter(like='% ACTIVATION - ').columns))
-    columns.extend(list(new_df.filter(like='% INHIBITION - ').columns))
+    columns.extend(list(new_df.filter(like='- % ACTIVATION').columns))
+    columns.extend(list(new_df.filter(like='- % INHIBITION').columns))
     new_df = new_df[columns]
     new_df.dropna(inplace=True)
 
@@ -318,7 +338,8 @@ def get_umap(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: obje
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,
-        min_dist=min_dist
+        min_dist=min_dist,
+        random_state=23
     )
     X_umap = umap_transformer.fit_transform(X)
     X_ctrl = umap_transformer.transform(X_ctrl)
