@@ -185,7 +185,7 @@ def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = list(x.split('-')[0].lstrip() for x in assays_cols)
+    assays = sorted({x.split('-')[0].strip() for x in assays_cols})
     bin_seq = generate_binary_strings(len(assays))
 
     ctrl_df = pd.DataFrame()
@@ -197,18 +197,18 @@ def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
         for j, s in enumerate(seq):
             if s == '0':
                 neg_name_part += str(assays[j]) +','
-                key = list(df.filter(like=f'{assays[j]}- % ACTIVATION').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
-                key = list(df.filter(like=f'{assays[j]}- % INHIBITION').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
             else:
                 pos_name_part += str(assays[j]) +','
-                key = list(df.filter(like=f'{assays[j]}- % ACTIVATION').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
-                key = list(df.filter(like=f'{assays[j]}- % INHIBITION').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
         if pos_name_part[-1]==',':
@@ -243,7 +243,7 @@ def split_controls_pos_neg(df: pd.DataFrame, column_name: str) -> dict[pd.DataFr
 
     :return: Dictionary of positive and negative controls.
     """
-    assay_name = column_name.split('-')[-1][1:]
+    assay_name = column_name.split('-')[0].strip()
     controls_categorized = dict()
     dict_keys = ['all_pos', 'all_but_one_pos', 'pos', 'all_neg', 'all_but_one_neg', 'neg']
 
@@ -307,8 +307,8 @@ def get_activation_inhibition(df: pd.DataFrame) -> pd.DataFrame:
     """
     new_df = df.copy()
     columns = ['CMPD ID']
-    columns.extend(list(new_df.filter(like='% ACTIVATION - ').columns))
-    columns.extend(list(new_df.filter(like='% INHIBITION - ').columns))
+    columns.extend(list(new_df.filter(like='- % ACTIVATION').columns))
+    columns.extend(list(new_df.filter(like='- % INHIBITION').columns))
     new_df = new_df[columns]
     new_df.dropna(inplace=True)
 
