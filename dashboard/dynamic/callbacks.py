@@ -10,13 +10,7 @@ from dash import html, Dash, dcc
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-from src.data.parse_data import (
-    combine_assays,
-    get_projections,
-    add_ecbd_links,
-    add_control_rows,
-    split_compounds_controls,
-)
+from src.data.parse_data import combine_assays, get_projections, add_ecbd_links, get_control_rows
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
@@ -66,10 +60,8 @@ def on_data_upload(
         strict_summary_df,
         "description-table",
     )
-
-    strict_df = add_control_rows(strict_df)
-    projection_df = get_projections(strict_df, get_3d=False)
-    projection_df, controls_df = split_compounds_controls(projection_df)
+    controls = get_control_rows(strict_df)
+    projection_df, controls_df = get_projections(strict_df, controls)
     projection_with_ecbd_links_df = add_ecbd_links(projection_df)
     serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
         date_format="iso", orient="split"
