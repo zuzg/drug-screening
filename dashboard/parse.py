@@ -3,6 +3,8 @@ import base64
 
 import pandas as pd
 
+from src.data.utils import is_chemical_result
+
 
 def parse_contents(contents: str, filename: str) -> pd.DataFrame:
     """
@@ -33,6 +35,5 @@ def get_crucial_column_names(column_names: list[str]) -> list[str]:
     return [
         column
         for column in column_names
-        if ("% ACTIVATION" in column or "% INHIBITION" in column)
-        and "(" not in column  # filters out stuff like std(% ACTIVATION) etc
+        if is_chemical_result(column)
     ]

@@ -11,7 +11,7 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 from functools import reduce
-from src.data.utils import *
+from src.data.utils import generate_binary_strings, is_chemical_result
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -95,7 +95,7 @@ def rename_assay_columns(df: pd.DataFrame) -> pd.DataFrame:
     df_renamed = df.copy()
 
     for col_name in df_renamed.columns:
-        if ("% ACTIVATION" in col_name or "% INHIBITION" in col_name) and "(" not in col_name:
+        if is_chemical_result(col_name):
             parts = col_name.split('-')
             new_col_name = "".join([parts[1], ' - ', parts[0]]).strip()
             df_renamed.rename(columns={col_name: new_col_name}, inplace=True)
