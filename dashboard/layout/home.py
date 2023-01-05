@@ -107,11 +107,11 @@ projection_details_panel = html.Article(
                 id="add-controls-checkbox", 
                 options=[
                     {
-                        "label": "   Control values",
+                        "label": html.Span("Control values", className = "ps-1 pe-3"),
                         "value": "add_controls",
                     },
                     {
-                        "label": html.Img(className="px-1", src="/assets/images/colorblind.png"),
+                        "label": html.Img(src="/assets/images/colorblind.png", className = "px-1"),
                         "value": "cvd",
                     }
                 ]
