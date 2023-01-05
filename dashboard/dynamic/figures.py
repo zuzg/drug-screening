@@ -25,7 +25,7 @@ def scatterplot_from_df(
 
 
 def make_projection_plot(
-    projection_df: pd.DataFrame, controls_df: pd.DataFrame, colormap_feature: str, projection_type: str, add_controls: bool
+    projection_df: pd.DataFrame, controls_df: pd.DataFrame, colormap_feature: str, projection_type: str, checkbox_values: bool
 ) -> dcc.Graph:
     """
     Construct a scatterplot from a dataframe.
@@ -44,10 +44,15 @@ def make_projection_plot(
             height=None,
         )
 
-    if add_controls:
+    if checkbox_values is not None and "add_controls" in checkbox_values:
         control_points = split_controls_pos_neg(controls_df, colormap_feature)
+        if "cvd" in checkbox_values:
+            return dcc.Graph(
+            figure=projection_2d_add_controls(figure, control_points, projection=projection_type, cvd=True),
+            id="projection-plot",
+            )
         return dcc.Graph(
-            figure=projection_2d_add_controls(figure, control_points),
+            figure=projection_2d_add_controls(figure, control_points, projection=projection_type),
             id="projection-plot",
         )
   

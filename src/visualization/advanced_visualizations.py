@@ -127,7 +127,16 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
                     f'{str.upper(projection)}_Y':':.3f',
                     feature:':.3f'})
 
+
+    fig.update_yaxes(
+        title_standoff = 15,
+        automargin=True)
+    fig.update_xaxes(
+        title_standoff = 30,
+        automargin=True)
     fig.update_layout(
+        modebar=dict(orientation="v"),
+        margin=dict(r=35, l=15, b=0),
         title_x=0.5, 
         coloraxis_colorbar=dict(
             orientation='h', 
@@ -136,7 +145,7 @@ def plot_projection_2d(df: pd.DataFrame, feature: str, projection: str = 'umap',
     return fig
 
 
-def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], projection: str = 'umap') -> px.scatter:
+def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], projection: str = 'umap', cvd: bool = False) -> px.scatter:
     """
     Add control values to the plot of selected projection.
     
@@ -150,17 +159,22 @@ def projection_2d_add_controls(fig: px.scatter, controls: dict[pd.DataFrame], pr
     fig_controls = go.Figure(fig)
     fig_controls.update_traces(marker={"opacity": 0.6})
 
-    categories = ['all_pos', 'all_but_one_pos', 'pos', 'neg', 'all_but_one_neg', 'all_neg']
-    control_styles = {
-        'all_pos': ['#488f31',12],
-        'all_but_one_pos': ['#8aac49',10],  
-        'pos': ['#c6c96a',8],
-        'neg': ['#f8b267',8],
-        'all_but_one_neg': ['#eb7a52',10],
-        'all_neg': ['#de425b',12], 
-    }
+    if cvd:
+        control_styles = {
+            'all_pos': ['#018571',12],
+            'all_but_one_pos': ['#80cdc1',10],  
+            'all_but_one_neg': ['#dfc27d',10],
+            'all_neg': ['#a6611a',12], 
+        }
+    else:
+        control_styles = {
+            'all_pos': ['#488f31',12],
+            'all_but_one_pos': ['#8aac49',10],  
+            'all_but_one_neg': ['#eb7a52',10],
+            'all_neg': ['#de425b',12], 
+        }
     
-    for key in categories:
+    for key in control_styles.keys():
         fig_controls.add_scatter(
                     x=controls[key][f'{str.upper(projection)}_X'],
                     y=controls[key][f'{str.upper(projection)}_Y'], 
