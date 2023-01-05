@@ -67,7 +67,10 @@ general_info_panel = html.Article(
                 ),
             ],
         ),
-        html.Div(id="basic-plot-slot"),
+        dcc.Loading(
+            type="circle",
+            children=[html.Div(id="basic-plot-slot")],
+        ),
     ],
 )
 
@@ -107,7 +110,10 @@ projection_details_panel = html.Article(
                 id="add-controls-checkbox", options={True: " Add control values"}
             )
         ),
-        html.Div(id="projection-plot-slot"),
+        dcc.Loading(
+            type="circle",
+            children=[html.Div(id="projection-plot-slot")],
+        ),
     ],
 )
 
