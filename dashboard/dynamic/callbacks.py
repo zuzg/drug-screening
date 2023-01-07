@@ -6,9 +6,11 @@ import typing
 
 import pandas as pd
 
-from dash import html, Dash, dcc
+from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+
+from ..layout.layout import PAGE_1, PAGE_2
 
 from src.data.parse_data import (
     combine_assays,
@@ -170,6 +172,13 @@ def on_projection_settings_change(
     )
 
 
+def page_changer(*args):
+    changed_id = [p["prop_id"] for p in callback_context.triggered][0]
+    if "about-button" in changed_id:
+        return PAGE_2
+    return PAGE_1
+
+
 def register_callbacks(app: Dash) -> None:
     """
     Registers application callbacks.
@@ -218,3 +227,9 @@ def register_callbacks(app: Dash) -> None:
         State("data-holder", "data"),
         State("controls-holder", "data"),
     )(on_projection_settings_change)
+
+    app.callback(
+        Output("page-layout", "children"),
+        Input("home-button", "n_clicks"),
+        Input("about-button", "n_clicks"),
+    )(page_changer)

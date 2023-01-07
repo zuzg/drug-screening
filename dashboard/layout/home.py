@@ -136,10 +136,33 @@ main_container = html.Main(
     ],
 )
 
+nav_bar = html.Div(
+    children=[
+        html.Div(
+            children=[
+                html.Button(
+                    "Home",
+                    id="home-button",
+                    className="nav-button",
+                    n_clicks=0,
+                ),
+                html.Button(
+                    "About Section",
+                    id="about-button",
+                    className="nav-button",
+                    n_clicks=0,
+                ),
+            ]
+        ),
+    ],
+    className="nav-bar",
+)
+
 home_layout = html.Div(
     className="content",
     children=[
         main_header,
+        nav_bar,
         main_container,
         dcc.Store(id="data-holder", storage_type="session"),
         dcc.Store(id="controls-holder", storage_type="session"),
