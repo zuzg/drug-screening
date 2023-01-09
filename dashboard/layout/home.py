@@ -38,7 +38,10 @@ general_info_panel = html.Article(
                 ),
             ],
         ),
-        html.Div(id="basic-plot-slot"),
+        dcc.Loading(
+            type="circle",
+            children=[html.Div(id="basic-plot-slot")],
+        ),
     ],
 )
 
@@ -73,12 +76,23 @@ projection_details_panel = html.Article(
                 ),
             ],
         ),
-        html.Div(
-            dcc.Checklist(
-                id="add-controls-checkbox", options={True: " Add control values"}
-            )
+        dcc.Loading(
+            type="circle",
+            children=[html.Div(id="projection-plot-slot")],
         ),
-        html.Div(id="projection-plot-slot"),
+        dcc.Checklist(
+                id="add-controls-checkbox", 
+                options=[
+                    {
+                        "label": html.Span("Control values", className = "ps-1 pe-3"),
+                        "value": "add_controls",
+                    },
+                    {
+                        "label": html.Img(src="/assets/images/colorblind.png", className = "px-1"),
+                        "value": "cvd",
+                    }
+                ]
+        ),
     ],
 )
 

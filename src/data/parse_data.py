@@ -11,7 +11,7 @@ import sys
 if '../' not in sys.path:
     sys.path.append('../')
 from functools import reduce
-from src.data.utils import *
+from src.data.utils import generate_binary_strings, is_chemical_result
 
 
 def parse_data(filename: str) -> pd.DataFrame:
@@ -84,6 +84,28 @@ def combine_controls(dataframes: list[(pd.DataFrame, str)], agg_function = 'mean
     return res
 
 
+def rename_assay_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Rename columns with assays activation/inhibition so the assay numbers are first
+
+    :param df: dataframe with columns to rename
+
+    :return: dataframe with renamed columns
+    """
+    df_renamed = df.copy()
+
+    for col_name in df_renamed.columns:
+        if is_chemical_result(col_name):
+            parts = col_name.split('-')
+            new_col_name = "".join([parts[1], ' - ', parts[0]]).strip()
+            df_renamed.rename(columns={col_name: new_col_name}, inplace=True)
+
+    df_renamed.sort_index(axis=1, inplace=True)
+    first_col = df_renamed.pop("CMPD ID")
+    df_renamed.insert(0, "CMPD ID", first_col)
+    return df_renamed
+
+
 def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False, agg_function = 'max') -> pd.DataFrame:
     """
     Combine assays by compound ID.
@@ -149,10 +171,12 @@ def combine_assays(dataframes: list[(pd.DataFrame, str)], barcode: bool = False,
         res = res.groupby('CMPD ID').agg(agg_function)
 
     res = res.reset_index(level=0)
+    if not barcode:
+        res = rename_assay_columns(res)
     return res
 
 
-def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
+def get_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     """
     Add control rows to a DataFrame.
 
@@ -161,7 +185,7 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
     :return: DataFrame with control values
     """
     assays_cols = list(df.drop(columns=['CMPD ID']).columns)
-    assays = list(x.split('-')[-1].lstrip() for x in assays_cols)
+    assays = sorted({x.split('-')[0].strip() for x in assays_cols})
     bin_seq = generate_binary_strings(len(assays))
 
     ctrl_df = pd.DataFrame()
@@ -173,22 +197,18 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
         for j, s in enumerate(seq):
             if s == '0':
                 neg_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
             else:
                 pos_name_part += str(assays[j]) +','
-
-                key = list(df.filter(like=f'% ACTIVATION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % ACTIVATION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 100
-
-                key = list(df.filter(like=f'% INHIBITION - {assays[j]}').columns)
+                key = list(df.filter(like=f'{assays[j]} - % INHIBITION').columns)
                 if len(key) != 0:
                     ctrl_df.loc[i, key[0]] = 0
         if pos_name_part[-1]==',':
@@ -198,7 +218,7 @@ def add_control_rows(df: pd.DataFrame) -> pd.DataFrame:
 
         name = pos_name_part + ';' + neg_name_part
         ctrl_df.loc[i, 'CMPD ID'] = name
-    return pd.concat([df, ctrl_df])
+    return ctrl_df
 
 
 def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -223,7 +243,7 @@ def split_controls_pos_neg(df: pd.DataFrame, column_name: str) -> dict[pd.DataFr
 
     :return: Dictionary of positive and negative controls.
     """
-    assay_name = column_name.split('-')[-1][1:]
+    assay_name = column_name.split('-')[0].strip()
     controls_categorized = dict()
     dict_keys = ['all_pos', 'all_but_one_pos', 'pos', 'all_neg', 'all_but_one_neg', 'neg']
 
@@ -287,15 +307,15 @@ def get_activation_inhibition(df: pd.DataFrame) -> pd.DataFrame:
     """
     new_df = df.copy()
     columns = ['CMPD ID']
-    columns.extend(list(new_df.filter(like='% ACTIVATION - ').columns))
-    columns.extend(list(new_df.filter(like='% INHIBITION - ').columns))
+    columns.extend(list(new_df.filter(like='- % ACTIVATION').columns))
+    columns.extend(list(new_df.filter(like='- % INHIBITION').columns))
     new_df = new_df[columns]
     new_df.dropna(inplace=True)
 
     return new_df
 
 
-def get_umap(df: pd.DataFrame, target: str, scaler: object,
+def get_umap(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object,
              n_neighbors=10, n_components=2, min_dist=0.2) -> np.ndarray:
     """
     Get UMAP projection for given dataframe.
@@ -310,19 +330,24 @@ def get_umap(df: pd.DataFrame, target: str, scaler: object,
     """
     df_na = df.dropna(inplace=False)
     X = df_na.drop(target, axis=1)
+    controls_na = controls.dropna(inplace=False)
+    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
+        X_ctrl = scaler.fit_transform(X_ctrl)
     umap_transformer = umap.UMAP(
         n_neighbors=n_neighbors,
         n_components=n_components,
-        min_dist=min_dist
+        min_dist=min_dist,
+        random_state=23
     )
     X_umap = umap_transformer.fit_transform(X)
+    X_ctrl = umap_transformer.transform(X_ctrl)
 
-    return X_umap
+    return X_umap, X_ctrl
 
 
-def get_pca(df: pd.DataFrame, target: str, scaler: object, n_components=2) -> np.ndarray:
+def get_pca(df: pd.DataFrame, controls: pd.DataFrame, target: str, scaler: object, n_components=2) -> np.ndarray:
     """
     Get PCA projection for given dataframe.
 
@@ -334,13 +359,18 @@ def get_pca(df: pd.DataFrame, target: str, scaler: object, n_components=2) -> np
 
     :return: PCA array
     """
-    X = df.drop(target, axis=1)
+    df_na = df.dropna(inplace=False)
+    X = df_na.drop(target, axis=1)
+    controls_na = controls.dropna(inplace=False)
+    X_ctrl = controls_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
+        X_ctrl = scaler.fit_transform(X_ctrl)
     pca = PCA(n_components=n_components)
     X_pca = pca.fit_transform(X)
+    X_ctrl = pca.transform(X_ctrl)
 
-    return X_pca
+    return X_pca, X_ctrl
 
 
 def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
@@ -356,17 +386,19 @@ def get_tsne(df: pd.DataFrame, target: str, scaler: object, n_components=2,
 
     :return: t-SNE array
     """
-    X = df.drop(target, axis=1)
+    df_na = df.dropna(inplace=False)
+    X = df_na.drop(target, axis=1)
     if scaler:
         X = scaler.fit_transform(X)
     tsne = TSNE(n_components=n_components,
                 learning_rate=learning_rate, init=init, perplexity=perplexity)
+    
     X_tsne = tsne.fit_transform(X)
 
     return X_tsne
 
 
-def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
+def get_projections(df: pd.DataFrame, controls: pd.DataFrame) -> pd.DataFrame:
     """
     Add columns with projected values to exisisting dataframe
 
@@ -376,29 +408,33 @@ def get_projections(df: pd.DataFrame, get_3d: bool=False) -> pd.DataFrame:
 
     :return: dataframe with added projection columns
     """
-    if get_3d:
-        df_umap = get_umap(df, 'CMPD ID', n_components=3, scaler=False)
-        df_pca = get_pca(df, 'CMPD ID', n_components=3, scaler=False)
-        df_tsne = get_tsne(df, 'CMPD ID', n_components=3, scaler=False)
-    else:
-        df_umap = get_umap(df, 'CMPD ID', scaler=False)
-        df_pca = get_pca(df, 'CMPD ID', scaler=False)
-        df_tsne = get_tsne(df, 'CMPD ID', scaler=False)
-    df_expanded = df.copy()
+    df_umap, controls_umap = get_umap(df, controls, 'CMPD ID', scaler=False)
+    df_pca, controls_pca = get_pca(df, controls, 'CMPD ID', scaler=False)
+    points_all = pd.concat([df, controls])
+    df_tsne_all = get_tsne(points_all, 'CMPD ID', scaler=False)
 
+    # CMPD ID
+    df_expanded = df.copy()
     df_expanded['UMAP_X'] = df_umap[:, 0]
     df_expanded['UMAP_Y'] = df_umap[:, 1]
     df_expanded['PCA_X'] = df_pca[:, 0]
     df_expanded['PCA_Y'] = df_pca[:, 1]
-    df_expanded['TSNE_X'] = df_tsne[:, 0]
-    df_expanded['TSNE_Y'] = df_tsne[:, 1]
+    points_all['TSNE_X'] = df_tsne_all[:, 0]
+    points_all['TSNE_Y'] = df_tsne_all[:, 1]
+    df_tsne, controls_tsne = split_compounds_controls(points_all)
+    df_expanded['TSNE_X'] = df_tsne['TSNE_X']
+    df_expanded['TSNE_Y'] = df_tsne['TSNE_Y']
 
-    if get_3d:
-        df_expanded['UMAP_Z'] = df_umap[:, 2]
-        df_expanded['PCA_Z'] = df_pca[:, 2]
-        df_expanded['TSNE_Z'] = df_tsne[:, 2]
+    # CONTROLS
+    controls_expanded = controls.copy()
+    controls_expanded['UMAP_X'] = controls_umap[:, 0]
+    controls_expanded['UMAP_Y'] = controls_umap[:, 1]
+    controls_expanded['PCA_X'] = controls_pca[:, 0]
+    controls_expanded['PCA_Y'] = controls_pca[:, 1]
+    controls_expanded['TSNE_X'] = controls_tsne['TSNE_X']
+    controls_expanded['TSNE_Y'] = controls_tsne['TSNE_Y']
 
-    return df_expanded
+    return df_expanded, controls_expanded
 
 
 def add_ecbd_links(df: pd.DataFrame) -> pd.DataFrame:

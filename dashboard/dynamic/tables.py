@@ -2,6 +2,8 @@ import pandas as pd
 
 from dash import html, dash_table
 
+from src.data.utils import is_chemical_result
+
 
 def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
     """
@@ -63,9 +65,7 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                 }
             )
         elif (
-            "% ACTIVATION" in column_name
-            or "% INHIBITION" in column_name
-            and "(" not in column_name
+            is_chemical_result(column_name)
         ) or (column_name == "CMPD ID"):
             style_link.append(
                 {
