@@ -1,8 +1,18 @@
 from dash import html, dcc
-from .home import home_layout, nav_bar, main_header
+from .home import main_container
+from .common import main_header
+from .about import about_container
 
 PAGE_1 = [
-    home_layout,
+    html.Div(
+        className="content",
+        children=[
+            main_header,
+            main_container,
+            dcc.Store(id="data-holder", storage_type="session"),
+            dcc.Store(id="controls-holder", storage_type="session"),
+        ],
+    )
 ]
 
 PAGE_2 = [
@@ -10,9 +20,7 @@ PAGE_2 = [
         className="content",
         children=[
             main_header,
-            nav_bar,
-            dcc.Store(id="data-holder", storage_type="session"),
-            dcc.Store(id="controls-holder", storage_type="session"),
+            about_container,
         ],
     )
 ]

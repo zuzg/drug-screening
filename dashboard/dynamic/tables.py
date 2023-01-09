@@ -92,11 +92,14 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                 page_action="native",
                 page_current=0,
                 page_size=15,
-                style_cell={"overflow": "auto"},
+                style_cell={
+                    "overflow": "auto",
+                    "maxWidth": "110px",
+                },
                 style_header={
                     "whiteSpace": "normal",
                     "height": "auto",
-                    "maxWidth": "30px",
+                    "overflow": "auto",
                 },
                 css=[
                     dict(
@@ -105,6 +108,7 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     )
                 ],
                 export_format="csv",
+                virtualization=True,
             ),
         ],
         className="border rounded",

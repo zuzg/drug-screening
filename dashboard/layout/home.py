@@ -1,37 +1,8 @@
 """
-Contains the layout for the home page element.
+Contains elements for the home page element.
 """
 
 from dash import html, dcc
-
-main_header = html.Header(
-    className="p-3 mb-3 text-bg-dark",
-    children=[
-        html.Div(
-            className="container-xxl",
-            children=[
-                html.Div(
-                    className="d-flex flex-wrap align-items-center justify-content-between",
-                    children=[
-                        html.H1("Drug Screening Dashboard"),
-                        html.Div(
-                            className="text-end",
-                            children=[
-                                dcc.Upload(
-                                    "Upload",
-                                    className="btn btn-warning",
-                                    id="upload-data",
-                                    multiple=True,
-                                    accept=".xls, .xlsx",
-                                )
-                            ],
-                        ),
-                    ],
-                )
-            ],
-        )
-    ],
-)
 
 general_info_panel = html.Article(
     children=[
@@ -133,38 +104,5 @@ main_container = html.Main(
                 general_info_panel,
             ],
         ),
-    ],
-)
-
-nav_bar = html.Div(
-    children=[
-        html.Div(
-            children=[
-                html.Button(
-                    "Home",
-                    id="home-button",
-                    className="nav-button",
-                    n_clicks=0,
-                ),
-                html.Button(
-                    "About Section",
-                    id="about-button",
-                    className="nav-button",
-                    n_clicks=0,
-                ),
-            ]
-        ),
-    ],
-    className="nav-bar",
-)
-
-home_layout = html.Div(
-    className="content",
-    children=[
-        main_header,
-        nav_bar,
-        main_container,
-        dcc.Store(id="data-holder", storage_type="session"),
-        dcc.Store(id="controls-holder", storage_type="session"),
     ],
 )
