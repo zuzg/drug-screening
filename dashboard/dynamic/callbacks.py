@@ -12,13 +12,8 @@ from dash.dependencies import Input, Output, State
 
 from ..layout.layout import PAGE_1, PAGE_2
 
-from src.data.parse_data import (
-    combine_assays,
-    get_projections,
-    add_ecbd_links,
-    add_control_rows,
-    split_compounds_controls,
-)
+from src.data.parse_data import  combine_assays, get_projections, add_ecbd_links, add_control_rows, split_compounds_controls, get_control_rows
+
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
