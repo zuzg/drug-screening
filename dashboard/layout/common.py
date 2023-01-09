@@ -11,13 +11,13 @@ nav_bar = html.Div(
                 html.Button(
                     "Home",
                     id="home-button",
-                    className="nav-button px-2 text-white text-bg-dark",
+                    className="nav-button px-2 text-white text-bg-dark border-0",
                     n_clicks=0,
                 ),
                 html.Button(
                     "About",
                     id="about-button",
-                    className="nav-button px-2 text-white text-bg-dark",
+                    className="nav-button px-2 text-white text-bg-dark border-0",
                     n_clicks=0,
                 ),
             ]

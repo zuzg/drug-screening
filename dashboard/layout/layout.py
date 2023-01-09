@@ -9,8 +9,18 @@ PAGE_1 = [
         children=[
             main_header,
             main_container,
+            dcc.Loading(
+                type="default",
+                className="loading-modal",
+                children=[
+                    html.Div(
+                        id="dummy-loader",
+                    )
+                ],
+            ),
             dcc.Store(id="data-holder", storage_type="session"),
             dcc.Store(id="controls-holder", storage_type="session"),
+            dcc.Store(id="dataframe-holder", storage_type="session"),
         ],
     )
 ]

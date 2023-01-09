@@ -31,7 +31,7 @@ def on_data_upload(
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
     """
     Callback on data upload.
-    Parses the uploaded data and updates the description table, preview table, and dropdowns.
+    Parses the uploaded data.
     Creates projection dataframe and passes it to client-side data-holder.
     Only accepts two or more files.
 
@@ -58,15 +58,15 @@ def on_data_upload(
     except AttributeError:
         pass
 
+    serialized_processed_dataframe = processed_dataframe.to_json(
+        date_format="iso", orient="split"
+    )
+
     crucial_columns = get_crucial_column_names(processed_dataframe.columns)
 
     strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
     strict_summary_df = (
         strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
-    )
-    description_table = table_from_df(
-        strict_summary_df,
-        "description-table",
     )
 
     strict_df = add_control_rows(strict_df)
@@ -78,6 +78,42 @@ def on_data_upload(
     )
 
     serialized_controls_df = controls_df.to_json(date_format="iso", orient="split")
+
+    return (
+        serialized_projection_with_ecbd_links_df,  # sent to data holder
+        serialized_controls_df,  # sent to data holder
+        serialized_processed_dataframe,  # sent to data holder
+        [],  # trigger loader
+    )
+
+
+def on_home_button_click(
+    click,
+    serialized_projection_with_ecbd_links_df,
+    serialized_controls_df,
+    serialized_processed_dataframe,
+) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
+
+    if serialized_projection_with_ecbd_links_df is None:
+        raise PreventUpdate
+
+    processed_dataframe = pd.read_json(serialized_processed_dataframe, orient="split")
+
+    crucial_columns = get_crucial_column_names(processed_dataframe.columns)
+
+    strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
+    strict_summary_df = (
+        strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
+    )
+    description_table = table_from_df(
+        strict_summary_df,
+        "description-table",
+    )
+
+    projection_with_ecbd_links_df = pd.read_json(
+        serialized_projection_with_ecbd_links_df, orient="split"
+    )
+
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )
@@ -91,8 +127,6 @@ def on_data_upload(
         crucial_columns[0],  # y-axis dropdown value
         crucial_columns,  # colormap-feature dropdown options
         crucial_columns[0],  # colormap-feature dropdown value
-        serialized_projection_with_ecbd_links_df,  # sent to data holder
-        serialized_controls_df,  # sent to data holder
     )
 
 
@@ -187,16 +221,10 @@ def register_callbacks(app: Dash) -> None:
     """
     app.callback(
         [
-            Output("description-table-slot", "children"),
-            Output("preview-table-slot", "children"),
-            Output("x-axis-dropdown", "options"),
-            Output("x-axis-dropdown", "value"),
-            Output("y-axis-dropdown", "options"),
-            Output("y-axis-dropdown", "value"),
-            Output("colormap-attribute-dropdown", "options"),
-            Output("colormap-attribute-dropdown", "value"),
             Output("data-holder", "data"),
             Output("controls-holder", "data"),
+            Output("dataframe-holder", "data"),
+            Output("dummy-loader", "children"),
         ],
         Input("upload-data", "contents"),
         State("upload-data", "filename"),
@@ -233,3 +261,22 @@ def register_callbacks(app: Dash) -> None:
         Input("home-button", "n_clicks"),
         Input("about-button", "n_clicks"),
     )(page_changer)
+
+    app.callback(
+        [
+            Output("description-table-slot", "children"),
+            Output("preview-table-slot", "children"),
+            Output("x-axis-dropdown", "options"),
+            Output("x-axis-dropdown", "value"),
+            Output("y-axis-dropdown", "options"),
+            Output("y-axis-dropdown", "value"),
+            Output("colormap-attribute-dropdown", "options"),
+            Output("colormap-attribute-dropdown", "value"),
+        ],
+        [
+            Input("home-button", "n_clicks"),
+            Input("data-holder", "data"),
+            Input("controls-holder", "data"),
+            Input("dataframe-holder", "data"),
+        ],
+    )(on_home_button_click)
