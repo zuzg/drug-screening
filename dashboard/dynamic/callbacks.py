@@ -17,7 +17,6 @@ from src.data.parse_data import (
     combine_assays,
     get_projections,
     add_ecbd_links,
-    split_compounds_controls,
     get_control_rows,
 )
 
@@ -69,7 +68,6 @@ def on_data_upload(
 
     controls = get_control_rows(strict_df)
     projection_df, controls_df = get_projections(strict_df, controls)
-
     projection_with_ecbd_links_df = add_ecbd_links(projection_df)
     serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
         date_format="iso", orient="split"
