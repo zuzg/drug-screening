@@ -10,10 +10,16 @@ from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
+
 from ..layout.layout import PAGE_1, PAGE_2
 
-from src.data.parse_data import  combine_assays, get_projections, add_ecbd_links, add_control_rows, split_compounds_controls, get_control_rows
-
+from src.data.parse_data import (
+    combine_assays,
+    get_projections,
+    add_ecbd_links,
+    split_compounds_controls,
+    get_control_rows,
+)
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
@@ -60,13 +66,10 @@ def on_data_upload(
     crucial_columns = get_crucial_column_names(processed_dataframe.columns)
 
     strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
-    strict_summary_df = (
-        strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
-    )
 
-    strict_df = add_control_rows(strict_df)
-    projection_df = get_projections(strict_df, get_3d=False)
-    projection_df, controls_df = split_compounds_controls(projection_df)
+    controls = get_control_rows(strict_df)
+    projection_df, controls_df = get_projections(strict_df, controls)
+
     projection_with_ecbd_links_df = add_ecbd_links(projection_df)
     serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
         date_format="iso", orient="split"
