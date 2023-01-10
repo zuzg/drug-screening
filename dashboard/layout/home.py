@@ -1,37 +1,8 @@
 """
-Contains the layout for the home page element.
+Contains elements for the home page element.
 """
 
 from dash import html, dcc
-
-main_header = html.Header(
-    className="p-3 mb-3 text-bg-dark",
-    children=[
-        html.Div(
-            className="container-xxl",
-            children=[
-                html.Div(
-                    className="d-flex flex-wrap align-items-center justify-content-between",
-                    children=[
-                        html.H1("Drug Screening Dashboard"),
-                        html.Div(
-                            className="text-end",
-                            children=[
-                                dcc.Upload(
-                                    "Upload",
-                                    className="btn btn-warning",
-                                    id="upload-data",
-                                    multiple=True,
-                                    accept=".xls, .xlsx",
-                                )
-                            ],
-                        ),
-                    ],
-                )
-            ],
-        )
-    ],
-)
 
 general_info_panel = html.Article(
     children=[
@@ -110,17 +81,19 @@ projection_details_panel = html.Article(
             children=[html.Div(id="projection-plot-slot")],
         ),
         dcc.Checklist(
-                id="add-controls-checkbox", 
-                options=[
-                    {
-                        "label": html.Span("Control values", className = "ps-1 pe-3"),
-                        "value": "add_controls",
-                    },
-                    {
-                        "label": html.Img(src="/assets/images/colorblind.png", className = "px-1"),
-                        "value": "cvd",
-                    }
-                ]
+            id="add-controls-checkbox",
+            options=[
+                {
+                    "label": html.Span("Control values", className="ps-1 pe-3"),
+                    "value": "add_controls",
+                },
+                {
+                    "label": html.Img(
+                        src="/assets/images/colorblind.png", className="px-1"
+                    ),
+                    "value": "cvd",
+                },
+            ],
         ),
     ],
 )
@@ -147,15 +120,5 @@ main_container = html.Main(
                 general_info_panel,
             ],
         ),
-    ],
-)
-
-home_layout = html.Div(
-    className="content",
-    children=[
-        main_header,
-        main_container,
-        dcc.Store(id="data-holder", storage_type="session"),
-        dcc.Store(id="controls-holder", storage_type="session"),
     ],
 )
