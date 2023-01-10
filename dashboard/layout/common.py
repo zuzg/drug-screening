@@ -11,13 +11,13 @@ nav_bar = html.Div(
                 html.Button(
                     "Home",
                     id="home-button",
-                    className="nav-button px-2 text-white text-bg-dark border-0",
+                    className="nav-button px-1 text-white text-bg-dark border-0",
                     n_clicks=0,
                 ),
                 html.Button(
                     "About",
                     id="about-button",
-                    className="nav-button px-2 text-white text-bg-dark border-0",
+                    className="nav-button px-4 text-white text-bg-dark border-0",
                     n_clicks=0,
                 ),
             ]
@@ -36,17 +36,17 @@ main_header = html.Header(
                     className="d-flex flex-wrap align-items-center justify-content-between",
                     children=[
                         html.H1("Drug Screening Dashboard"),
-                        nav_bar,
                         html.Div(
-                            className="text-end",
+                            className="d-flex flex-wrap align-items-center justify-content-between m-1 text-end",
                             children=[
+                                nav_bar,
                                 dcc.Upload(
                                     "Upload",
                                     className="btn btn-warning",
                                     id="upload-data",
                                     multiple=True,
                                     accept=".xls, .xlsx",
-                                )
+                                ),
                             ],
                         ),
                     ],

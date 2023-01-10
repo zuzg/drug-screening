@@ -81,17 +81,19 @@ projection_details_panel = html.Article(
             children=[html.Div(id="projection-plot-slot")],
         ),
         dcc.Checklist(
-                id="add-controls-checkbox", 
-                options=[
-                    {
-                        "label": html.Span("Control values", className = "ps-1 pe-3"),
-                        "value": "add_controls",
-                    },
-                    {
-                        "label": html.Img(src="/assets/images/colorblind.png", className = "px-1"),
-                        "value": "cvd",
-                    }
-                ]
+            id="add-controls-checkbox",
+            options=[
+                {
+                    "label": html.Span("Control values", className="ps-1 pe-3"),
+                    "value": "add_controls",
+                },
+                {
+                    "label": html.Img(
+                        src="/assets/images/colorblind.png", className="px-1"
+                    ),
+                    "value": "cvd",
+                },
+            ],
         ),
     ],
 )

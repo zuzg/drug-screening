@@ -52,7 +52,6 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
     :param table_id: id of the table
     :return: html Div element containing the table and heading
     """
-
     style_link = []
     for column_name in df.columns:
         if column_name == "EOS":
@@ -64,9 +63,8 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
                     "presentation": "markdown",
                 }
             )
-        elif (
-            is_chemical_result(column_name)
-        ) or (column_name == "CMPD ID"):
+        elif (is_chemical_result(column_name)) or (column_name == "CMPD ID"):
+            df[column_name] = df[column_name].map("{:,.4f}".format)
             style_link.append(
                 {
                     "id": column_name,

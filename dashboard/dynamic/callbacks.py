@@ -202,7 +202,7 @@ def on_projection_settings_change(
     )
 
 
-def page_changer(*args):
+def on_page_change(*args):
     changed_id = [p["prop_id"] for p in callback_context.triggered][0]
     if "about-button" in changed_id:
         return PAGE_2
@@ -256,7 +256,7 @@ def register_callbacks(app: Dash) -> None:
         Output("page-layout", "children"),
         Input("home-button", "n_clicks"),
         Input("about-button", "n_clicks"),
-    )(page_changer)
+    )(on_page_change)
 
     app.callback(
         [
