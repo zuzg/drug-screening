@@ -3,7 +3,7 @@ from .home import main_container
 from .common import main_header
 from .about import about_container
 
-PAGE_1 = [
+Page_home = [
     html.Div(
         className="content",
         children=[
@@ -20,12 +20,12 @@ PAGE_1 = [
             ),
             dcc.Store(id="data-holder", storage_type="session"),
             dcc.Store(id="controls-holder", storage_type="session"),
-            dcc.Store(id="dataframe-holder", storage_type="session"),
+            dcc.Store(id="table-holder", storage_type="session"),
         ],
     )
 ]
 
-PAGE_2 = [
+Page_about = [
     html.Div(
         className="content",
         children=[
