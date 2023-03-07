@@ -3,7 +3,7 @@ from .home import main_container
 from .common import main_header
 from .about import about_container
 
-PAGE_Home = [
+Page_home = [
     html.Div(
         className="content",
         children=[
@@ -25,7 +25,7 @@ PAGE_Home = [
     )
 ]
 
-PAGE_About = [
+Page_about = [
     html.Div(
         className="content",
         children=[
