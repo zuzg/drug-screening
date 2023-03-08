@@ -1,6 +1,6 @@
 from dash import Dash, html, dcc
 
-from .layout.layout import Page_home
+from .layout.layout import PAGE_HOME
 from .dynamic import register_callbacks
 
 BOOTSTRAP_CDN = (
@@ -8,5 +8,5 @@ BOOTSTRAP_CDN = (
 )
 
 app = Dash(__name__, external_stylesheets=[BOOTSTRAP_CDN])
-app.layout = html.Div(id="page-layout", children=Page_home)
+app.layout = html.Div(id="page-layout", children=PAGE_HOME)
 register_callbacks(app)

@@ -11,7 +11,7 @@ from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
 
-from ..layout.layout import Page_home, Page_about
+from ..layout.layout import PAGE_HOME, PAGE_ABOUT
 
 from src.data.parse_data import (
     combine_assays,
@@ -199,8 +199,8 @@ def on_projection_settings_change(
 def on_page_change(*args):
     changed_id = [p["prop_id"] for p in callback_context.triggered][0]
     if "about-button" in changed_id:
-        return Page_about
-    return Page_home
+        return PAGE_ABOUT
+    return PAGE_HOME
 
 
 def register_callbacks(app: Dash) -> None:
