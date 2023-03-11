@@ -9,4 +9,6 @@ threaded_mode_on = os.environ.get("THREADED_MODE", True)
 num_processes = os.environ.get("NUM_PROCESSES", 4)
 
 if __name__ == "__main__":
-    dash_app.run_server(debug=debug_mode_on, threaded=threaded_mode_on, processes=num_processes)
+    dash_app.run_server(
+        debug=debug_mode_on, threaded=threaded_mode_on, processes=num_processes
+    )

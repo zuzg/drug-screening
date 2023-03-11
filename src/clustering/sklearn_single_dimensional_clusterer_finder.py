@@ -4,6 +4,7 @@ from .single_dimensional_clusterer_finder import (
     SingleDimensionalClustererFinder,
 )
 
+
 class SklearnSingleDimensionalClustererFinder(SingleDimensionalClustererFinder):
     """
     Clusterer Finder compatible with sklearn api (sklearn clusterers require series to be 2D)

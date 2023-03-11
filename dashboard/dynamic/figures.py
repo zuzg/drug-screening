@@ -2,8 +2,12 @@ import pandas as pd
 import plotly.express as px
 
 from dash import dcc
-from src.visualization.advanced_visualizations import plot_projection_2d, projection_2d_add_controls
+from src.visualization.advanced_visualizations import (
+    plot_projection_2d,
+    projection_2d_add_controls,
+)
 from src.data.parse_data import split_controls_pos_neg
+
 
 def scatterplot_from_df(
     df: pd.DataFrame, x: str, y: str, title: str, graph_id: str
@@ -25,7 +29,11 @@ def scatterplot_from_df(
 
 
 def make_projection_plot(
-    projection_df: pd.DataFrame, controls_df: pd.DataFrame, colormap_feature: str, projection_type: str, checkbox_values: bool
+    projection_df: pd.DataFrame,
+    controls_df: pd.DataFrame,
+    colormap_feature: str,
+    projection_type: str,
+    checkbox_values: bool,
 ) -> dcc.Graph:
     """
     Construct a scatterplot from a dataframe.
@@ -37,25 +45,29 @@ def make_projection_plot(
     :return: dcc Graph element containing the plot
     """
     figure = plot_projection_2d(
-            projection_df,
-            colormap_feature,
-            projection=projection_type,
-            width=None,
-            height=None,
-        )
+        projection_df,
+        colormap_feature,
+        projection=projection_type,
+        width=None,
+        height=None,
+    )
 
     if checkbox_values is not None and "add_controls" in checkbox_values:
         control_points = split_controls_pos_neg(controls_df, colormap_feature)
         if "cvd" in checkbox_values:
             return dcc.Graph(
-            figure=projection_2d_add_controls(figure, control_points, projection=projection_type, cvd=True),
-            id="projection-plot",
+                figure=projection_2d_add_controls(
+                    figure, control_points, projection=projection_type, cvd=True
+                ),
+                id="projection-plot",
             )
         return dcc.Graph(
-            figure=projection_2d_add_controls(figure, control_points, projection=projection_type),
+            figure=projection_2d_add_controls(
+                figure, control_points, projection=projection_type
+            ),
             id="projection-plot",
         )
-  
+
     return dcc.Graph(
         figure=figure,
         id="projection-plot",

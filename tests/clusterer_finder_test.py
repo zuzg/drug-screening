@@ -31,7 +31,9 @@ def test_sklearn_single_dimensional_finder_passes_reshaped_series_to_clusterer()
         [{"test_param": 1}], mock_clusterer, MockScorer()
     )
     finder.cluster_data_series(np.array([1, 2, 3]))
-    assert np.array_equal(mock_clusterer.fit_predict.call_args[0][0], np.array([[1], [2], [3]]))
+    assert np.array_equal(
+        mock_clusterer.fit_predict.call_args[0][0], np.array([[1], [2], [3]])
+    )
 
 
 class TestGeneralClustererFinder:

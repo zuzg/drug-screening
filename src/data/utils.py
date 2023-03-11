@@ -11,6 +11,6 @@ def is_chemical_result(column_name: str) -> bool:
     :param column_name: column_name to check
     :return: Whether the column contains chemical results or not
     """
-    return (("% ACTIVATION" in column_name or
-            "% INHIBITION" in column_name) and
-            "(" not in column_name)
+    return (
+        "% ACTIVATION" in column_name or "% INHIBITION" in column_name
+    ) and "(" not in column_name
