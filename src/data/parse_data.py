@@ -1,17 +1,13 @@
-import copy
+import umap
 import numpy as np
 import pandas as pd
+
+from functools import reduce
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
-import umap
-from functools import reduce
-import os
-import sys
 
-if "../" not in sys.path:
-    sys.path.append("../")
-from functools import reduce
 from src.data.utils import generate_binary_strings, is_chemical_result
 
 

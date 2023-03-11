@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc
+from dash import Dash, html
 
 from .layout.layout import PAGE_HOME
 from .dynamic import register_callbacks

@@ -2,7 +2,7 @@
 Contains elements for the about page.
 """
 
-from dash import html, dcc
+from dash import html
 
 about_container = html.Main(
     className="container-xl flex-grow-1",
