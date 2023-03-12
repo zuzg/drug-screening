@@ -10,9 +10,6 @@ from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
 
-
-from ..layout.layout import PAGE_HOME, PAGE_ABOUT
-
 from src.data.parse_data import (
     combine_assays,
     get_projections,
@@ -23,6 +20,7 @@ from src.data.parse_data import (
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import scatterplot_from_df, make_projection_plot
 from ..parse import parse_contents, get_crucial_column_names
+from ..layout import PAGE_HOME, PAGE_ABOUT
 
 
 def on_data_upload(
