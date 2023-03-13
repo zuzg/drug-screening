@@ -47,22 +47,13 @@ def on_data_upload(
         raise ValueError("Only one file was uploaded.")
 
     processed_dataframe = combine_assays(zip(dataframes, names))
-
-    # Workaround for the bug in the parse_data module
-    try:
-        processed_dataframe = processed_dataframe[
-            processed_dataframe["CMPD ID"].str.isnumeric() != False
-        ]
-    except AttributeError:
-        pass
-
     crucial_columns = get_crucial_column_names(processed_dataframe.columns)
-
     strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
 
     strict_summary_df = (
         strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
     )
+
     description_table = table_from_df(
         strict_summary_df,
         "description-table",
@@ -88,7 +79,6 @@ def on_data_upload(
 def on_home_button_click(
     click,
     serialized_projection_with_ecbd_links_df,
-    serialized_controls_df,
     table,
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
 
@@ -99,15 +89,12 @@ def on_home_button_click(
         serialized_projection_with_ecbd_links_df, orient="split"
     )
     crucial_columns = get_crucial_column_names(projection_with_ecbd_links_df.columns)
-
-    description_table = table
-
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )
 
     return (
-        description_table,
+        table,
         preview_table,
         crucial_columns,  # x-axis dropdown options
         crucial_columns[0],  # x-axis dropdown value
@@ -264,7 +251,6 @@ def register_callbacks(app: Dash) -> None:
         [
             Input("home-button", "n_clicks"),
             Input("data-holder", "data"),
-            Input("controls-holder", "data"),
             Input("table-holder", "data"),
         ],
     )(on_home_button_click)

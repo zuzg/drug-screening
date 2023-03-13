@@ -51,23 +51,14 @@ def make_projection_plot(
         width=None,
         height=None,
     )
-
     if checkbox_values is not None and "add_controls" in checkbox_values:
         control_points = split_controls_pos_neg(controls_df, colormap_feature)
-        if "cvd" in checkbox_values:
-            return dcc.Graph(
-                figure=projection_2d_add_controls(
-                    figure, control_points, projection=projection_type, cvd=True
-                ),
-                id="projection-plot",
-            )
-        return dcc.Graph(
-            figure=projection_2d_add_controls(
-                figure, control_points, projection=projection_type
-            ),
-            id="projection-plot",
+        figure = projection_2d_add_controls(
+            figure,
+            control_points,
+            projection=projection_type,
+            cvd=("cvd" in checkbox_values),
         )
-
     return dcc.Graph(
         figure=figure,
         id="projection-plot",
