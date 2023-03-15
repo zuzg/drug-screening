@@ -33,3 +33,5 @@ def get_crucial_column_names(column_names: list[str]) -> list[str]:
     :return: list of crucial column names
     """
     return [column for column in column_names if is_chemical_result(column)]
+
+

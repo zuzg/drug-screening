@@ -2,14 +2,13 @@ import pandas as pd
 import plotly.express as px
 
 from dash import dcc
-from src.visualization.advanced_visualizations import (
-    plot_projection_2d,
-    projection_2d_add_controls,
-)
+
+from src.visualization.plots import plot_projection_2d
+from src.visualization.overlay import projection_plot_overlay_controls
 from src.data.parse_data import split_controls_pos_neg
 
 
-def scatterplot_from_df(
+def make_scatterplot(
     df: pd.DataFrame, x: str, y: str, title: str, graph_id: str
 ) -> dcc.Graph:
     """
@@ -53,7 +52,7 @@ def make_projection_plot(
     )
     if checkbox_values is not None and "add_controls" in checkbox_values:
         control_points = split_controls_pos_neg(controls_df, colormap_feature)
-        figure = projection_2d_add_controls(
+        figure = projection_plot_overlay_controls(
             figure,
             control_points,
             projection=projection_type,

@@ -52,31 +52,31 @@ def table_from_df_with_selected_columns(df: pd.DataFrame, table_id: str) -> html
     :param table_id: id of the table
     :return: html Div element containing the table and heading
     """
-    style_link = []
-    for column_name in df.columns:
-        if column_name == "EOS":
-            style_link.append(
-                {
-                    "id": column_name,
-                    "name": column_name,
-                    "type": "text",
-                    "presentation": "markdown",
-                }
-            )
-        elif (is_chemical_result(column_name)) or (column_name == "CMPD ID"):
-            df[column_name] = df[column_name].map("{:,.4f}".format)
-            style_link.append(
-                {
-                    "id": column_name,
-                    "name": column_name,
-                }
-            )
+    table_columns = [
+        {"id": "CMPD ID", "name": "CMPD ID"},
+        {
+            "id": "EOS",
+            "name": "EOS",
+            "type": "text",
+            "presentation": "markdown",
+        },
+    ]
+    df["CMPD ID"] = df["CMPD ID"].map("{:,.4f}".format)
+    chemical_columns = [col for col in df.columns if is_chemical_result(col)]
+    for column_name in chemical_columns:
+        df[column_name] = df[column_name].map("{:,.4f}".format)
+        table_columns.append(
+            {
+                "id": column_name,
+                "name": column_name,
+            }
+        )
 
     return html.Div(
         children=[
             dash_table.DataTable(
                 id=table_id,
-                columns=style_link,
+                columns=table_columns,
                 data=df.to_dict("records"),
                 editable=False,
                 filter_action="native",

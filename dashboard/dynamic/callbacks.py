@@ -18,7 +18,7 @@ from src.data.parse_data import (
 )
 
 from .tables import table_from_df, table_from_df_with_selected_columns
-from .figures import scatterplot_from_df, make_projection_plot
+from .figures import make_scatterplot, make_projection_plot
 from ..parse import parse_contents, get_crucial_column_names
 from ..layout import PAGE_HOME, PAGE_ABOUT
 
@@ -81,6 +81,16 @@ def on_home_button_click(
     serialized_projection_with_ecbd_links_df,
     table,
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
+    """
+    Callback on home button click.
+    Resets the dashboard to the initial state.
+
+    :param click: click event
+    :param serialized_projection_with_ecbd_links_df: jsonified projection dataframe
+    :param table: table element
+    :raises PreventUpdate: if no click event or no projection dataframe is provided
+    :return: tuple of updated elements
+    """
 
     if serialized_projection_with_ecbd_links_df is None:
         raise PreventUpdate
@@ -126,6 +136,7 @@ def on_projection_plot_selection(
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
         df = df[df[f"{projection_type}_X"].between(x_min, x_max)]
+    if "yaxis.range[0]" in relayoutData:
         y_min = relayoutData["yaxis.range[0]"]
         y_max = relayoutData["yaxis.range[1]"]
         df = df[df[f"{projection_type}_Y"].between(y_min, y_max)]
@@ -144,7 +155,7 @@ def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
     """
     if not x_attr or not y_attr:
         raise PreventUpdate
-    return scatterplot_from_df(
+    return make_scatterplot(
         pd.read_json(projection_data, orient="split"),
         x_attr,
         y_attr,
