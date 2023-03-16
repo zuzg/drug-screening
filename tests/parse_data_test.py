@@ -1,4 +1,6 @@
-from src.data.parse_data import *
+from src.data.combine import combine_assays
+from src.data.parse import *
+from src.data.preprocess import normalize_columns
 
 
 def test_parse_barcode(experiment_df):

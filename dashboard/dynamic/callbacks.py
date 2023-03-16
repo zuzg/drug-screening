@@ -9,13 +9,11 @@ import pandas as pd
 from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+from src.data.combine import combine_assays
 
-from src.data.parse_data import (
-    combine_assays,
-    get_projections,
-    add_ecbd_links,
-    get_control_rows,
-)
+from src.data.parse import get_control_rows
+from src.data.utils import get_chemical_columns
+from src.data.preprocess import MergedAssaysPreprocessor
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import make_scatterplot, make_projection_plot
@@ -46,12 +44,24 @@ def on_data_upload(
     if len(dataframes) <= 1:
         raise ValueError("Only one file was uploaded.")
 
-    processed_dataframe = combine_assays(zip(dataframes, names))
-    crucial_columns = get_crucial_column_names(processed_dataframe.columns)
-    strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
+    combined_df = combine_assays(zip(dataframes, names))
+    chemical_columns = get_chemical_columns(combined_df.columns)
+
+    projector_specs = []
+
+    main_preprocessor = (
+        MergedAssaysPreprocessor(combined_df, chemical_columns)
+        .restrict_to_chemicals()
+        .drop_na()
+        .append_ecbd_links([])
+    )
+
+    for projector, name in projector_specs:
+        main_preprocessor.apply_projection(projector, name)
+    processed_df = main_preprocessor.get_processed_df()
 
     strict_summary_df = (
-        strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
+        processed_df[chemical_columns].describe().round(3).T.reset_index(level=0)
     )
 
     description_table = table_from_df(
@@ -59,17 +69,21 @@ def on_data_upload(
         "description-table",
     )
 
-    controls = get_control_rows(strict_df)
-    projection_df, controls_df = get_projections(strict_df, controls)
-    projection_with_ecbd_links_df = add_ecbd_links(projection_df)
-    serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
+    controls_df = get_control_rows(processed_df[chemical_columns].reset_index())
+    controls_preprocessor = MergedAssaysPreprocessor(controls_df, chemical_columns)
+    for projector, name in projector_specs:
+        controls_preprocessor.apply_projection(projector, name, just_transform=True)
+    processed_controls_df = controls_preprocessor.get_processed_df()
+
+    serialized_processed_df = processed_df.reset_index().to_json(
+        date_format="iso", orient="split"
+    )
+    serialized_controls_df = processed_controls_df.reset_index().to_json(
         date_format="iso", orient="split"
     )
 
-    serialized_controls_df = controls_df.to_json(date_format="iso", orient="split")
-
     return (
-        serialized_projection_with_ecbd_links_df,  # sent to data holder
+        serialized_processed_df,  # sent to data holder
         serialized_controls_df,  # sent to data holder
         description_table,
         [],  # trigger loader

@@ -5,7 +5,7 @@ from dash import dcc
 
 from src.visualization.plots import plot_projection_2d
 from src.visualization.overlay import projection_plot_overlay_controls
-from src.data.parse_data import split_controls_pos_neg
+from src.data.parse import split_controls_pos_neg
 
 
 def make_scatterplot(
