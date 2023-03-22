@@ -4,15 +4,16 @@ import pandas as pd
 
 def projection_plot_overlay_controls(
     fig: go.Figure,
-    controls: dict[pd.DataFrame],
+    controls_df: pd.DataFrame,
+    style_dict: dict[str, list[str, int]],
     projection: str = "umap",
-    cvd: bool = False,
 ) -> go.Figure:
     """
     Add control values to the plot of selected projection.
 
     :param fig: projection plot
-    :param controls: dictionary containing data frames with projected control values (positive and negative respectively)
+    :param controls_df: dataframe with control values
+    :param style_dict: dictionary with styles (color and font size) for each annotation
     :param projection: name of projection to be visualized
     :param cvd: whether the plot is for CVD or not
     :return: plotly express scatter plot with control values
@@ -20,38 +21,27 @@ def projection_plot_overlay_controls(
     fig_controls = go.Figure(fig)
     fig_controls.update_traces(marker={"opacity": 0.6})
 
-    if cvd:
-        control_styles = {
-            "all_pos": ["#018571", 12],
-            "all_but_one_pos": ["#80cdc1", 10],
-            "all_but_one_neg": ["#dfc27d", 10],
-            "all_neg": ["#a6611a", 12],
-        }
-    else:
-        control_styles = {
-            "all_pos": ["#488f31", 12],
-            "all_but_one_pos": ["#8aac49", 10],
-            "all_but_one_neg": ["#eb7a52", 10],
-            "all_neg": ["#de425b", 12],
-        }
-
-    for key in control_styles.keys():
+    for name, group in controls_df.groupby("annotation"):
+        if name not in style_dict:
+            continue
+        color, size = style_dict[name]
         fig_controls.add_scatter(
-            x=controls[key][f"{projection.upper()}_X"],
-            y=controls[key][f"{projection.upper()}_Y"],
+            x=group[f"{projection.upper()}_X"],
+            y=group[f"{projection.upper()}_Y"],
             mode="markers",
             marker=dict(
-                size=control_styles[key][1],
-                color=control_styles[key][0],
+                size=size,
+                color=color,
                 symbol="star-diamond",
             ),
-            name=str.upper(key).replace("_", " "),
-            text=controls[key]["CMPD ID"].str.split(";"),
+            name=str.upper(name).replace("_", " "),
+            text=group["CMPD ID"].str.split(";"),
             hovertemplate="<b>%{text[0]}</b><br>"
             + "<b>%{text[1]}</b><br>"
             + "X: %{x:.4f}<br>Y: %{y:.4f}<br>"
             + "<extra></extra>",
         )
+
     fig_controls.update_layout(
         legend=dict(
             title="   CONTROLS",

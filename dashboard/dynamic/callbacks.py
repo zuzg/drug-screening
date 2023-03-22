@@ -9,10 +9,13 @@ import pandas as pd
 from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
-from src.data.combine import combine_assays
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from umap import UMAP
 
-from src.data.parse import get_control_rows
-from src.data.utils import get_chemical_columns
+from src.data.combine import combine_assays
+from src.data.controls import generate_controls, controls_index_annotator
+from src.data.utils import get_chemical_columns, generate_dummy_links_dataframe
 from src.data.preprocess import MergedAssaysPreprocessor
 
 from .tables import table_from_df, table_from_df_with_selected_columns
@@ -47,18 +50,40 @@ def on_data_upload(
     combined_df = combine_assays(zip(dataframes, names))
     chemical_columns = get_chemical_columns(combined_df.columns)
 
-    projector_specs = []
+    # TODO: find better place to specify projectors
+    base_projector_specs = [
+        (PCA(n_components=2), "PCA"),
+        (
+            UMAP(
+                n_components=2,
+                n_neighbors=10,
+                min_dist=0.1,
+            ),
+            "UMAP",
+        ),
+    ]
+    combined_projector_specs = [
+        (
+            TSNE(n_components=2, learning_rate="auto", init="random", perplexity=3),
+            "TSNE",
+        ),
+    ]
 
+    # ==== MAIN DF PREPROCESSING ====
+
+    ecbd_links = generate_dummy_links_dataframe(combined_df["CMPD ID"].to_list())
     main_preprocessor = (
         MergedAssaysPreprocessor(combined_df, chemical_columns)
         .restrict_to_chemicals()
         .drop_na()
-        .append_ecbd_links([])
+        .append_ecbd_links(ecbd_links)
     )
 
-    for projector, name in projector_specs:
+    for projector, name in base_projector_specs:
         main_preprocessor.apply_projection(projector, name)
     processed_df = main_preprocessor.get_processed_df()
+
+    # ==== END ====
 
     strict_summary_df = (
         processed_df[chemical_columns].describe().round(3).T.reset_index(level=0)
@@ -69,11 +94,36 @@ def on_data_upload(
         "description-table",
     )
 
-    controls_df = get_control_rows(processed_df[chemical_columns].reset_index())
+    # ==== CONTROLS DF PREPROCESSING ====
+
+    controls_df = generate_controls(chemical_columns)
     controls_preprocessor = MergedAssaysPreprocessor(controls_df, chemical_columns)
-    for projector, name in projector_specs:
+    for projector, name in base_projector_specs:
         controls_preprocessor.apply_projection(projector, name, just_transform=True)
     processed_controls_df = controls_preprocessor.get_processed_df()
+
+    # ==== END ====
+
+    # ==== TSNE PROJECTION + ANNOTATION ====
+    # TODO: this part is a bit ugly, it'd be nice if we figure out a better solution for TSNE
+
+    controls_with_main = pd.concat([processed_df, processed_controls_df]).reset_index()
+
+    tsne_preprocessor = MergedAssaysPreprocessor(controls_with_main, chemical_columns)
+    for projector, name in combined_projector_specs:
+        tsne_preprocessor.apply_projection(projector, name).annotate_by_index(
+            controls_index_annotator
+        )
+    merged_processed_df = tsne_preprocessor.get_processed_df()
+
+    processed_df = merged_processed_df[
+        merged_processed_df["annotation"] == "NOT CONTROL"
+    ]
+    processed_controls_df = merged_processed_df[
+        merged_processed_df["annotation"] != "NOT CONTROL"
+    ]
+
+    # ==== END ====
 
     serialized_processed_df = processed_df.reset_index().to_json(
         date_format="iso", orient="split"

@@ -5,7 +5,6 @@ from dash import dcc
 
 from src.visualization.plots import plot_projection_2d
 from src.visualization.overlay import projection_plot_overlay_controls
-from src.data.parse import split_controls_pos_neg
 
 
 def make_scatterplot(
@@ -51,12 +50,25 @@ def make_projection_plot(
         height=None,
     )
     if checkbox_values is not None and "add_controls" in checkbox_values:
-        control_points = split_controls_pos_neg(controls_df, colormap_feature)
+        default_style = {
+            "ALL NEGATIVE": ["#de425b", 12],
+            "ALL POSITIVE": ["#488f31", 12],
+            "ALL BUT ONE NEGATIVE": ["#eb7a52", 10],
+            "ALL BUT ONE POSITIVE": ["#8aac49", 10],
+        }
+        if "cvd" in checkbox_values:
+            default_style = {
+                "ALL NEGATIVE": ["#a6611a", 12],
+                "ALL POSITIVE": ["#018571", 12],
+                "ALL BUT ONE NEGATIVE": ["#dfc27d", 10],
+                "ALL BUT ONE POSITIVE": ["#80cdc1", 10],
+            }
+
         figure = projection_plot_overlay_controls(
             figure,
-            control_points,
+            controls_df,
+            default_style,
             projection=projection_type,
-            cvd=("cvd" in checkbox_values),
         )
     return dcc.Graph(
         figure=figure,

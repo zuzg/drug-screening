@@ -3,7 +3,7 @@ from __future__ import annotations
 import pandas as pd
 import numpy as np
 
-from typing import Protocol, Callable
+from typing import Protocol, Callable, Any
 
 from sklearn.preprocessing import StandardScaler
 
@@ -70,8 +70,14 @@ class MergedAssaysPreprocessor:
     def append_ecbd_links(
         self,
         ecbd_links: pd.DataFrame,
-    ):
+    ) -> MergedAssaysPreprocessor:
         self.compounds_df = self.compounds_df.join(ecbd_links, how="left")
+        return self
+
+    def annotate_by_index(
+        self, annotator: Callable[[Any], str]
+    ) -> MergedAssaysPreprocessor:
+        self.compounds_df["annotation"] = self.compounds_df.index.map(annotator)
         return self
 
     def get_processed_df(self) -> pd.DataFrame:
