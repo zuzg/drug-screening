@@ -21,4 +21,10 @@ def is_chemical_result(column_name: str) -> bool:
 
 
 def get_chemical_columns(columns: list[str]) -> list[str]:
+    """
+    Get chemical columns from a list of columns
+
+    :param columns: list of columns
+    :return: list of chemical columns
+    """
     return [column for column in columns if is_chemical_result(column)]

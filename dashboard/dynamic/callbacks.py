@@ -13,6 +13,7 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from umap import UMAP
 
+from src.data.parse import parse_bytes_to_dataframe
 from src.data.combine import combine_assays
 from src.data.controls import generate_controls, controls_index_annotator
 from src.data.utils import get_chemical_columns, generate_dummy_links_dataframe
@@ -20,7 +21,6 @@ from src.data.preprocess import MergedAssaysPreprocessor
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import make_scatterplot, make_projection_plot
-from ..parse import parse_contents, get_crucial_column_names
 from ..layout import PAGE_HOME, PAGE_ABOUT
 
 
@@ -43,7 +43,7 @@ def on_data_upload(
     if not contents:
         raise PreventUpdate
 
-    dataframes = [parse_contents(c, n) for c, n in zip(contents, names)]
+    dataframes = [parse_bytes_to_dataframe(c, n) for c, n in zip(contents, names)]
     if len(dataframes) <= 1:
         raise ValueError("Only one file was uploaded.")
 
@@ -165,7 +165,7 @@ def on_home_button_click(
     projection_with_ecbd_links_df = pd.read_json(
         serialized_projection_with_ecbd_links_df, orient="split"
     )
-    crucial_columns = get_crucial_column_names(projection_with_ecbd_links_df.columns)
+    crucial_columns = get_chemical_columns(projection_with_ecbd_links_df.columns)
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )

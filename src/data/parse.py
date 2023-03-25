@@ -1,3 +1,6 @@
+import io
+import base64
+
 import pandas as pd
 
 
@@ -19,20 +22,20 @@ def parse_excel_assay(path_to_file: str) -> pd.DataFrame:
     return df
 
 
-def parse_barcode(df: pd.DataFrame) -> pd.DataFrame:
+def parse_bytes_to_dataframe(contents: str, filename: str) -> pd.DataFrame:
     """
-    Parse dataframe to extract compound's ID.
+    Parses the contents of an uploaded file into a pandas DataFrame.
 
-    :param df: DataFrame with barcode
-    :return: DataFrame with extracted barcode prefix and suffix
+    :param contents: binary encoded file
+    :param filename: name of the file
+    :raises ValueError: if the file is not an Excel file
+    :return: pandas DataFrame
     """
-    bar_colname = "Barcode assay plate"
-    temp = df.filter(like="BARCODE ASSAY PLATE").columns
-    if len(temp != 0):
-        bar_colname = temp[0]
+    filename, extension = filename.split(".")
+    if extension != "xlsx":
+        raise ValueError("File must be an Excel file.")
 
-    new_df = df.copy(deep=True)
-    new_df[["Barcode_prefix", "Barcode_exp", "Barcode_suffix"]] = new_df[
-        bar_colname
-    ].str.extract(pat="(.{13})([^0-9]*)(.*)")
-    return new_df
+    _, content_string = contents.split(",")
+    decoded = base64.b64decode(content_string)
+
+    return pd.read_excel(io.BytesIO(decoded))

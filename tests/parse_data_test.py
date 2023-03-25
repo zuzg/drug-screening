@@ -3,11 +3,6 @@ from src.data.parse import *
 from src.data.preprocess import normalize_columns
 
 
-def test_parse_barcode(experiment_df):
-    new_df = parse_barcode(experiment_df)
-    assert new_df["Barcode_prefix"][0] == "B1007L2002L03"
-
-
 def test_combining_experiments():
     # TODO add this test after generalizing combining experiments
     assert True
