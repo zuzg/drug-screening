@@ -31,7 +31,7 @@ def make_projection_plot(
     controls_df: pd.DataFrame,
     colormap_feature: str,
     projection_type: str,
-    checkbox_values: bool,
+    checkbox_values: list[str],
 ) -> dcc.Graph:
     """
     Construct a scatterplot from a dataframe.
@@ -39,7 +39,7 @@ def make_projection_plot(
     :param projection_df: dataframe to construct plot from
     :param colormap_feature: feature to use for coloring
     :param projection_type: projection type
-    :param add_controls: add control values option
+    :param checkbox_values: list of checkbox values
     :return: dcc Graph element containing the plot
     """
     figure = plot_projection_2d(

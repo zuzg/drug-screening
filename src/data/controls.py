@@ -9,6 +9,7 @@ from typing import Any
 def controls_index_annotator(index: Any) -> str:
     """
     Annotate control index.
+
     :param index: index value to annotate
     :return: control annotation
     """

@@ -9,6 +9,18 @@ def combine_assays(
     id_column: str = "CMPD ID",
     control_prefix: str = "CTRL",
 ):
+    """
+    Combine assays into a single dataframe.
+    Performs initial preprocessing needed for valid merge, e.g.
+    dropping controls and setting uniform ID column
+
+    :param dataframes: list of dataframes to merge
+    :param names: list of names for the dataframes
+    :param id_column: name of the id column, defaults to "CMPD ID"
+    :param control_prefix: prefix of control values index, defaults to "CTRL"
+    :raises ValueError: if more than 1/no column(s) having id_column in file
+    :return: merged dataframe (potentially with duplicates)
+    """
     processed_dataframes = list()
     for df, name in zip(dataframes, names):
         if sum(df.columns.map(lambda x: id_column.upper() in x.upper())) != 1:
