@@ -45,4 +45,4 @@ def combine_dataframes():
             "VALUE": [2020, 2121, 2222],
         }
     )
-    return [(df, "Assay 1.xlsx"), (df2, "Assay 2.xlsx")]
+    return [df, df2]

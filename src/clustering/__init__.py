@@ -1,5 +1,1 @@
-from .sklearn_single_dimensional_clusterer_finder import (
-    SklearnSingleDimensionalClustererFinder,
-)
-from .single_dimensional_clusterer_finder import SingleDimensionalClustererFinder
 from .general_clusterer_finder import GeneralClustererFinder
