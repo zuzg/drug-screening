@@ -30,6 +30,10 @@ class MergedAssaysPreprocessor:
         self.compounds_df = self.compounds_df[self.chemical_columns]
         return self
 
+    def group_duplicates_by_function(self, func_name: str) -> MergedAssaysPreprocessor:
+        self.compounds_df = self.compounds_df.groupby(level=0).agg(func_name)
+        return self
+
     def drop_na(self) -> MergedAssaysPreprocessor:
         self.compounds_df.dropna(inplace=True)
         return self

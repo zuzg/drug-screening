@@ -47,7 +47,8 @@ def on_data_upload(
     if len(dataframes) <= 1:
         raise ValueError("Only one file was uploaded.")
 
-    combined_df = combine_assays(zip(dataframes, names))
+    names = [name.split(".")[0] for name in names]
+    combined_df = combine_assays(dataframes, names)
     chemical_columns = get_chemical_columns(combined_df.columns)
 
     # TODO: find better place to specify projectors
@@ -71,11 +72,13 @@ def on_data_upload(
 
     # ==== MAIN DF PREPROCESSING ====
 
-    ecbd_links = generate_dummy_links_dataframe(combined_df["CMPD ID"].to_list())
+    unique_ids = combined_df["CMPD ID"].unique().tolist()
+    ecbd_links = generate_dummy_links_dataframe(unique_ids)
     main_preprocessor = (
         MergedAssaysPreprocessor(combined_df, chemical_columns)
         .restrict_to_chemicals()
         .drop_na()
+        .group_duplicates_by_function("max")
         .append_ecbd_links(ecbd_links)
     )
 
