@@ -5,8 +5,6 @@ import numpy as np
 
 from typing import Protocol, Callable, Any
 
-from sklearn.preprocessing import StandardScaler
-
 
 class Projector(Protocol):
     def fit_transform(self, X: np.ndarray) -> np.ndarray:
@@ -36,21 +34,6 @@ class MergedAssaysPreprocessor:
 
     def drop_na(self) -> MergedAssaysPreprocessor:
         self.compounds_df.dropna(inplace=True)
-        return self
-
-    def rename_chemical_columns(
-        self, rename_func: Callable[[str], str]
-    ) -> MergedAssaysPreprocessor:
-        new_names = {
-            old_name: rename_func(old_name) for old_name in self.chemical_columns
-        }
-        self.compounds_df = self.compounds_df.rename(columns=new_names)
-        return self
-
-    def normalize_columns(self, columns: list[str]) -> MergedAssaysPreprocessor:
-        self.compounds_df[columns] = StandardScaler().fit_transform(
-            self.compounds_df[columns]
-        )
         return self
 
     def apply_projection(
