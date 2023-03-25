@@ -244,7 +244,9 @@ def on_projection_settings_change(
 
     :param projection_type: type of the projection to be visualized
     :param colormap_attr: column to be used for coloring the points
-    :param global_state: global state of the application contaiing the dataframe
+    :param add_controls: whether to add controls to the plot
+    :param projection_data: jsonified dataframe with projection data
+    :param controls_data: jsonified dataframe with controls data
     :raises PreventUpdate: if no projection_type or colormap_attr is provided
     :return: dcc Graph object representing the projection plot
     """
@@ -260,6 +262,11 @@ def on_projection_settings_change(
 
 
 def on_page_change(*args):
+    """
+    Callback on page change.
+
+    :return: new page
+    """
     changed_id = [p["prop_id"] for p in callback_context.triggered][0]
     if "about-button" in changed_id:
         return PAGE_ABOUT
