@@ -5,11 +5,6 @@ import pandas as pd
 
 
 @pytest.fixture
-def dummy_fixture_return_2():
-    return 2
-
-
-@pytest.fixture
 def experiment_df():
     df = pd.DataFrame.from_dict(
         {
