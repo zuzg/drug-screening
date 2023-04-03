@@ -1,14 +1,23 @@
 from dash import html, dcc
-from .home import main_container
-from .common import main_header
-from .about import about_container
 
-PAGE_HOME = [
-    html.Div(
+from .home import main_container
+from .header import main_header
+from .about import about_container
+from .storage import STORAGE
+
+
+def make_page(page_content: list) -> html.Div:
+    """
+    Creates a page with the given content.
+
+    :param page_content: list of html elements
+    :return: html Div containing the page
+    """
+    return html.Div(
         className="content",
         children=[
             main_header,
-            main_container,
+            *page_content,
             dcc.Loading(
                 type="default",
                 className="loading-modal",
@@ -18,19 +27,10 @@ PAGE_HOME = [
                     )
                 ],
             ),
-            dcc.Store(id="data-holder", storage_type="session"),
-            dcc.Store(id="controls-holder", storage_type="session"),
-            dcc.Store(id="table-holder", storage_type="session"),
+            *STORAGE,
         ],
     )
-]
 
-PAGE_ABOUT = [
-    html.Div(
-        className="content",
-        children=[
-            main_header,
-            about_container,
-        ],
-    )
-]
+
+PAGE_HOME = make_page([main_container])
+PAGE_ABOUT = make_page([about_container])

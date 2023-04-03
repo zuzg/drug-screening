@@ -1,7 +1,8 @@
 tmp/
 
 # Data
-data/raw/
+data/raw/*
+!data/raw/.gitkeep
 
 # Jupyter Notebooks
 .ipynb_checkpoints

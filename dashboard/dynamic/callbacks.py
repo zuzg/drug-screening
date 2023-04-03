@@ -9,20 +9,19 @@ import pandas as pd
 from dash import html, Dash, dcc, callback_context
 from dash.exceptions import PreventUpdate
 from dash.dependencies import Input, Output, State
+from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from umap import UMAP
 
-
-from ..layout.layout import PAGE_HOME, PAGE_ABOUT
-
-from src.data.parse_data import (
-    combine_assays,
-    get_projections,
-    add_ecbd_links,
-    get_control_rows,
-)
+from src.data.parse import parse_bytes_to_dataframe
+from src.data.combine import combine_assays
+from src.data.controls import generate_controls, controls_index_annotator
+from src.data.utils import get_chemical_columns, generate_dummy_links_dataframe
+from src.data.preprocess import MergedAssaysPreprocessor
 
 from .tables import table_from_df, table_from_df_with_selected_columns
-from .figures import scatterplot_from_df, make_projection_plot
-from ..parse import parse_contents, get_crucial_column_names
+from .figures import make_scatterplot, make_projection_plot
+from ..layout import PAGE_HOME, PAGE_ABOUT
 
 
 def on_data_upload(
@@ -44,43 +43,100 @@ def on_data_upload(
     if not contents:
         raise PreventUpdate
 
-    dataframes = [parse_contents(c, n) for c, n in zip(contents, names)]
+    dataframes = [parse_bytes_to_dataframe(c, n) for c, n in zip(contents, names)]
     if len(dataframes) <= 1:
         raise ValueError("Only one file was uploaded.")
 
-    processed_dataframe = combine_assays(zip(dataframes, names))
+    names = [name.split(".")[0] for name in names]
+    combined_df = combine_assays(dataframes, names)
+    chemical_columns = get_chemical_columns(combined_df.columns)
 
-    # Workaround for the bug in the parse_data module
-    try:
-        processed_dataframe = processed_dataframe[
-            processed_dataframe["CMPD ID"].str.isnumeric() != False
-        ]
-    except AttributeError:
-        pass
+    # TODO: find better place to specify projectors
+    base_projector_specs = [
+        (PCA(n_components=2), "PCA"),
+        (
+            UMAP(
+                n_components=2,
+                n_neighbors=10,
+                min_dist=0.1,
+            ),
+            "UMAP",
+        ),
+    ]
+    combined_projector_specs = [
+        (
+            TSNE(n_components=2, learning_rate="auto", init="random", perplexity=3),
+            "TSNE",
+        ),
+    ]
 
-    crucial_columns = get_crucial_column_names(processed_dataframe.columns)
+    # ==== MAIN DF PREPROCESSING ====
 
-    strict_df = processed_dataframe[["CMPD ID"] + crucial_columns]
+    unique_ids = combined_df["CMPD ID"].unique().tolist()
+    ecbd_links = generate_dummy_links_dataframe(unique_ids)
+    main_preprocessor = (
+        MergedAssaysPreprocessor(combined_df, chemical_columns)
+        .restrict_to_chemicals()
+        .drop_na()
+        .group_duplicates_by_function("max")
+        .append_ecbd_links(ecbd_links)
+    )
+
+    for projector, name in base_projector_specs:
+        main_preprocessor.apply_projection(projector, name)
+    processed_df = main_preprocessor.get_processed_df()
+
+    # ==== END ====
 
     strict_summary_df = (
-        strict_df[crucial_columns].describe().round(3).T.reset_index(level=0)
+        processed_df[chemical_columns].describe().round(3).T.reset_index(level=0)
     )
+
     description_table = table_from_df(
         strict_summary_df,
         "description-table",
     )
 
-    controls = get_control_rows(strict_df)
-    projection_df, controls_df = get_projections(strict_df, controls)
-    projection_with_ecbd_links_df = add_ecbd_links(projection_df)
-    serialized_projection_with_ecbd_links_df = projection_with_ecbd_links_df.to_json(
+    # ==== CONTROLS DF PREPROCESSING ====
+
+    controls_df = generate_controls(chemical_columns)
+    controls_preprocessor = MergedAssaysPreprocessor(controls_df, chemical_columns)
+    for projector, name in base_projector_specs:
+        controls_preprocessor.apply_projection(projector, name, just_transform=True)
+    processed_controls_df = controls_preprocessor.get_processed_df()
+
+    # ==== END ====
+
+    # ==== TSNE PROJECTION + ANNOTATION ====
+    # TODO: this part is a bit ugly, it'd be nice if we figure out a better solution for TSNE
+
+    controls_with_main = pd.concat([processed_df, processed_controls_df]).reset_index()
+
+    tsne_preprocessor = MergedAssaysPreprocessor(controls_with_main, chemical_columns)
+    for projector, name in combined_projector_specs:
+        tsne_preprocessor.apply_projection(projector, name).annotate_by_index(
+            controls_index_annotator
+        )
+    merged_processed_df = tsne_preprocessor.get_processed_df()
+
+    processed_df = merged_processed_df[
+        merged_processed_df["annotation"] == "NOT CONTROL"
+    ]
+    processed_controls_df = merged_processed_df[
+        merged_processed_df["annotation"] != "NOT CONTROL"
+    ]
+
+    # ==== END ====
+
+    serialized_processed_df = processed_df.reset_index().to_json(
+        date_format="iso", orient="split"
+    )
+    serialized_controls_df = processed_controls_df.reset_index().to_json(
         date_format="iso", orient="split"
     )
 
-    serialized_controls_df = controls_df.to_json(date_format="iso", orient="split")
-
     return (
-        serialized_projection_with_ecbd_links_df,  # sent to data holder
+        serialized_processed_df,  # sent to data holder
         serialized_controls_df,  # sent to data holder
         description_table,
         [],  # trigger loader
@@ -90,9 +146,18 @@ def on_data_upload(
 def on_home_button_click(
     click,
     serialized_projection_with_ecbd_links_df,
-    serialized_controls_df,
     table,
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
+    """
+    Callback on home button click.
+    Resets the dashboard to the initial state.
+
+    :param click: click event
+    :param serialized_projection_with_ecbd_links_df: jsonified projection dataframe
+    :param table: table element
+    :raises PreventUpdate: if no click event or no projection dataframe is provided
+    :return: tuple of updated elements
+    """
 
     if serialized_projection_with_ecbd_links_df is None:
         raise PreventUpdate
@@ -100,16 +165,13 @@ def on_home_button_click(
     projection_with_ecbd_links_df = pd.read_json(
         serialized_projection_with_ecbd_links_df, orient="split"
     )
-    crucial_columns = get_crucial_column_names(projection_with_ecbd_links_df.columns)
-
-    description_table = table
-
+    crucial_columns = get_chemical_columns(projection_with_ecbd_links_df.columns)
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )
 
     return (
-        description_table,
+        table,
         preview_table,
         crucial_columns,  # x-axis dropdown options
         crucial_columns[0],  # x-axis dropdown value
@@ -141,6 +203,7 @@ def on_projection_plot_selection(
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
         df = df[df[f"{projection_type}_X"].between(x_min, x_max)]
+    if "yaxis.range[0]" in relayoutData:
         y_min = relayoutData["yaxis.range[0]"]
         y_max = relayoutData["yaxis.range[1]"]
         df = df[df[f"{projection_type}_Y"].between(y_min, y_max)]
@@ -159,7 +222,7 @@ def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
     """
     if not x_attr or not y_attr:
         raise PreventUpdate
-    return scatterplot_from_df(
+    return make_scatterplot(
         pd.read_json(projection_data, orient="split"),
         x_attr,
         y_attr,
@@ -181,7 +244,9 @@ def on_projection_settings_change(
 
     :param projection_type: type of the projection to be visualized
     :param colormap_attr: column to be used for coloring the points
-    :param global_state: global state of the application contaiing the dataframe
+    :param add_controls: whether to add controls to the plot
+    :param projection_data: jsonified dataframe with projection data
+    :param controls_data: jsonified dataframe with controls data
     :raises PreventUpdate: if no projection_type or colormap_attr is provided
     :return: dcc Graph object representing the projection plot
     """
@@ -197,6 +262,11 @@ def on_projection_settings_change(
 
 
 def on_page_change(*args):
+    """
+    Callback on page change.
+
+    :return: new page
+    """
     changed_id = [p["prop_id"] for p in callback_context.triggered][0]
     if "about-button" in changed_id:
         return PAGE_ABOUT
@@ -266,7 +336,6 @@ def register_callbacks(app: Dash) -> None:
         [
             Input("home-button", "n_clicks"),
             Input("data-holder", "data"),
-            Input("controls-holder", "data"),
             Input("table-holder", "data"),
         ],
     )(on_home_button_click)

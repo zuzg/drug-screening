@@ -1,12 +1,8 @@
-import pytest
 import numpy as np
 
 from unittest.mock import Mock
-from src.clustering import (
-    GeneralClustererFinder,
-    SingleDimensionalClustererFinder,
-    SklearnSingleDimensionalClustererFinder,
-)
+
+from src.clustering import GeneralClustererFinder
 
 
 class MockScorer:
@@ -17,21 +13,6 @@ class MockScorer:
         if self.scores:
             return self.scores.pop(0)
         return 0
-
-
-def test_single_dimensional_finder_raises_exception_if_provided_series_not_1d():
-    finder = SingleDimensionalClustererFinder([{"test_param": 1}], Mock(), Mock())
-    with pytest.raises(ValueError):
-        finder.cluster_data_series(np.zeros((2, 2)))
-
-
-def test_sklearn_single_dimensional_finder_passes_reshaped_series_to_clusterer():
-    mock_clusterer = Mock()
-    finder = SklearnSingleDimensionalClustererFinder(
-        [{"test_param": 1}], mock_clusterer, MockScorer()
-    )
-    finder.cluster_data_series(np.array([1, 2, 3]))
-    assert np.array_equal(mock_clusterer.fit_predict.call_args[0][0], np.array([[1], [2], [3]]))
 
 
 class TestGeneralClustererFinder:
