@@ -3,7 +3,10 @@ Defines and registers callbacks for the dashboard.
 """
 
 import typing
+import functools
+import uuid
 
+import pyarrow as pa
 import pandas as pd
 
 from dash import html, Dash, dcc, callback_context
@@ -22,12 +25,27 @@ from src.data.preprocess import MergedAssaysPreprocessor
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import make_scatterplot, make_projection_plot
 from ..layout import PAGE_HOME, PAGE_ABOUT
+from ..storage import FileStorage
+
+
+def safe_load_data(
+    file_storage: FileStorage, user_id: str, main: bool = True
+) -> pd.DataFrame:
+    file_type = "main" if main else "controls"
+    file_name = f"{user_id}_{file_type}.pq"
+    try:
+        raw = file_storage.read_file(file_name)
+    except FileNotFoundError:
+        raise PreventUpdate
+    return pd.read_parquet(pa.BufferReader(raw))
 
 
 def on_data_upload(
     contents: typing.Iterable,
     names: typing.Iterable[str],
-) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> tuple[html.Div, str, list]:
     """
     Callback on data upload.
     Parses the uploaded data.
@@ -42,7 +60,8 @@ def on_data_upload(
     """
     if not contents:
         raise PreventUpdate
-
+    if not stored_uuid:
+        stored_uuid = str(uuid.uuid4())
     dataframes = [parse_bytes_to_dataframe(c, n) for c, n in zip(contents, names)]
     if len(dataframes) <= 1:
         raise ValueError("Only one file was uploaded.")
@@ -71,7 +90,6 @@ def on_data_upload(
     ]
 
     # ==== MAIN DF PREPROCESSING ====
-
     unique_ids = combined_df["CMPD ID"].unique().tolist()
     ecbd_links = generate_dummy_links_dataframe(unique_ids)
     main_preprocessor = (
@@ -88,17 +106,7 @@ def on_data_upload(
 
     # ==== END ====
 
-    strict_summary_df = (
-        processed_df[chemical_columns].describe().round(3).T.reset_index(level=0)
-    )
-
-    description_table = table_from_df(
-        strict_summary_df,
-        "description-table",
-    )
-
     # ==== CONTROLS DF PREPROCESSING ====
-
     controls_df = generate_controls(chemical_columns)
     controls_preprocessor = MergedAssaysPreprocessor(controls_df, chemical_columns)
     for projector, name in base_projector_specs:
@@ -109,15 +117,14 @@ def on_data_upload(
 
     # ==== TSNE PROJECTION + ANNOTATION ====
     # TODO: this part is a bit ugly, it'd be nice if we figure out a better solution for TSNE
-
     controls_with_main = pd.concat([processed_df, processed_controls_df]).reset_index()
 
     tsne_preprocessor = MergedAssaysPreprocessor(controls_with_main, chemical_columns)
     for projector, name in combined_projector_specs:
-        tsne_preprocessor.apply_projection(projector, name).annotate_by_index(
-            controls_index_annotator
-        )
-    merged_processed_df = tsne_preprocessor.get_processed_df()
+        tsne_preprocessor.apply_projection(projector, name)
+    merged_processed_df = tsne_preprocessor.annotate_by_index(
+        controls_index_annotator
+    ).get_processed_df()
 
     processed_df = merged_processed_df[
         merged_processed_df["annotation"] == "NOT CONTROL"
@@ -127,51 +134,54 @@ def on_data_upload(
     ]
 
     # ==== END ====
+    print("Serializing...")
+    serialized_processed_df = processed_df.reset_index().to_parquet()
+    serialized_controls_df = processed_controls_df.reset_index().to_parquet()
 
-    serialized_processed_df = processed_df.reset_index().to_json(
-        date_format="iso", orient="split"
-    )
-    serialized_controls_df = processed_controls_df.reset_index().to_json(
-        date_format="iso", orient="split"
-    )
+    file_storage.save_file(f"{stored_uuid}_main.pq", serialized_processed_df)
+    file_storage.save_file(f"{stored_uuid}_controls.pq", serialized_controls_df)
 
-    return (
-        serialized_processed_df,  # sent to data holder
-        serialized_controls_df,  # sent to data holder
-        description_table,
-        [],  # trigger loader
-    )
+    return (stored_uuid, [], 1)  # trigger loader
 
 
 def on_home_button_click(
     click,
-    serialized_projection_with_ecbd_links_df,
-    table,
+    dummy,
+    user_uuid: str,
+    file_storage: FileStorage,
 ) -> tuple[html.Div, html.Div, list[str], str, list[str], str, list[str], str]:
     """
     Callback on home button click.
     Resets the dashboard to the initial state.
 
     :param click: click event
-    :param serialized_projection_with_ecbd_links_df: jsonified projection dataframe
     :param table: table element
     :raises PreventUpdate: if no click event or no projection dataframe is provided
     :return: tuple of updated elements
     """
 
-    if serialized_projection_with_ecbd_links_df is None:
+    if not user_uuid:
         raise PreventUpdate
 
-    projection_with_ecbd_links_df = pd.read_json(
-        serialized_projection_with_ecbd_links_df, orient="split"
-    )
+    projection_with_ecbd_links_df = safe_load_data(file_storage, user_uuid)
     crucial_columns = get_chemical_columns(projection_with_ecbd_links_df.columns)
     preview_table = table_from_df_with_selected_columns(
         projection_with_ecbd_links_df, "preview-table"
     )
+    strict_summary_df = (
+        projection_with_ecbd_links_df[crucial_columns]
+        .describe()
+        .round(3)
+        .T.reset_index(level=0)
+    )
+
+    description_table = table_from_df(
+        strict_summary_df,
+        "description-table",
+    )
 
     return (
-        table,
+        description_table,
         preview_table,
         crucial_columns,  # x-axis dropdown options
         crucial_columns[0],  # x-axis dropdown value
@@ -179,11 +189,12 @@ def on_home_button_click(
         crucial_columns[0],  # y-axis dropdown value
         crucial_columns,  # colormap-feature dropdown options
         crucial_columns[0],  # colormap-feature dropdown value
+        [],
     )
 
 
 def on_projection_plot_selection(
-    relayoutData: dict, projection_type: str, projection_data: str
+    relayoutData: dict, projection_type: str, user_uuid: str, file_storage: FileStorage
 ) -> dict:
     """
     Callback on projection selection (i.e. zooming in).
@@ -195,10 +206,10 @@ def on_projection_plot_selection(
     :raises PreventUpdate: if no relayoutData or projection_type is provided
     :return: restricted dataframe as a dictionary
     """
-    if not relayoutData or not projection_type:
+    if not relayoutData or not projection_type or not user_uuid:
         raise PreventUpdate
 
-    df = pd.read_json(projection_data, orient="split")
+    df = safe_load_data(file_storage, user_uuid)
     if "xaxis.range[0]" in relayoutData:
         x_min = relayoutData["xaxis.range[0]"]
         x_max = relayoutData["xaxis.range[1]"]
@@ -210,7 +221,9 @@ def on_projection_plot_selection(
     return df[df["CMPD ID"].isin(df["CMPD ID"])].round(3).to_dict("records")
 
 
-def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
+def on_axis_change(
+    x_attr: str, y_attr: str, user_uuid: str, file_storage: FileStorage
+) -> dcc.Graph:
     """
     Callback on axis dropdown change.
     Updates the basic plot.
@@ -220,10 +233,11 @@ def on_axis_change(x_attr: str, y_attr: str, projection_data: str) -> dcc.Graph:
     :param projection_data: jsonified dataframe with projection data
     :return: html Div containing the basic plot
     """
-    if not x_attr or not y_attr:
+    if not x_attr or not y_attr or not user_uuid:
         raise PreventUpdate
+    df = safe_load_data(file_storage, user_uuid)
     return make_scatterplot(
-        pd.read_json(projection_data, orient="split"),
+        df,
         x_attr,
         y_attr,
         "Compounds experimens results",
@@ -235,8 +249,8 @@ def on_projection_settings_change(
     projection_type: str,
     colormap_attr: str,
     add_controls: bool,
-    projection_data: str,
-    controls_data: str,
+    user_uuid: str,
+    file_storage: FileStorage,
 ) -> dcc.Graph:
     """
     Callback on projection settings change.
@@ -245,16 +259,18 @@ def on_projection_settings_change(
     :param projection_type: type of the projection to be visualized
     :param colormap_attr: column to be used for coloring the points
     :param add_controls: whether to add controls to the plot
-    :param projection_data: jsonified dataframe with projection data
-    :param controls_data: jsonified dataframe with controls data
     :raises PreventUpdate: if no projection_type or colormap_attr is provided
     :return: dcc Graph object representing the projection plot
     """
-    if not projection_type or not colormap_attr:
+    if not projection_type or not colormap_attr or not user_uuid:
         raise PreventUpdate
+
+    df = safe_load_data(file_storage, user_uuid)
+    controls_df = safe_load_data(file_storage, user_uuid, main=False)
+
     return make_projection_plot(
-        pd.read_json(projection_data, orient="split"),
-        pd.read_json(controls_data, orient="split"),
+        df,
+        controls_df,
         colormap_attr,
         projection_type,
         add_controls,
@@ -273,7 +289,7 @@ def on_page_change(*args):
     return PAGE_HOME
 
 
-def register_callbacks(app: Dash) -> None:
+def register_callbacks(app: Dash, file_storage: FileStorage) -> None:
     """
     Registers application callbacks.
 
@@ -281,30 +297,26 @@ def register_callbacks(app: Dash) -> None:
     """
     app.callback(
         [
-            Output("data-holder", "data"),
-            Output("controls-holder", "data"),
-            Output("table-holder", "data"),
+            Output("user-uuid", "data"),
             Output("dummy-loader", "children"),
+            Output("home-button", "n_clicks"),
         ],
         Input("upload-data", "contents"),
-        State("upload-data", "filename"),
-    )(on_data_upload)
+        [State("upload-data", "filename"), State("user-uuid", "data")],
+    )(functools.partial(on_data_upload, file_storage=file_storage))
     app.callback(
         Output("preview-table", "data"),
         Input("projection-plot", "relayoutData"),
-        [
-            State("projection-type-dropdown", "value"),
-            State("data-holder", "data"),
-        ],
-    )(on_projection_plot_selection)
+        [State("projection-type-dropdown", "value"), State("user-uuid", "data")],
+    )(functools.partial(on_projection_plot_selection, file_storage=file_storage))
     app.callback(
         Output("basic-plot-slot", "children"),
         [
             Input("x-axis-dropdown", "value"),
             Input("y-axis-dropdown", "value"),
         ],
-        State("data-holder", "data"),
-    )(on_axis_change)
+        State("user-uuid", "data"),
+    )(functools.partial(on_axis_change, file_storage=file_storage))
     app.callback(
         Output("projection-plot-slot", "children"),
         [
@@ -312,9 +324,8 @@ def register_callbacks(app: Dash) -> None:
             Input("colormap-attribute-dropdown", "value"),
             Input("add-controls-checkbox", "value"),
         ],
-        State("data-holder", "data"),
-        State("controls-holder", "data"),
-    )(on_projection_settings_change)
+        State("user-uuid", "data"),
+    )(functools.partial(on_projection_settings_change, file_storage=file_storage))
 
     app.callback(
         Output("page-layout", "children"),
@@ -332,10 +343,11 @@ def register_callbacks(app: Dash) -> None:
             Output("y-axis-dropdown", "value"),
             Output("colormap-attribute-dropdown", "options"),
             Output("colormap-attribute-dropdown", "value"),
+            Output("dummy-loader-2", "children"),
         ],
         [
             Input("home-button", "n_clicks"),
-            Input("data-holder", "data"),
-            Input("table-holder", "data"),
+            Input("dummy-loader-2", "children"),
         ],
-    )(on_home_button_click)
+        State("user-uuid", "data"),
+    )(functools.partial(on_home_button_click, file_storage=file_storage))

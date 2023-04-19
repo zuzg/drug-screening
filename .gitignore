@@ -1,8 +1,10 @@
 tmp/
+**/out/
 
 # Data
 data/raw/*
 !data/raw/.gitkeep
+.drug-screening-data/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
