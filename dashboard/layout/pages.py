@@ -24,7 +24,10 @@ def make_page(page_content: list) -> html.Div:
                 children=[
                     html.Div(
                         id="dummy-loader",
-                    )
+                    ),
+                    html.Div(
+                        id="dummy-loader-2",
+                    ),
                 ],
             ),
             *STORAGE,
