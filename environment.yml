@@ -15,5 +15,6 @@ dependencies:
   - jenkspy
   - numpy
   - rdkit
+  - pyarrow
   - dash
   - umap-learn
