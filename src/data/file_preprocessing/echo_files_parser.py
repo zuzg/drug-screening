@@ -76,7 +76,7 @@ class EchoFilesParser:
         for bmg_file in bmg_files:
             plate_barcode = bmg_file.split('.')[0].split('\\')[-1]
             bmg_df = pd.read_csv(bmg_file, sep='\t', names=bmg_columns)
-            bmg_df[bmg_keys[0]]=plate_barcode
+            bmg_df[bmg_keys[0]] = plate_barcode
 
             echo_bmg_linked_dfs.append(self.echo_df.merge(bmg_df, left_on=echo_keys, right_on=bmg_keys))
         self.echo_df = pd.concat(echo_bmg_linked_dfs, ignore_index=True)
