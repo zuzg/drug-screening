@@ -31,7 +31,7 @@ class TestEchoFilesParser(unittest.TestCase):
             expected_echo_df = pd.DataFrame({'Plate': ['plate123','plate456'], 'Well': ['A01','B01'], 'Transfer Volume': [10.0, 20.0]})
             pd.testing.assert_frame_equal(self.parser.get_processed_echo_df(), expected_echo_df)
 
-    def test_link_bmg_files(self): #FIX IT
+    def test_link_bmg_files(self):
         echo1_content = '[DETAILS]\nDestination Plate Barcode,Destination Well\nPLATE_BARCODE,A01\nPLATE_BARCODE,A02\n'
         echo2_content = '[DETAILS]\nDestination Plate Barcode,Destination Well\nPLATE_BARCODE,B01\nPLATE_BARCODE2,B02\nInstrument\n'
         bmg1_content = 'A01\t10\nA02\t20\nA03\t30\nA04\t40\n'

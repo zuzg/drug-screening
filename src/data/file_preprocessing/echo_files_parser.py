@@ -113,3 +113,4 @@ class EchoFilesParser:
         :return: processed dataframe
         """
         return self.exceptions_df
+    
