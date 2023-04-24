@@ -1,4 +1,5 @@
 import pandas as pd
+import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 
@@ -53,4 +54,20 @@ def plot_projection_2d(
         title_x=0.5,
         coloraxis_colorbar=dict(orientation="h", thickness=15),
     )
+    return fig
+
+
+def visualize_multiple_plates(df: pd.DataFrame) -> plt.Figure:
+    """
+    Visualize plate values on grid 3x3
+
+    :param df: DataFrame with plates
+    :return: plot with visualized plates
+    """
+    fig, axes = plt.subplots(3, 3, constrained_layout=True)
+    for ax, plate, barcode in zip(axes.flat, df.plate_array, df.barcode):
+        im = ax.pcolormesh(plate)
+        ax.set_title(barcode, fontsize=9)
+        ax.axis("off")
+    fig.colorbar(im, ax=axes.ravel().tolist(), location='bottom', aspect=60)
     return fig
