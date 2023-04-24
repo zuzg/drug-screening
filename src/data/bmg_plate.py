@@ -1,12 +1,14 @@
 import os
 import numpy as np
 import pandas as pd
+from collections import namedtuple
 
 
 class Plate:
     """
     Class representing a plate with values resulting from an HTS experiment
     """
+
     def __init__(self, barcode: str, plate_array: np.array) -> None:
         """
         :param filepath: path to the file consisting plate
@@ -32,16 +34,21 @@ class Plate:
         # TODO
         ...
 
-    def summary_row(self) -> list:
+    def get_summary_tuple(self) -> list:
         """
-        Get all features describing a plate in the form of a list
+        Get all features describing a plate in the form of a namedtuple
 
-        :return: list consisting of plate features
+        :return: namedtuple consisting of plate features
         """
-        return [self.barcode, self.plate_array,
-                self.std_pos, self.std_neg,
-                self.mean_pos, self.mean_neg,
-                self.z_factor]
+        PlateSummary = namedtuple('PlateSummary', ['barcode', 'plate_array',
+                                                   'std_pos', 'std_neg',
+                                                   'mean_pos', 'mean_neg',
+                                                   'z_factor'])
+        plate_summary = PlateSummary(self.barcode, self.plate_array,
+                                     self.std_pos, self.std_neg,
+                                     self.mean_pos, self.mean_neg,
+                                     self.z_factor)
+        return plate_summary
 
 
 def well_to_ids(well_name: str) -> tuple[int, int]:
@@ -90,5 +97,5 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     for filename in os.listdir(dir):
         barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
         plate = Plate(barcode, plate_array)
-        df.loc[len(df)] = plate.summary_row()
+        df.loc[len(df)] = list(plate.get_summary_tuple())
     return df
