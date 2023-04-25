@@ -41,7 +41,6 @@ def perform_clusterer_search_from_config(
     """
     df = pd.DataFrame(index=index)
     for name, config in clustering_config.items():
-
         clusterer_finder = GeneralClustererFinder(
             param_grid=config.param_grid,
             clusterer=config.clusterer,
