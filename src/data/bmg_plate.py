@@ -39,6 +39,7 @@ def get_summary_tuple(plate: Plate) -> namedtuple:
     """
     Get all features describing a plate in the form of a namedtuple
 
+    :param plate: Plate object to be summarized
     :return: namedtuple consisting of plate features
     """
     PlateSummary = namedtuple('PlateSummary', ['barcode', 'plate_array',
