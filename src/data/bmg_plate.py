@@ -4,6 +4,12 @@ import pandas as pd
 from collections import namedtuple
 
 
+PlateSummary = namedtuple('PlateSummary', ['barcode', 'plate_array',
+                                           'std_pos', 'std_neg',
+                                           'mean_pos', 'mean_neg',
+                                           'z_factor'])
+
+
 class Plate:
     """
     Class representing a plate with values resulting from an HTS experiment
@@ -34,23 +40,18 @@ class Plate:
         # TODO
         ...
 
+    def get_summary_tuple(self) -> PlateSummary:
+        """
+        Get all features describing a plate in the form of a namedtuple
 
-def get_summary_tuple(plate: Plate) -> namedtuple:
-    """
-    Get all features describing a plate in the form of a namedtuple
-
-    :param plate: Plate object to be summarized
-    :return: namedtuple consisting of plate features
-    """
-    PlateSummary = namedtuple('PlateSummary', ['barcode', 'plate_array',
-                                               'std_pos', 'std_neg',
-                                               'mean_pos', 'mean_neg',
-                                               'z_factor'])
-    plate_summary = PlateSummary(plate.barcode, plate.plate_array,
-                                 plate.std_pos, plate.std_neg,
-                                 plate.mean_pos, plate.mean_neg,
-                                 plate.z_factor)
-    return plate_summary
+        :param plate: Plate object to be summarized
+        :return: namedtuple consisting of plate features
+        """
+        plate_summary = PlateSummary(self.barcode, self.plate_array,
+                                     self.std_pos, self.std_neg,
+                                     self.mean_pos, self.mean_neg,
+                                     self.z_factor)
+        return plate_summary
 
 
 def well_to_ids(well_name: str) -> tuple[int, int]:
@@ -97,6 +98,6 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     for filename in os.listdir(dir):
         barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
         plate = Plate(barcode, plate_array)
-        plates_list.append(get_summary_tuple(plate))
+        plates_list.append(plate.get_summary_tuple())
     df = pd.DataFrame(plates_list)
     return df

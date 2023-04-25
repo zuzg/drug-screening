@@ -1,7 +1,7 @@
 import numpy as np
 from unittest.mock import mock_open, patch
 
-from src.data.bmg_plate import Plate, well_to_ids, parse_bmg_file, get_summary_tuple
+from src.data.bmg_plate import Plate, well_to_ids, parse_bmg_file
 
 
 def test_well_to_ids():
@@ -22,7 +22,7 @@ def test_plate_class():
     barcode = 'abcd'
     plate_array = np.array([[1, 3, 2], [0, 0, 0]])
     plate = Plate(barcode, plate_array)
-    summary = get_summary_tuple(plate)
+    summary = plate.get_summary_tuple()
     errors = []
     if summary.std_pos != 1.5:
         errors.append('std_pos error')
