@@ -18,3 +18,4 @@ dependencies:
   - pyarrow
   - dash
   - umap-learn
+  - pre-commit

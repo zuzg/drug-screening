@@ -4,10 +4,18 @@ import pandas as pd
 from collections import namedtuple
 
 
-PlateSummary = namedtuple('PlateSummary', ['barcode', 'plate_array',
-                                           'std_pos', 'std_neg',
-                                           'mean_pos', 'mean_neg',
-                                           'z_factor'])
+PlateSummary = namedtuple(
+    "PlateSummary",
+    [
+        "barcode",
+        "plate_array",
+        "std_pos",
+        "std_neg",
+        "mean_pos",
+        "mean_neg",
+        "z_factor",
+    ],
+)
 
 
 class Plate:
@@ -15,15 +23,16 @@ class Plate:
     Class representing a plate with values resulting from an HTS experiment
     """
 
-    def __init__(self, barcode: str, plate_array: np.array) -> None:
+    def __init__(self, barcode: str, plate_array: np.ndarray) -> None:
         """
         :param filepath: path to the file consisting plate
         """
         self.barcode = barcode
         self.plate_array = plate_array
         self.control_statistics()
-        self.z_factor = 1 - (3*(self.std_pos+self.std_neg) /
-                             (self.mean_neg-self.mean_pos))
+        self.z_factor = 1 - (
+            3 * (self.std_pos + self.std_neg) / (self.mean_neg - self.mean_pos)
+        )
 
     def control_statistics(self) -> None:
         """
@@ -47,10 +56,15 @@ class Plate:
         :param plate: Plate object to be summarized
         :return: namedtuple consisting of plate features
         """
-        plate_summary = PlateSummary(self.barcode, self.plate_array,
-                                     self.std_pos, self.std_neg,
-                                     self.mean_pos, self.mean_neg,
-                                     self.z_factor)
+        plate_summary = PlateSummary(
+            self.barcode,
+            self.plate_array,
+            self.std_pos,
+            self.std_neg,
+            self.mean_pos,
+            self.mean_neg,
+            self.z_factor,
+        )
         return plate_summary
 
 
@@ -61,9 +75,9 @@ def well_to_ids(well_name: str) -> tuple[int, int]:
     :param well_name: well name in format {letter}{number} (e.g. A10)
     to be transformed
     """
-    head = well_name.rstrip('0123456789')
-    tail = well_name[len(head):]
-    return ord(head)-65, int(tail)-1
+    head = well_name.rstrip("0123456789")
+    tail = well_name[len(head) :]
+    return ord(head) - 65, int(tail) - 1
 
 
 def parse_bmg_file(filepath: str) -> np.array:
@@ -73,11 +87,11 @@ def parse_bmg_file(filepath: str) -> np.array:
     :return: array with plate values
     """
     plate = np.zeros(shape=(16, 24))
-    barcode = filepath.split('/')[-1].split('.')[0].split('\\')[-1]
+    barcode = filepath.split("/")[-1].split(".")[0].split("\\")[-1]
     with open(filepath) as f:
         for i, line in enumerate(f.readlines()):
             # handle different formatting (as in FIREFLY)
-            if i == 0 and 'A' not in line:
+            if i == 0 and "A" not in line:
                 df = pd.read_csv(filepath, header=None)
                 plate = df.to_numpy()
                 break
