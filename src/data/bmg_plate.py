@@ -93,11 +93,10 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     :param dir: directory consisting of BMG files
     :return: DataFrame with BMG files (=plates) as rows
     """
-    df = pd.DataFrame(columns=['barcode', 'plate_array', 'std_pos', 'std_neg',
-                               'mean_pos', 'mean_neg', 'z_factor'])
-    df['plate_array'] = df['plate_array'].astype(object)
+    plates_list = []
     for filename in os.listdir(dir):
         barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
         plate = Plate(barcode, plate_array)
-        df.loc[len(df)] = list(get_summary_tuple(plate))
+        plates_list.append(get_summary_tuple(plate))
+    df = pd.DataFrame(plates_list)
     return df
