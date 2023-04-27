@@ -14,6 +14,9 @@ PlateSummary = namedtuple(
         "mean_pos",
         "mean_neg",
         "z_factor",
+        "z_factor_no_outliers",
+        "outliers_pos",
+        "outliers_neg",
     ],
 )
 
@@ -29,25 +32,70 @@ class Plate:
         """
         self.barcode = barcode
         self.plate_array = plate_array
-        self.control_statistics()
-        self.z_factor = 1 - (
-            3 * (self.std_pos + self.std_neg) / (self.mean_neg - self.mean_pos)
+        self.pos = self.plate_array[:, -2]
+        self.neg = self.plate_array[:, -1]
+        (
+            self.std_pos,
+            self.std_neg,
+            self.mean_pos,
+            self.mean_neg,
+            self.z_factor,
+        ) = self.control_statistics(self.pos, self.neg)
+        self.pos_wo, self.outliers_pos = self.find_outliers(
+            self.pos, self.mean_pos, self.std_pos
         )
+        self.neg_wo, self.outliers_neg = self.find_outliers(
+            self.neg, self.mean_neg, self.std_neg
+        )
+        (
+            self.std_pos_wo,
+            self.std_neg_wo,
+            self.mean_pos_wo,
+            self.mean_neg_wo,
+            self.z_factor_wo,
+        ) = self.control_statistics(self.pos_wo, self.neg_wo)
 
-    def control_statistics(self) -> None:
+    def control_statistics(self, pos: np.ndarray, neg: np.ndarray) -> tuple:
         """
         Calculate statistic for control values e.g. two last columns of a plate
         """
-        pos = self.plate_array[:, -2]
-        neg = self.plate_array[:, -1]
-        self.std_pos = np.std(pos)
-        self.std_neg = np.std(neg)
-        self.mean_pos = np.mean(pos)
-        self.mean_neg = np.mean(neg)
+        std_pos = np.nanstd(pos)
+        std_neg = np.nanstd(neg)
+        mean_pos = np.nanmean(pos)
+        mean_neg = np.nanmean(neg)
+        z_factor = 1 - (3 * (std_pos + std_neg) / (mean_neg - mean_pos))
+        return std_pos, std_neg, mean_pos, mean_neg, z_factor
 
-    def find_outliers(self):
-        # TODO
-        ...
+    def find_outliers(
+        self, control: np.ndarray, control_mean: float, control_std: float
+    ) -> tuple:
+        """
+        Find outliers (max 2) in a given control array and assign them value of NaN.
+        The method is using standard deviation: 3sigma rule
+
+        :param control: array containing control values (pos or neg)
+        :param control_mean: mean of given control array
+        :param control_std: std of given control array
+        :return: control array with outliers replaced to NaNs, tuple with outliers indices and values
+        """
+        cut_off = 3 * control_std
+        lower_limit = control_mean - cut_off
+        upper_limit = control_mean + cut_off
+        outliers = np.where((control > upper_limit) | (control < lower_limit))[0]
+        if len(outliers) == 0:
+            return control, [np.nan]
+        elif len(outliers) > 2:
+            while len(outliers) > 2:
+                max_o = np.max(outliers)
+                min_o = np.min(outliers)
+                if max_o - upper_limit > lower_limit - min_o:
+                    outliers = outliers[outliers != max_o]
+                else:
+                    outliers = outliers[outliers != min_o]
+        new_control = control.copy()
+        new_control[outliers] = np.nan
+        outliers_values = control[outliers]
+        return new_control, (outliers, outliers_values)
 
     def get_summary_tuple(self) -> PlateSummary:
         """
@@ -64,6 +112,9 @@ class Plate:
             self.mean_pos,
             self.mean_neg,
             self.z_factor,
+            self.z_factor_wo,
+            self.outliers_pos,
+            self.outliers_neg,
         )
         return plate_summary
 
