@@ -96,25 +96,31 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
     )
     fig.add_trace(
         go.Bar(
-            name="CTRL POS",
+            name="CTRL NEG",
             x=df.barcode,
-            y=df.mean_pos,
-            error_y=dict(type="data", array=df.std_pos),
-            marker_color="green",
+            y=df.mean_neg,
+            error_y=dict(
+                type="data", array=df.std_neg, color="gray", thickness=0.5, width=2
+            ),
+            marker_color="#d73027",
+            marker_line_color="#d73027",
             opacity=0.75,
         )
     )
     fig.add_trace(
         go.Bar(
-            name="CTRL NEG",
+            name="CTRL POS",
             x=df.barcode,
-            y=df.mean_neg,
-            error_y=dict(type="data", array=df.std_neg),
-            marker_color="red",
+            y=df.mean_pos,
+            error_y=dict(
+                type="data", array=df.std_pos, color="gray", thickness=0.5, width=2
+            ),
+            marker_color="#1a9850",
+            marker_line_color="#1a9850",
             opacity=0.75,
         )
     )
-    fig.update_layout(barmode="overlay")
+    fig.update_layout(barmode="group")
     return fig
 
 
