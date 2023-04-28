@@ -18,20 +18,21 @@ def test_parse_bmg_file():
         assert barcode == "1234" and plate[0, 0] == 28670
 
 
-def test_plate_class():
-    barcode = "abcd"
-    plate_array = np.array([[1, 3, 2], [0, 0, 0]])
-    plate = Plate(barcode, plate_array)
-    summary = plate.get_summary_tuple()
+def test_plate_class(bmg_plate):
+    summary = bmg_plate.get_summary_tuple()
     errors = []
-    if summary.std_pos != 1.5:
+    if summary.std_neg != 1.5:
         errors.append("std_pos error")
-    if summary.std_neg != 1:
+    if summary.std_pos != 1:
         errors.append("std_neg error")
-    if summary.mean_pos != 1.5:
+    if summary.mean_neg != 1.5:
         errors.append("mean_pos error")
-    if summary.mean_neg != 1:
+    if summary.mean_pos != 1:
         errors.append("mean_neg error")
-    if summary.z_factor != 16:
+    if summary.z_factor != -14:
         errors.append("z_factor error")
     assert not errors
+
+
+def test_outliers(bmg_plate):
+    assert bmg_plate.z_factor == bmg_plate.z_factor_wo

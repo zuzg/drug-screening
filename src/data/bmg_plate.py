@@ -31,9 +31,9 @@ class Plate:
         :param filepath: path to the file consisting plate
         """
         self.barcode = barcode
-        self.plate_array = plate_array
-        self.pos = self.plate_array[:, -2]
-        self.neg = self.plate_array[:, -1]
+        self.plate_array = plate_array.astype(np.float32)
+        self.pos = self.plate_array[:, -1]
+        self.neg = self.plate_array[:, -2]
         (
             self.std_pos,
             self.std_neg,
@@ -71,7 +71,8 @@ class Plate:
     ) -> tuple:
         """
         Find outliers (max 2) in a given control array and assign them value of NaN.
-        The method is using standard deviation: 3sigma rule
+        The method is using standard deviation. In case of finding more than 2 outliers,
+        remove the most outling ones.
 
         :param control: array containing control values (pos or neg)
         :param control_mean: mean of given control array

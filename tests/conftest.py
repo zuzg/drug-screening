@@ -1,7 +1,9 @@
 # Put common fixtures here to be available in other test suits without explicit import
 
 import pytest
+import numpy as np
 import pandas as pd
+from src.data.bmg_plate import Plate
 
 
 @pytest.fixture
@@ -41,3 +43,11 @@ def combine_dataframes():
         }
     )
     return [df, df2]
+
+
+@pytest.fixture
+def bmg_plate():
+    barcode = "abcd"
+    plate_array = np.array([[1, 3, 2], [0, 0, 0]])
+    plate = Plate(barcode, plate_array)
+    return plate
