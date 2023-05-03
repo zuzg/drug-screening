@@ -28,96 +28,82 @@ class Plate:
 
     def __init__(self, barcode: str, plate_array: np.ndarray) -> None:
         """
-        :param filepath: path to the file consisting plate
+        :param barcode: barcode identifying plate
+        :param plate_array: array consisting plate values
         """
         self.barcode = barcode
         self.plate_array = plate_array.astype(np.float32)
         self.pos = self.plate_array[:, -1]
         self.neg = self.plate_array[:, -2]
-        (
-            self.std_pos,
-            self.std_neg,
-            self.mean_pos,
-            self.mean_neg,
-            self.z_factor,
-        ) = self.control_statistics(self.pos, self.neg)
-        self.pos_wo, self.outliers_pos = self.find_outliers(
-            self.pos, self.mean_pos, self.std_pos
-        )
-        self.neg_wo, self.outliers_neg = self.find_outliers(
-            self.neg, self.mean_neg, self.std_neg
-        )
-        (
-            self.std_pos_wo,
-            self.std_neg_wo,
-            self.mean_pos_wo,
-            self.mean_neg_wo,
-            self.z_factor_wo,
-        ) = self.control_statistics(self.pos_wo, self.neg_wo)
 
-    def control_statistics(self, pos: np.ndarray, neg: np.ndarray) -> tuple:
-        """
-        Calculate statistic for control values e.g. two last columns of a plate
-        """
-        std_pos = np.nanstd(pos)
-        std_neg = np.nanstd(neg)
-        mean_pos = np.nanmean(pos)
-        mean_neg = np.nanmean(neg)
-        z_factor = 1 - (3 * (std_pos + std_neg) / (mean_neg - mean_pos))
-        return std_pos, std_neg, mean_pos, mean_neg, z_factor
 
-    def find_outliers(
-        self, control: np.ndarray, control_mean: float, control_std: float
-    ) -> tuple:
-        """
-        Find outliers (max 2) in a given control array and assign them value of NaN.
-        The method is using standard deviation. In case of finding more than 2 outliers,
-        remove the most outling ones.
+def control_statistics(pos: np.ndarray, neg: np.ndarray) -> tuple:
+    """
+    Calculate statistic for control values e.g. two last columns of a plate
 
-        :param control: array containing control values (pos or neg)
-        :param control_mean: mean of given control array
-        :param control_std: std of given control array
-        :return: control array with outliers replaced to NaNs, tuple with outliers indices and values
-        """
-        cut_off = 3 * control_std
-        lower_limit = control_mean - cut_off
-        upper_limit = control_mean + cut_off
-        outliers = np.where((control > upper_limit) | (control < lower_limit))[0]
-        if len(outliers) == 0:
-            return control, [np.nan]
-        elif len(outliers) > 2:
-            while len(outliers) > 2:
-                max_o = np.max(outliers)
-                min_o = np.min(outliers)
-                if max_o - upper_limit > lower_limit - min_o:
-                    outliers = outliers[outliers != max_o]
-                else:
-                    outliers = outliers[outliers != min_o]
-        new_control = control.copy()
-        new_control[outliers] = np.nan
-        outliers_values = control[outliers]
-        return new_control, (outliers, outliers_values)
+    :param pos: array with positive control
+    :param neg: array with negative control
+    :return: standard deviation and mean of controls, z factor
+    """
+    std_pos = np.nanstd(pos)
+    std_neg = np.nanstd(neg)
+    mean_pos = np.nanmean(pos)
+    mean_neg = np.nanmean(neg)
+    z_factor = 1 - (3 * (std_pos + std_neg) / (mean_neg - mean_pos))
+    return std_pos, std_neg, mean_pos, mean_neg, z_factor
 
-    def get_summary_tuple(self) -> PlateSummary:
-        """
-        Get all features describing a plate in the form of a namedtuple
 
-        :param plate: Plate object to be summarized
-        :return: namedtuple consisting of plate features
-        """
-        plate_summary = PlateSummary(
-            self.barcode,
-            self.plate_array,
-            self.std_pos,
-            self.std_neg,
-            self.mean_pos,
-            self.mean_neg,
-            self.z_factor,
-            self.z_factor_wo,
-            self.outliers_pos,
-            self.outliers_neg,
-        )
-        return plate_summary
+def remove_outliers(
+    control: np.ndarray, control_std: float, control_mean: float
+) -> tuple:
+    """
+    Find outliers (max 2) in a given control array and assign them value of NaN.
+    The method is using standard deviation. In case of finding more than 2 outliers,
+    remove the most outling ones.
+
+    :param control: array containing control values (pos or neg)
+    :param control_mean: mean of given control array
+    :param control_std: std of given control array
+    :return: control with outliers as nans, outliers indices
+    """
+    cut_off = 3 * control_std
+    lower_limit = control_mean - cut_off
+    upper_limit = control_mean + cut_off
+    all_outliers = np.where((control > upper_limit) | (control < lower_limit))[0]
+    if len(all_outliers) == 0:
+        return control, np.nan
+    outliers = set(np.argsort(np.abs(control - control_mean))[-2:]) & set(all_outliers)
+    new_control = control.copy()
+    return new_control, outliers
+
+
+def get_summary_tuple(plate: Plate) -> PlateSummary:
+    """
+    Get all features describing a plate in the form of a namedtuple
+
+    :param plate: Plate object to be summarized
+    :return: namedtuple consisting of plate features
+    """
+    std_pos, std_neg, mean_pos, mean_neg, z_factor = control_statistics(
+        plate.pos, plate.neg
+    )
+    new_pos, outliers_pos = remove_outliers(plate.pos, std_pos, mean_pos)
+    new_neg, outliers_neg = remove_outliers(plate.neg, std_neg, mean_neg)
+    _, _, _, _, z_factor_wo = control_statistics(new_pos, new_neg)
+
+    plate_summary = PlateSummary(
+        plate.barcode,
+        plate.plate_array,
+        std_pos,
+        std_neg,
+        mean_pos,
+        mean_neg,
+        z_factor,
+        z_factor_wo,
+        outliers_pos,
+        outliers_neg,
+    )
+    return plate_summary
 
 
 def well_to_ids(well_name: str) -> tuple[int, int]:
@@ -164,6 +150,6 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     for filename in os.listdir(dir):
         barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
         plate = Plate(barcode, plate_array)
-        plates_list.append(plate.get_summary_tuple())
+        plates_list.append(get_summary_tuple(plate))
     df = pd.DataFrame(plates_list)
     return df

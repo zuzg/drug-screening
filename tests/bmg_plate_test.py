@@ -1,7 +1,7 @@
 import numpy as np
 from unittest.mock import mock_open, patch
 
-from src.data.bmg_plate import Plate, well_to_ids, parse_bmg_file
+from src.data.bmg_plate import well_to_ids, parse_bmg_file, get_summary_tuple
 
 
 def test_well_to_ids():
@@ -19,7 +19,7 @@ def test_parse_bmg_file():
 
 
 def test_plate_class(bmg_plate):
-    summary = bmg_plate.get_summary_tuple()
+    summary = get_summary_tuple(bmg_plate)
     errors = []
     if summary.std_neg != 1.5:
         errors.append("std_pos error")
