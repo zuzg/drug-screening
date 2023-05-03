@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 import pandas as pd
-from src.data.bmg_plate import Plate
+from src.data.bmg_plate import Plate, get_summary_tuple
 
 
 @pytest.fixture
@@ -46,8 +46,9 @@ def combine_dataframes():
 
 
 @pytest.fixture
-def bmg_plate():
+def plate_summary():
     barcode = "abcd"
     plate_array = np.array([[1, 3, 2], [0, 0, 0]])
     plate = Plate(barcode, plate_array)
-    return plate
+    summary = get_summary_tuple(plate)
+    return summary
