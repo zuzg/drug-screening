@@ -82,6 +82,8 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
     together with their standard devations
 
     :param df: DataFrame with control values
+    :param plate_array: array with plate values
+    :return: plotly figure
     """
     fig = go.Figure(
         layout_title_text="Control values for plates: mean and std",
@@ -130,7 +132,8 @@ def plot_row_col_means(plate_array: np.ndarray) -> plt.Figure:
     """
     Plot mean values for each row and column across all plates
 
-    :param df: DataFrame with plate array
+    :param plate_array: array with plate values
+    :return: plt figure
     """
     arrays = plate_array[:, 0]
     outliers = plate_array[:, 1]

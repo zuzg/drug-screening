@@ -61,7 +61,7 @@ def find_outliers(
     :param control: array containing control values (pos or neg)
     :param control_mean: mean of given control array
     :param control_std: std of given control array
-    :return: control with outliers as nans, outliers indices
+    :return: outliers indices
     """
     cut_off = 3 * control_std
     lower_limit = control_mean - cut_off
@@ -75,7 +75,13 @@ def find_outliers(
     return outliers
 
 
-def calculate_z_outliers(plate: Plate) -> tuple:
+def calculate_z_outliers(plate: Plate) -> tuple[float, np.ndarray]:
+    """
+    Method to update controls after finding outliers
+
+    :param plate: Plate object
+    :return: z factor after removing outliers, outliers mask
+    """
     std_pos, std_neg, mean_pos, mean_neg, _ = control_statistics(plate.pos, plate.neg)
     outliers_pos = find_outliers(plate.pos, std_pos, mean_pos)
     outliers_neg = find_outliers(plate.neg, std_neg, mean_neg)
@@ -97,6 +103,7 @@ def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
     Get all features describing a plate in the form of a namedtuple
 
     :param plate: Plate object to be summarized
+    :param z_factor_wo: z_factor calculated after removing outliers
     :return: namedtuple consisting of plate features
     """
     std_pos, std_neg, mean_pos, mean_neg, z_factor = control_statistics(
@@ -121,17 +128,19 @@ def well_to_ids(well_name: str) -> tuple[int, int]:
 
     :param well_name: well name in format {letter}{number} (e.g. A10)
     to be transformed
+    :return: well name as indices
     """
     head = well_name.rstrip("0123456789")
     tail = well_name[len(head) :]
     return ord(head) - 65, int(tail) - 1
 
 
-def parse_bmg_file(filepath: str) -> np.array:
+def parse_bmg_file(filepath: str) -> tuple[str, np.ndarray]:
     """
     Read data from txt file to np.array
 
-    :return: array with plate values
+    :param filepath: path to the file with bmg plate
+    :return: barcode and array with plate values
     """
     plate = np.zeros(shape=(16, 24))
     barcode = filepath.split("/")[-1].split(".")[0].split("\\")[-1]
@@ -148,12 +157,12 @@ def parse_bmg_file(filepath: str) -> np.array:
     return barcode, plate
 
 
-def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
+def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Parse file from directory with BMG files to DataFrame
 
     :param dir: directory consisting of BMG files
-    :return: DataFrame with BMG files (=plates) as rows
+    :return: DataFrame with BMG files (=plates) as rows, array with plate values
     """
     plate_summaries = []
     plate_values = []
