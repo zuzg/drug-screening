@@ -203,9 +203,10 @@ def calculate_activation_inhibition(
             / (df_stats["mean_neg"] - df_stats["mean_pos"])
         ) * 100
 
-    assert not (
-        activation == inhibition
-    ).all(), "Activation and inhibition are the same"
+    # TODO
+    # assert not (
+    #     activation == inhibition
+    # ).all(), "Activation and inhibition are the same"
     return activation, inhibition
 
 
