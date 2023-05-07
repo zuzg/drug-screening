@@ -58,7 +58,7 @@ def plot_projection_2d(
     return fig
 
 
-def visualize_multiple_plates(df: pd.DataFrame) -> plt.Figure:
+def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> plt.Figure:
     """
     Visualize plate values on grid 3x3
 
@@ -66,8 +66,10 @@ def visualize_multiple_plates(df: pd.DataFrame) -> plt.Figure:
     :return: plot with visualized plates
     """
     fig, axes = plt.subplots(3, 3, constrained_layout=True)
-    for ax, plate, barcode in zip(axes.flat, df.plate_array, df.barcode):
-        im = ax.pcolormesh(plate)
+    for ax, plate, barcode in zip(axes.flat, plate_array, df.barcode):
+        im = ax.pcolormesh(plate[0])
+        x, y = np.nonzero(plate[1])  # outliers
+        ax.scatter(y + 0.5, x + 0.5, s=3, color="magenta")
         ax.set_title(barcode, fontsize=9)
         ax.axis("off")
     fig.colorbar(im, ax=axes.ravel().tolist(), location="bottom", aspect=60)
@@ -124,20 +126,22 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
     return fig
 
 
-def plot_row_col_means(df: pd.DataFrame) -> plt.Figure:
+def plot_row_col_means(plate_array: np.ndarray) -> plt.Figure:
     """
     Plot mean values for each row and column across all plates
 
     :param df: DataFrame with plate array
     """
-    arrays = np.array([arr for arr in df.plate_array])
+    arrays = plate_array[:, 0]
+    outliers = plate_array[:, 1]
+    arrays = np.where(outliers == 1, np.nan, arrays)
     params = [("column", 1), ("row", 2)]
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
     fig.suptitle("Mean values for columns and rows", fontsize=16)
     for i, p in enumerate(params):
         name, axis = p
-        means = arrays.mean(axis=(0, axis))
-        stds = arrays.std(axis=(0, axis))
+        means = np.nanmean(arrays, axis=(0, axis))
+        stds = np.nanstd(arrays, axis=(0, axis))
         ticks = range(1, means.shape[0] + 1)
         axes[i].bar(ticks, means, yerr=stds, alpha=0.75, ecolor="gray", capsize=5)
         axes[i].set_xlabel(name)

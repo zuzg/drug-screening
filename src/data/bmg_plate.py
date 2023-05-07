@@ -8,15 +8,12 @@ PlateSummary = namedtuple(
     "PlateSummary",
     [
         "barcode",
-        "plate_array",
         "std_pos",
         "std_neg",
         "mean_pos",
         "mean_neg",
         "z_factor",
         "z_factor_no_outliers",
-        "outliers_pos",
-        "outliers_neg",
     ],
 )
 
@@ -53,7 +50,7 @@ def control_statistics(pos: np.ndarray, neg: np.ndarray) -> tuple:
     return std_pos, std_neg, mean_pos, mean_neg, z_factor
 
 
-def remove_outliers(
+def find_outliers(
     control: np.ndarray, control_std: float, control_mean: float
 ) -> tuple:
     """
@@ -71,13 +68,31 @@ def remove_outliers(
     upper_limit = control_mean + cut_off
     all_outliers = np.where((control > upper_limit) | (control < lower_limit))[0]
     if len(all_outliers) == 0:
-        return control, np.nan
-    outliers = set(np.argsort(np.abs(control - control_mean))[-2:]) & set(all_outliers)
-    new_control = control.copy()
-    return new_control, outliers
+        return None
+    outliers = list(
+        set(np.argsort(np.abs(control - control_mean))[-2:]) & set(all_outliers)
+    )
+    return outliers
 
 
-def get_summary_tuple(plate: Plate) -> PlateSummary:
+def calculate_z_outliers(plate: Plate) -> tuple:
+    std_pos, std_neg, mean_pos, mean_neg, _ = control_statistics(plate.pos, plate.neg)
+    outliers_pos = find_outliers(plate.pos, std_pos, mean_pos)
+    outliers_neg = find_outliers(plate.neg, std_neg, mean_neg)
+    new_pos = plate.pos.copy()
+    new_neg = plate.neg.copy()
+    outliers_mask = np.zeros(shape=plate.plate_array.shape)
+    if outliers_pos:
+        new_pos[outliers_pos] = np.nan
+        outliers_mask[outliers_pos, -1] = 1
+    if outliers_neg:
+        new_neg[outliers_neg] = np.nan
+        outliers_mask[outliers_neg, -2] = 1
+    _, _, _, _, z_factor_wo = control_statistics(new_pos, new_neg)
+    return z_factor_wo, outliers_mask
+
+
+def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
     """
     Get all features describing a plate in the form of a namedtuple
 
@@ -87,21 +102,15 @@ def get_summary_tuple(plate: Plate) -> PlateSummary:
     std_pos, std_neg, mean_pos, mean_neg, z_factor = control_statistics(
         plate.pos, plate.neg
     )
-    new_pos, outliers_pos = remove_outliers(plate.pos, std_pos, mean_pos)
-    new_neg, outliers_neg = remove_outliers(plate.neg, std_neg, mean_neg)
-    _, _, _, _, z_factor_wo = control_statistics(new_pos, new_neg)
 
     plate_summary = PlateSummary(
         plate.barcode,
-        plate.plate_array,
         std_pos,
         std_neg,
         mean_pos,
         mean_neg,
         z_factor,
         z_factor_wo,
-        outliers_pos,
-        outliers_neg,
     )
     return plate_summary
 
@@ -146,10 +155,15 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     :param dir: directory consisting of BMG files
     :return: DataFrame with BMG files (=plates) as rows
     """
-    plates_list = []
+    plate_summaries = []
+    plate_values = []
     for filename in os.listdir(dir):
         barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
         plate = Plate(barcode, plate_array)
-        plates_list.append(get_summary_tuple(plate))
-    df = pd.DataFrame(plates_list)
-    return df
+        z_wo, outliers_mask = calculate_z_outliers(plate)
+        plate_summaries.append(get_summary_tuple(plate, z_wo))
+        plate_values.append([plate.plate_array, outliers_mask])
+
+    df = pd.DataFrame(plate_summaries)
+    plate_values = np.asarray(plate_values)
+    return df, plate_values
