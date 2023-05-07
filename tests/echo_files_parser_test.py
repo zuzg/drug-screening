@@ -60,7 +60,7 @@ def test_link_bmg_files():
             ["PLATE_BARCODE.txt", "PLATE_BARCODE2.txt"],
             bmg_columns=["Well", "Value"],
             bmg_keys=["Plate_barcode", "Well"],
-        ).retain_columns(["Destination Plate Barcode", "Destination Well", "Value"])
+        ).retain_key_columns(["Destination Plate Barcode", "Destination Well", "Value"])
         expected_echo_df = pd.DataFrame(
             {
                 "Value": [10, 20, 60],
@@ -77,7 +77,7 @@ def test_link_bmg_files():
         pd.testing.assert_frame_equal(res_df[cols], expected_echo_df[cols])
 
 
-def test_retain_columns():
+def test_retain_key_columns():
     echo1_content = (
         "[DETAILS]\nPlate,Well,Transfer Volume\nplate123,A01,10\nInstrument\n"
     )
@@ -85,6 +85,6 @@ def test_retain_columns():
     parser.find_marker_rows = MagicMock(return_value=[0])
     with patch("builtins.open", mock_open(read_data=echo1_content)):
         parser.parse_files()
-        parser.retain_columns(["Plate", "Wrong_column"])
+        parser.retain_key_columns(["Plate", "Wrong_column"])
         expected_echo_df = pd.DataFrame({"Plate": ["plate123"]})
         pd.testing.assert_frame_equal(parser.get_processed_echo_df(), expected_echo_df)

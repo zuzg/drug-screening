@@ -11,8 +11,6 @@ class EchoFilesParser:
         :param echo_files: list of echo file names
         """
         self.echo_files = echo_files
-        self.echo_df = pd.DataFrame()
-        self.exceptions_df = pd.DataFrame()
 
     def find_marker_rows(self, file: str, markers: tuple[str]) -> list[int]:
         """
@@ -28,8 +26,6 @@ class EchoFilesParser:
                     markers_rows.append(i)
                 if len(markers_rows) == len(markers):
                     return markers_rows
-        if len(markers_rows) == 0:
-            raise ValueError("No marker found in file.")
         return markers_rows
 
     def parse_files(self) -> EchoFilesParser:
@@ -53,9 +49,11 @@ class EchoFilesParser:
                     nrows=(details_line - 1) - exceptions_line - 2,
                 )
                 echo_df = pd.read_csv(filename, skiprows=details_line + 1)
-            else:
+            elif len(markers) == 1:
                 exceptions_df = pd.DataFrame()
                 echo_df = pd.read_csv(filename, skiprows=markers[0] + 1)
+            else:
+                echo_df = pd.read_csv(filename)
 
             echo_df = echo_df[
                 ~echo_df[echo_df.columns[0]].str.lower().str.startswith("instrument")
@@ -95,17 +93,29 @@ class EchoFilesParser:
         self.echo_df = pd.concat(echo_bmg_linked_dfs, ignore_index=True)
         return self
 
-    def retain_columns(self, columns: list[str]) -> EchoFilesParser:
+    def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """
         Retains only the specified columns.
 
         :param columns: list of columns to retain
         """
-        # TODO: check whether it is beneficial to split this into two methods (we need to include exceptions in the report)
+        # TODO : include CMPD -> we need to get these column from HTS center
+        if columns is None:
+            columns = [
+                "CMPD ID",
+                "Source Plate Barcode",
+                "Source Well",
+                "Destination Plate Barcode",
+                "Destination Well",
+                "Actual Volume",
+            ]
+
         retain_echo = list(set(columns).intersection(self.echo_df.columns))
         self.echo_df = self.echo_df[retain_echo]
 
-        retain_exceptions = list(set(columns).intersection(self.exceptions_df.columns))
+        retain_exceptions = list(
+            set(columns + ["Transfer Status"]).intersection(self.exceptions_df.columns)
+        )
         self.exceptions_df = self.exceptions_df[retain_exceptions].sort_index(axis=1)
         return self
 

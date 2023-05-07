@@ -148,7 +148,7 @@ def parse_bmg_file(filepath: str) -> np.array:
     return barcode, plate
 
 
-def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
+def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Parse file from directory with BMG files to DataFrame
 
@@ -167,3 +167,62 @@ def parse_bmg_files_from_dir(dir: str) -> pd.DataFrame:
     df = pd.DataFrame(plate_summaries)
     plate_values = np.asarray(plate_values)
     return df, plate_values
+
+
+def calculate_activation_inhibition(
+    df_stats: pd.Series,
+    values: np.ndarray,
+    mode: str = "all",
+    without_pos: bool = False,
+) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Calculates the activation and inhibition values for each well.
+    :param df_stats: dataframe with pre-calculated statistics
+    :param values: values to calculate activation and inhibition
+    :param mode: mode of calculation, either "all", "activation" or "inhibition"
+    :param without_pos: whether to calculate without positive controls (in case of "activation" mode)
+    """
+
+    activation, inhibition = None, None
+    if mode == "activation" or mode == "all":
+        # NOTE: for now not used
+        if without_pos:
+            activation = (
+                (values - df_stats["mean_neg"])
+                / (df_stats["mean_pos"] - df_stats["mean_neg"])
+                * 100
+            )
+
+        else:
+            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
+
+    if mode == "inhibition" or mode == "all":
+        inhibition = (
+            (values - df_stats["mean_pos"])
+            / (df_stats["mean_neg"] - df_stats["mean_pos"])
+            * 100
+        )
+
+    return activation, inhibition
+
+
+def get_activation_inhibition_dict(
+    df_stats: pd.DataFrame, plate_values: np.ndarray, modes: list[str]
+) -> dict[str, dict[str, float]]:
+    """
+    Calculates activation and inhibition for each compound in the plates.
+    :param df_stats: dataframe with statistics for each plate
+    :param plate_values: array with values in the plate
+    :param mode: list of modes to calculate activation and inhibition
+    :return: dictionary with activation and inhibition values for each compound in the plate
+    """
+    act_inh_dict = {}
+    for (_, row_stats), v, mode in zip(df_stats.iterrows(), plate_values, modes):
+        activation, inhibition = calculate_activation_inhibition(
+            row_stats, v[0], mode=mode
+        )
+        act_inh_dict[row_stats["barcode"]] = {
+            "activation": activation,
+            "inhibition": inhibition,
+        }
+    return act_inh_dict
