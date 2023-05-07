@@ -185,24 +185,27 @@ def calculate_activation_inhibition(
 
     activation, inhibition = None, None
     if mode == "activation" or mode == "all":
-        # NOTE: for now not used
+        # NOTE: for now `without_pos` is not used
         if without_pos:
+            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
+
+        else:
             activation = (
                 (values - df_stats["mean_neg"])
                 / (df_stats["mean_pos"] - df_stats["mean_neg"])
                 * 100
             )
 
-        else:
-            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
-
     if mode == "inhibition" or mode == "all":
         inhibition = (
-            (values - df_stats["mean_pos"])
+            1
+            - ((values - df_stats["mean_pos"]))
             / (df_stats["mean_neg"] - df_stats["mean_pos"])
-            * 100
-        )
+        ) * 100
 
+    assert not (
+        activation == inhibition
+    ).all(), "Activation and inhibition are the same"
     return activation, inhibition
 
 
@@ -217,9 +220,9 @@ def get_activation_inhibition_dict(
     :return: dictionary with activation and inhibition values for each compound in the plate
     """
     act_inh_dict = {}
-    for (_, row_stats), v, mode in zip(df_stats.iterrows(), plate_values, modes):
+    for (_, row_stats), v in zip(df_stats.iterrows(), plate_values):
         activation, inhibition = calculate_activation_inhibition(
-            row_stats, v[0], mode=mode
+            row_stats, v[0], mode=modes[row_stats["barcode"]]
         )
         act_inh_dict[row_stats["barcode"]] = {
             "activation": activation,

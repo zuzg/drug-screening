@@ -66,33 +66,6 @@ class EchoFilesParser:
 
         return self
 
-    def link_bmg_files(
-        self,
-        bmg_files: list[str],
-        bmg_columns: list[str] = ("Well", "Value"),
-        bmg_keys: list[str] = ("Plate_barcode", "Well"),
-        echo_keys: list[str] = ("Destination Plate Barcode", "Destination Well"),
-    ) -> EchoFilesParser:
-        """
-        Links bmg files to the echo files.
-
-        :param bmg_files: list of bmg files
-        :param echo_keys: list of echo keys to merge on
-        :param bmg_keys: list of bmg keys to merge on
-        """
-        echo_bmg_linked_dfs = []
-
-        for bmg_file in bmg_files:
-            plate_barcode = bmg_file.split(".")[0].split("\\")[-1]
-            bmg_df = pd.read_csv(bmg_file, sep="\t", names=bmg_columns)
-            bmg_df[bmg_keys[0]] = plate_barcode
-
-            echo_bmg_linked_dfs.append(
-                self.echo_df.merge(bmg_df, left_on=echo_keys, right_on=bmg_keys)
-            )
-        self.echo_df = pd.concat(echo_bmg_linked_dfs, ignore_index=True)
-        return self
-
     def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """
         Retains only the specified columns.
