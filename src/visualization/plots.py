@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 
 def plot_projection_2d(
@@ -99,57 +100,82 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
         },
     )
     fig.add_trace(
-        go.Bar(
+        go.Scatter(
             name="CTRL NEG",
             x=df.barcode,
             y=df.mean_neg,
             error_y=dict(
                 type="data", array=df.std_neg, color="gray", thickness=0.5, width=2
             ),
+            mode="markers",
             marker_color="#d73027",
-            marker_line_color="#d73027",
+            marker_symbol="circle",
             opacity=0.75,
         )
     )
     fig.add_trace(
-        go.Bar(
+        go.Scatter(
             name="CTRL POS",
             x=df.barcode,
             y=df.mean_pos,
             error_y=dict(
                 type="data", array=df.std_pos, color="gray", thickness=0.5, width=2
             ),
+            mode="markers",
             marker_color="#1a9850",
-            marker_line_color="#1a9850",
             opacity=0.75,
         )
     )
-    fig.update_layout(barmode="group")
     return fig
 
 
-def plot_row_col_means(plate_array: np.ndarray) -> plt.Figure:
+def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     """
     Plot mean values for each row and column across all plates
 
     :param plate_array: array with plate values
-    :return: plt figure
+    :return: plotly figure
     """
     arrays = plate_array[:, 0]
     outliers = plate_array[:, 1]
     arrays = np.where(outliers == 1, np.nan, arrays)
     params = [("column", 1), ("row", 2)]
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Mean values for columns and rows", fontsize=16)
-    for i, p in enumerate(params):
+    fig = make_subplots(rows=1, cols=2)
+    ticks_all = []
+    for p in params:
         name, axis = p
         means = np.nanmean(arrays, axis=(0, axis))
         stds = np.nanstd(arrays, axis=(0, axis))
-        ticks = range(1, means.shape[0] + 1)
-        axes[i].bar(ticks, means, yerr=stds, alpha=0.75, ecolor="gray", capsize=5)
-        axes[i].set_xlabel(name)
-        axes[i].set_xticks(ticks)
-        axes[i].set_xticklabels(axes[i].get_xticks(), rotation=90)
+        ticks = [*range(1, means.shape[0] + 1)]
+        ticks_all.append(ticks)
+        fig.add_trace(
+            go.Scatter(
+                x=ticks,
+                y=means,
+                error_y=dict(
+                    type="data", array=stds, color="gray", thickness=0.5, width=2
+                ),
+                mode="markers",
+                marker_color="blue",
+            ),
+            row=1,
+            col=axis,
+        )
+        fig.update_xaxes(title_text=f"{name}", row=1, col=axis)
+    fig.update_layout(
+        xaxis1=dict(tickmode="array", tickvals=ticks_all[0], ticktext=ticks_all[0]),
+        xaxis2=dict(tickmode="array", tickvals=ticks_all[1], ticktext=ticks_all[1]),
+    )
+    fig.update_layout(
+        title_text="Mean values for columns and rows",
+        showlegend=False,
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+    )
     return fig
 
 
