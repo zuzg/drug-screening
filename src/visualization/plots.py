@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
+from itertools import product
 
 
 def plot_projection_2d(
@@ -59,21 +60,43 @@ def plot_projection_2d(
     return fig
 
 
-def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> plt.Figure:
+def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> go.Figure:
     """
-    Visualize plate values on grid 3x3
+    Visualize plate values on subplots 3x3
 
     :param df: DataFrame with plates
+    :param plate_array: array with plate values
     :return: plot with visualized plates
     """
-    fig, axes = plt.subplots(3, 3, constrained_layout=True)
-    for ax, plate, barcode in zip(axes.flat, plate_array, df.barcode):
-        im = ax.pcolormesh(plate[0])
-        x, y = np.nonzero(plate[1])  # outliers
-        ax.scatter(y + 0.5, x + 0.5, s=3, color="magenta")
-        ax.set_title(barcode, fontsize=9)
-        ax.axis("off")
-    fig.colorbar(im, ax=axes.ravel().tolist(), location="bottom", aspect=60)
+    row, col = 3, 3
+    fig = make_subplots(row, col, horizontal_spacing=0.01)
+    ids = product([1, 2, 3], [1, 2, 3])
+    for i, p, plate, barcode in zip(range(1, 10), ids, plate_array, df.barcode):
+        fig.add_trace(
+            go.Heatmap(
+                z=plate[0],
+                customdata=plate[1],
+                coloraxis="coloraxis",
+                hovertemplate="row: %{y}<br>column: %{x}<br>value: %{z}<br>outlier: %{customdata}<extra></extra>",
+            ),
+            p[0],
+            p[1],
+        )
+        fig.update_xaxes(title_text=barcode, row=p[0], col=p[1])
+        fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}})
+
+    fig.update_layout(
+        coloraxis={"colorscale": "viridis"},
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+    )
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
     return fig
 
 
