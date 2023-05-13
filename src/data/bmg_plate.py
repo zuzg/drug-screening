@@ -61,7 +61,7 @@ def find_outliers(
     :param control: array containing control values (pos or neg)
     :param control_mean: mean of given control array
     :param control_std: std of given control array
-    :return: control with outliers as nans, outliers indices
+    :return: outliers indices
     """
     cut_off = 3 * control_std
     lower_limit = control_mean - cut_off
@@ -75,7 +75,13 @@ def find_outliers(
     return outliers
 
 
-def calculate_z_outliers(plate: Plate) -> tuple:
+def calculate_z_outliers(plate: Plate) -> tuple[float, np.ndarray]:
+    """
+    Method to update controls after finding outliers
+
+    :param plate: Plate object
+    :return: z factor after removing outliers, outliers mask
+    """
     std_pos, std_neg, mean_pos, mean_neg, _ = control_statistics(plate.pos, plate.neg)
     outliers_pos = find_outliers(plate.pos, std_pos, mean_pos)
     outliers_neg = find_outliers(plate.neg, std_neg, mean_neg)
@@ -97,6 +103,7 @@ def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
     Get all features describing a plate in the form of a namedtuple
 
     :param plate: Plate object to be summarized
+    :param z_factor_wo: z_factor calculated after removing outliers
     :return: namedtuple consisting of plate features
     """
     std_pos, std_neg, mean_pos, mean_neg, z_factor = control_statistics(
@@ -121,17 +128,19 @@ def well_to_ids(well_name: str) -> tuple[int, int]:
 
     :param well_name: well name in format {letter}{number} (e.g. A10)
     to be transformed
+    :return: well name as indices
     """
     head = well_name.rstrip("0123456789")
     tail = well_name[len(head) :]
     return ord(head) - 65, int(tail) - 1
 
 
-def parse_bmg_file(filepath: str) -> np.array:
+def parse_bmg_file(filepath: str) -> tuple[str, np.ndarray]:
     """
     Read data from txt file to np.array
 
-    :return: array with plate values
+    :param filepath: path to the file with bmg plate
+    :return: barcode and array with plate values
     """
     plate = np.zeros(shape=(16, 24))
     barcode = filepath.split("/")[-1].split(".")[0].split("\\")[-1]
@@ -153,7 +162,7 @@ def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     Parse file from directory with BMG files to DataFrame
 
     :param dir: directory consisting of BMG files
-    :return: DataFrame with BMG files (=plates) as rows
+    :return: DataFrame with BMG files (=plates) as rows, array with plate values
     """
     plate_summaries = []
     plate_values = []
@@ -167,66 +176,3 @@ def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     df = pd.DataFrame(plate_summaries)
     plate_values = np.asarray(plate_values)
     return df, plate_values
-
-
-def calculate_activation_inhibition(
-    df_stats: pd.Series,
-    values: np.ndarray,
-    mode: str = "all",
-    without_pos: bool = False,
-) -> tuple[np.ndarray, np.ndarray]:
-    """
-    Calculates the activation and inhibition values for each well.
-    :param df_stats: dataframe with pre-calculated statistics
-    :param values: values to calculate activation and inhibition
-    :param mode: mode of calculation, either "all", "activation" or "inhibition"
-    :param without_pos: whether to calculate without positive controls (in case of "activation" mode)
-    """
-
-    activation, inhibition = None, None
-    if mode == "activation" or mode == "all":
-        # NOTE: for now `without_pos` is not used
-        if without_pos:
-            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
-
-        else:
-            activation = (
-                (values - df_stats["mean_neg"])
-                / (df_stats["mean_pos"] - df_stats["mean_neg"])
-                * 100
-            )
-
-    if mode == "inhibition" or mode == "all":
-        inhibition = (
-            1
-            - ((values - df_stats["mean_pos"]))
-            / (df_stats["mean_neg"] - df_stats["mean_pos"])
-        ) * 100
-
-    # TODO
-    # assert not (
-    #     activation == inhibition
-    # ).all(), "Activation and inhibition are the same"
-    return activation, inhibition
-
-
-def get_activation_inhibition_dict(
-    df_stats: pd.DataFrame, plate_values: np.ndarray, modes: list[str]
-) -> dict[str, dict[str, float]]:
-    """
-    Calculates activation and inhibition for each compound in the plates.
-    :param df_stats: dataframe with statistics for each plate
-    :param plate_values: array with values in the plate
-    :param mode: list of modes to calculate activation and inhibition
-    :return: dictionary with activation and inhibition values for each compound in the plate
-    """
-    act_inh_dict = {}
-    for (_, row_stats), v in zip(df_stats.iterrows(), plate_values):
-        activation, inhibition = calculate_activation_inhibition(
-            row_stats, v[0], mode=modes[row_stats["barcode"]]
-        )
-        act_inh_dict[row_stats["barcode"]] = {
-            "activation": activation,
-            "inhibition": inhibition,
-        }
-    return act_inh_dict
