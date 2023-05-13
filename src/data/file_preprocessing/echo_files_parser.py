@@ -1,16 +1,17 @@
 from __future__ import annotations
 import pandas as pd
+import os
 
 
 class EchoFilesParser:
     def __init__(
         self,
-        echo_files: list[str],
+        echo_files_dir: str,
     ):
         """
-        :param echo_files: list of echo file names
+        :param echo_files_dir: directory containing echo files
         """
-        self.echo_files = echo_files
+        self.echo_files_dir = echo_files_dir
 
     def find_marker_rows(self, file: str, markers: tuple[str]) -> list[int]:
         """
@@ -28,36 +29,37 @@ class EchoFilesParser:
                     return markers_rows
         return markers_rows
 
-    def parse_files(self) -> EchoFilesParser:
+    def parse_files_from_dir(self) -> EchoFilesParser:
         """
         Preprocesses csv echo files, splits regular records from exceptions.
         """
-        if not (all(file.endswith(".csv") for file in self.echo_files)):
-            raise ValueError(
-                f"Expected files to be of '*.csv' type, provided: {self.echo_files}"
-            )
-
         exception_dfs, echo_dfs = [], []
-        for filename in self.echo_files:
-            markers = self.find_marker_rows(filename, ("[EXCEPTIONS]", "[DETAILS]"))
+        for filename in os.listdir(self.echo_files_dir):
+            if not (filename.endswith(".csv")):
+                continue
+            filepath = os.path.join(self.echo_files_dir, filename)
+            markers = self.find_marker_rows(filepath, ("[EXCEPTIONS]", "[DETAILS]"))
 
             if len(markers) == 2:
                 exceptions_line, details_line = markers
                 exceptions_df = pd.read_csv(
-                    filename,
+                    filepath,
                     skiprows=exceptions_line + 1,
                     nrows=(details_line - 1) - exceptions_line - 2,
                 )
-                echo_df = pd.read_csv(filename, skiprows=details_line + 1)
+                echo_df = pd.read_csv(filepath, skiprows=details_line + 1)
             elif len(markers) == 1:
                 exceptions_df = pd.DataFrame()
-                echo_df = pd.read_csv(filename, skiprows=markers[0] + 1)
+                echo_df = pd.read_csv(filepath, skiprows=markers[0] + 1)
             else:
-                echo_df = pd.read_csv(filename)
+                echo_df = pd.read_csv(filepath)
 
-            echo_df = echo_df[
-                ~echo_df[echo_df.columns[0]].str.lower().str.startswith("instrument")
-            ]
+            mask = echo_df[echo_df.columns[0]].apply(
+                lambda x: isinstance(x, str)
+            ) & echo_df[echo_df.columns[0]].astype(str).str.lower().str.startswith(
+                "instrument", na=False
+            )
+            echo_df = echo_df[~mask]
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 

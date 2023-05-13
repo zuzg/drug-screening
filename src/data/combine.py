@@ -94,8 +94,8 @@ def get_activation_inhibition_df(barcode: str, values_dict: dict) -> pd.DataFram
 
 
 def combine_bmg_echo_data(
-    echo_df,
-    barcodes_dict,
+    echo_df: pd.DataFrame,
+    barcodes_dict: dict,
     echo_keys: list[str] = ("Destination Plate Barcode", "Destination Well"),
 ) -> pd.DataFrame:
     """
