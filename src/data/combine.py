@@ -114,4 +114,5 @@ def combine_bmg_echo_data(
                 right_on=("Barcode", "Well"),
             )
         )
-    return pd.concat(dfs, ignore_index=True)
+    res = pd.concat(dfs, ignore_index=True)
+    return res.drop(columns=["Barcode", "Well"])
