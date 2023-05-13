@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from itertools import product
 
 
 def plot_projection_2d(
@@ -58,19 +60,43 @@ def plot_projection_2d(
     return fig
 
 
-def visualize_multiple_plates(df: pd.DataFrame) -> plt.Figure:
+def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> go.Figure:
     """
-    Visualize plate values on grid 3x3
+    Visualize plate values on subplots 3x3
 
     :param df: DataFrame with plates
+    :param plate_array: array with plate values
     :return: plot with visualized plates
     """
-    fig, axes = plt.subplots(3, 3, constrained_layout=True)
-    for ax, plate, barcode in zip(axes.flat, df.plate_array, df.barcode):
-        im = ax.pcolormesh(plate)
-        ax.set_title(barcode, fontsize=9)
-        ax.axis("off")
-    fig.colorbar(im, ax=axes.ravel().tolist(), location="bottom", aspect=60)
+    row, col = 3, 3
+    fig = make_subplots(row, col, horizontal_spacing=0.01)
+    ids = product([1, 2, 3], [1, 2, 3])
+    for i, p, plate, barcode in zip(range(1, 10), ids, plate_array, df.barcode):
+        fig.add_trace(
+            go.Heatmap(
+                z=plate[0],
+                customdata=plate[1],
+                coloraxis="coloraxis",
+                hovertemplate="row: %{y}<br>column: %{x}<br>value: %{z}<br>outlier: %{customdata}<extra></extra>",
+            ),
+            p[0],
+            p[1],
+        )
+        fig.update_xaxes(title_text=barcode, row=p[0], col=p[1])
+        fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}})
+
+    fig.update_layout(
+        coloraxis={"colorscale": "viridis"},
+        plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+    )
+    fig.update_xaxes(showticklabels=False)
+    fig.update_yaxes(showticklabels=False)
     return fig
 
 
@@ -80,6 +106,8 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
     together with their standard devations
 
     :param df: DataFrame with control values
+    :param plate_array: array with plate values
+    :return: plotly figure
     """
     fig = go.Figure(
         layout_title_text="Control values for plates: mean and std",
@@ -95,48 +123,82 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
         },
     )
     fig.add_trace(
-        go.Bar(
-            name="CTRL POS",
+        go.Scatter(
+            name="CTRL NEG",
             x=df.barcode,
-            y=df.mean_pos,
-            error_y=dict(type="data", array=df.std_pos),
-            marker_color="green",
+            y=df.mean_neg,
+            error_y=dict(
+                type="data", array=df.std_neg, color="gray", thickness=0.5, width=2
+            ),
+            mode="markers",
+            marker_color="#d73027",
+            marker_symbol="circle",
             opacity=0.75,
         )
     )
     fig.add_trace(
-        go.Bar(
-            name="CTRL NEG",
+        go.Scatter(
+            name="CTRL POS",
             x=df.barcode,
-            y=df.mean_neg,
-            error_y=dict(type="data", array=df.std_neg),
-            marker_color="red",
+            y=df.mean_pos,
+            error_y=dict(
+                type="data", array=df.std_pos, color="gray", thickness=0.5, width=2
+            ),
+            mode="markers",
+            marker_color="#1a9850",
             opacity=0.75,
         )
     )
-    fig.update_layout(barmode="overlay")
     return fig
 
 
-def plot_row_col_means(df: pd.DataFrame) -> plt.Figure:
+def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     """
     Plot mean values for each row and column across all plates
 
-    :param df: DataFrame with plate array
+    :param plate_array: array with plate values
+    :return: plotly figure
     """
-    arrays = np.array([arr for arr in df.plate_array])
+    arrays = plate_array[:, 0]
+    outliers = plate_array[:, 1]
+    arrays = np.where(outliers == 1, np.nan, arrays)
     params = [("column", 1), ("row", 2)]
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Mean values for columns and rows", fontsize=16)
-    for i, p in enumerate(params):
+    fig = make_subplots(rows=1, cols=2)
+    ticks_all = []
+    for p in params:
         name, axis = p
-        means = arrays.mean(axis=(0, axis))
-        stds = arrays.std(axis=(0, axis))
-        ticks = range(1, means.shape[0] + 1)
-        axes[i].bar(ticks, means, yerr=stds, alpha=0.75, ecolor="gray", capsize=5)
-        axes[i].set_xlabel(name)
-        axes[i].set_xticks(ticks)
-        axes[i].set_xticklabels(axes[i].get_xticks(), rotation=90)
+        means = np.nanmean(arrays, axis=(0, axis))
+        stds = np.nanstd(arrays, axis=(0, axis))
+        ticks = [*range(1, means.shape[0] + 1)]
+        ticks_all.append(ticks)
+        fig.add_trace(
+            go.Scatter(
+                x=ticks,
+                y=means,
+                error_y=dict(
+                    type="data", array=stds, color="gray", thickness=0.5, width=2
+                ),
+                mode="markers",
+                marker_color="blue",
+            ),
+            row=1,
+            col=axis,
+        )
+        fig.update_xaxes(title_text=f"{name}", row=1, col=axis)
+    fig.update_layout(
+        xaxis1=dict(tickmode="array", tickvals=ticks_all[0], ticktext=ticks_all[0]),
+        xaxis2=dict(tickmode="array", tickvals=ticks_all[1], ticktext=ticks_all[1]),
+    )
+    fig.update_layout(
+        title_text="Mean values for columns and rows",
+        showlegend=False,
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+    )
     return fig
 
 
