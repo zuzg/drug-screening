@@ -3,6 +3,7 @@ import numpy as np
 from collections import namedtuple
 from functools import reduce
 import string
+from src.data.bmg_plate import get_activation_inhibition_dict
 
 
 # NOTE: to be removed
@@ -50,27 +51,22 @@ def combine_assays(
     return merged
 
 
-def values_array_to_column(values: np.ndarray, column: str) -> pd.DataFrame:
+def values_array_to_column(
+    values: np.ndarray, outliers: np.ndarray, column: str
+) -> pd.DataFrame:
     """
-    Convert a 2D numpy array of values to a dataframe with two column (well, value).
-    :param values: 2D numpy array of values
+    Convert a 2D numpy array of values to a dataframe with two column (well, value), but only if the corresponding
+    value in outliers is not equal to 1.
+    :param values: numpy array of values (both activation/inhibition and outlier mask)
+    :param outliers: numpy array of outlier mask
     :param column: name of the column
     :return: dataframe with two columns
     """
-    rows, columns = values.shape
-    records = []
-    uppercase_letters = list(string.ascii_uppercase)
-    Row = namedtuple("Row", ["Well", "Value"])
-
-    for row in range(rows):
-        for col in range(columns):
-            column_str = "0" + str(col + 1) if col < 10 else str(col + 1)
-            records.append(
-                Row(
-                    Well=uppercase_letters[row] + column_str,
-                    Value=values[row, col],
-                )
-            )
+    records = [
+        {"Well": f"{chr(row + 65)}{(col + 1):02d}", "Value": value}
+        for (row, col), value in np.ndenumerate(values)
+        if outliers[row, col] != 1
+    ]
     return pd.DataFrame(records).rename(columns={"Value": column})
 
 
@@ -82,30 +78,43 @@ def get_activation_inhibition_df(barcode: str, values_dict: dict) -> pd.DataFram
     :return: dataframe with activation and inhibition values
     """
     if values_dict["activation"] is not None and values_dict["inhibition"] is not None:
-        df = values_array_to_column(values_dict["activation"], "% ACTIVATION")
-        inhibition = values_array_to_column(values_dict["inhibition"], "% INHIBITION")
+        df = values_array_to_column(
+            values_dict["activation"], values_dict["outliers"], "% ACTIVATION"
+        )
+        inhibition = values_array_to_column(
+            values_dict["inhibition"], values_dict["outliers"], "% INHIBITION"
+        )
         df = df.merge(inhibition, on="Well")
     elif values_dict["activation"] is not None:
-        df = values_array_to_column(values_dict["activation"], "% ACTIVATION")
+        df = values_array_to_column(
+            values_dict["activation"], values_dict["outliers"], "% ACTIVATION"
+        )
     elif values_dict["inhibition"] is not None:
-        df = values_array_to_column(values_dict["inhibition"], "% INHIBITION")
+        df = values_array_to_column(
+            values_dict["inhibition"], values_dict["outliers"], "% INHIBITION"
+        )
     df["Barcode"] = barcode
     return df
 
 
 def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
-    barcodes_dict: dict,
-    echo_keys: list[str] = ("Destination Plate Barcode", "Destination Well"),
+    df_stats: pd.DataFrame,
+    plate_values: np.ndarray,
+    modes: dict[str],
+    echo_keys: tuple[str] = ("Destination Plate Barcode", "Destination Well"),
 ) -> pd.DataFrame:
     """
     Combine Echo data with activation and inhibition values.
     :param echo_df: dataframe with Echo data
-    :param barcodes_dict: dictionary with barcodes and activation and inhibition values
-    :param echo_keys: keys to merge on, defaults to ("Destination Plate Barcode", "Destination Well")
+    :param df_stats: dataframe containing statistics for each plate
+    :param plate_values: numpy array with activation and inhibition values - shape: (#plates, 2, 16, 24)
+    :param modes: dictionary with modes for each plate
+    :param echo_keys: keys used to merge Echo data with activation and inhibition values #TODO: maybe not necessary and should be hard-coded?
     """
+    act_inh_dict = get_activation_inhibition_dict(df_stats, plate_values, modes)
     dfs = []
-    for barcode, values_dict in barcodes_dict.items():
+    for barcode, values_dict in act_inh_dict.items():
         activation_inhibition_df = get_activation_inhibition_df(barcode, values_dict)
         dfs.append(
             echo_df.merge(
@@ -114,5 +123,4 @@ def combine_bmg_echo_data(
                 right_on=("Barcode", "Well"),
             )
         )
-    res = pd.concat(dfs, ignore_index=True)
-    return res.drop(columns=["Barcode", "Well"])
+    return pd.concat(dfs, ignore_index=True).drop(columns=["Barcode", "Well"])

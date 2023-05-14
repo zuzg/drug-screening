@@ -187,14 +187,12 @@ def calculate_activation_inhibition(
     """
     Calculates the activation and inhibition values for each well.
     :param df_stats: dataframe with pre-calculated statistics
-    :param values: values to calculate activation and inhibition
+    :param values: values to calculate activation/inhibition and an outlier mask
     :param mode: mode of calculation, either "all", "activation" or "inhibition"
     :param without_pos: whether to calculate without positive controls (in case of "activation" mode)
     """
-
     activation, inhibition = None, None
     if mode == "activation" or mode == "all":
-        # NOTE: for now not used
         # NOTE: for now `without_pos` is not used
         if without_pos:
             activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
@@ -237,5 +235,6 @@ def get_activation_inhibition_dict(
         act_inh_dict[row_stats["barcode"]] = {
             "activation": activation,
             "inhibition": inhibition,
+            "outliers": v[1],
         }
     return act_inh_dict
