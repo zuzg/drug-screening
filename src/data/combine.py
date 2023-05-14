@@ -1,8 +1,6 @@
 import pandas as pd
 import numpy as np
-from collections import namedtuple
 from functools import reduce
-import string
 from src.data.bmg_plate import get_activation_inhibition_dict
 
 
@@ -70,7 +68,9 @@ def values_array_to_column(
     return pd.DataFrame(records).rename(columns={"Value": column})
 
 
-def get_activation_inhibition_df(barcode: str, values_dict: dict) -> pd.DataFrame:
+def get_activation_inhibition_zscore_df(
+    barcode: str, values_dict: dict
+) -> pd.DataFrame:
     """
     Get a dataframe with activation and inhibition values.
     :param barcode: barcode of the plate
@@ -93,6 +93,12 @@ def get_activation_inhibition_df(barcode: str, values_dict: dict) -> pd.DataFram
         df = values_array_to_column(
             values_dict["inhibition"], values_dict["outliers"], "% INHIBITION"
         )
+
+    z_score = values_array_to_column(
+        values_dict["z_score"], values_dict["outliers"], "Z-SCORE"
+    )
+
+    df = df.merge(z_score, on="Well")
     df["Barcode"] = barcode
     return df
 
@@ -115,7 +121,9 @@ def combine_bmg_echo_data(
     act_inh_dict = get_activation_inhibition_dict(df_stats, plate_values, modes)
     dfs = []
     for barcode, values_dict in act_inh_dict.items():
-        activation_inhibition_df = get_activation_inhibition_df(barcode, values_dict)
+        activation_inhibition_df = get_activation_inhibition_zscore_df(
+            barcode, values_dict
+        )
         dfs.append(
             echo_df.merge(
                 activation_inhibition_df,
@@ -124,3 +132,16 @@ def combine_bmg_echo_data(
             )
         )
     return pd.concat(dfs, ignore_index=True).drop(columns=["Barcode", "Well"])
+
+
+def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
+    """
+    Split dataframe into compounds, positive controls and negative controls.
+    :param df: dataframe with compounds and controls
+    :return: tuple of dataframes with compounds, positive controls and negative controls
+    """
+    mask = df["Destination Well"].str[-2:]
+    control_pos_df = df[mask == "24"]
+    control_neg_df = df[mask == "23"]
+    compounds_df = df[~mask.isin(["23", "24"])]
+    return compounds_df, control_pos_df, control_neg_df

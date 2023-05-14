@@ -8,8 +8,10 @@ PlateSummary = namedtuple(
     "PlateSummary",
     [
         "barcode",
+        "std_cmpd",
         "std_pos",
         "std_neg",
+        "mean_cmpd",
         "mean_pos",
         "mean_neg",
         "z_factor",
@@ -110,10 +112,15 @@ def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
         plate.pos, plate.neg
     )
 
+    std_cmpd = np.nanstd(plate.plate_array[:, :22])
+    mean_cmpd = np.nanmean(plate.plate_array[:, :22])
+
     plate_summary = PlateSummary(
         plate.barcode,
+        std_cmpd,
         std_pos,
         std_neg,
+        mean_cmpd,
         mean_pos,
         mean_neg,
         z_factor,
@@ -178,7 +185,7 @@ def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     return df, plate_values
 
 
-def calculate_activation_inhibition(
+def calculate_activation_inhibition_zscore(
     df_stats: pd.Series,
     values: np.ndarray,
     mode: str = "all",
@@ -210,10 +217,12 @@ def calculate_activation_inhibition(
             / (df_stats["mean_neg"] - df_stats["mean_pos"])
         ) * 100
 
+    z_score = (values - df_stats["mean_cmpd"]) / df_stats["std_cmpd"]
+
     assert not (
         activation == inhibition
     ).all(), "Activation and inhibition are the same"
-    return activation, inhibition
+    return activation, inhibition, z_score
 
 
 def get_activation_inhibition_dict(
@@ -229,12 +238,13 @@ def get_activation_inhibition_dict(
     act_inh_dict = {}
     for (_, row_stats), v in zip(df_stats.iterrows(), plate_values):
         mode = modes[row_stats["barcode"]] if row_stats["barcode"] in modes else "all"
-        activation, inhibition = calculate_activation_inhibition(
+        activation, inhibition, z_score = calculate_activation_inhibition_zscore(
             row_stats, v[0], mode=mode
         )
         act_inh_dict[row_stats["barcode"]] = {
             "activation": activation,
             "inhibition": inhibition,
+            "z_score": z_score,
             "outliers": v[1],
         }
     return act_inh_dict
