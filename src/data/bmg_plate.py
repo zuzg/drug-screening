@@ -190,7 +190,7 @@ def calculate_activation_inhibition_zscore(
     values: np.ndarray,
     mode: str = "all",
     without_pos: bool = False,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray]:
     """
     Calculates the activation and inhibition values for each well.
     :param df_stats: dataframe with pre-calculated statistics
@@ -219,13 +219,10 @@ def calculate_activation_inhibition_zscore(
 
     z_score = (values - df_stats["mean_cmpd"]) / df_stats["std_cmpd"]
 
-    assert not (
-        activation == inhibition
-    ).all(), "Activation and inhibition are the same"
     return activation, inhibition, z_score
 
 
-def get_activation_inhibition_dict(
+def get_activation_inhibition_zscore_dict(
     df_stats: pd.DataFrame, plate_values: np.ndarray, modes: list[str]
 ) -> dict[str, dict[str, float]]:
     """

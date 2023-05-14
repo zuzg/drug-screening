@@ -9,6 +9,8 @@ class EchoFilesParser:
         echo_files_dir: str,
     ):
         """
+        Parser for csv echo files.
+
         :param echo_files_dir: directory containing echo files
         """
         self.echo_files_dir = echo_files_dir
@@ -29,42 +31,58 @@ class EchoFilesParser:
                     return markers_rows
         return markers_rows
 
+    def parse_file(self, filename: str) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """
+        Preprocesses a csv echo file and stores it in a dataframe (exceptions separated).
+
+        :param filename: path to the file
+        :return: dataframe with echo data, dataframe with exceptions
+        """
+        markers = self.find_marker_rows(filename, ("[EXCEPTIONS]", "[DETAILS]"))
+
+        if len(markers) == 2:
+            exceptions_line, details_line = markers
+            exceptions_df = pd.read_csv(
+                filename,
+                skiprows=exceptions_line + 1,
+                nrows=(details_line - 1) - exceptions_line - 2,
+            )
+            echo_df = pd.read_csv(filename, skiprows=details_line + 1)
+        elif len(markers) == 1:
+            exceptions_df = pd.DataFrame()
+            echo_df = pd.read_csv(filename, skiprows=markers[0] + 1)
+        else:
+            exceptions_df = pd.read_csv(filename)
+            echo_df = None
+
+        if echo_df is not None:
+            mask = (
+                echo_df[echo_df.columns[0]]
+                .astype(str)
+                .str.lower()
+                .str.startswith("instrument", na=False)
+            )
+            echo_df = echo_df[~mask]
+        return echo_df, exceptions_df
+
     def parse_files_from_dir(self) -> EchoFilesParser:
         """
-        Preprocesses csv echo files, splits regular records from exceptions.
+        Preprocesses csv echo files from a directory and stores them in dataframes (exceptions separated).
+
+        :return: self
         """
         exception_dfs, echo_dfs = [], []
         for filename in os.listdir(self.echo_files_dir):
             if not (filename.endswith(".csv")):
                 continue
             filepath = os.path.join(self.echo_files_dir, filename)
-            markers = self.find_marker_rows(filepath, ("[EXCEPTIONS]", "[DETAILS]"))
-
-            if len(markers) == 2:
-                exceptions_line, details_line = markers
-                exceptions_df = pd.read_csv(
-                    filepath,
-                    skiprows=exceptions_line + 1,
-                    nrows=(details_line - 1) - exceptions_line - 2,
-                )
-                echo_df = pd.read_csv(filepath, skiprows=details_line + 1)
-            elif len(markers) == 1:
-                exceptions_df = pd.DataFrame()
-                echo_df = pd.read_csv(filepath, skiprows=markers[0] + 1)
-            else:
-                echo_df = pd.read_csv(filepath)
-
-            mask = echo_df[echo_df.columns[0]].apply(
-                lambda x: isinstance(x, str)
-            ) & echo_df[echo_df.columns[0]].astype(str).str.lower().str.startswith(
-                "instrument", na=False
-            )
-            echo_df = echo_df[~mask]
+            echo_df, exceptions_df = self.parse_file(filepath)
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 
+        if echo_df is not None:
+            self.echo_df = pd.concat(echo_dfs, ignore_index=True)
         self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
-        self.echo_df = pd.concat(echo_dfs, ignore_index=True)
 
         return self
 
@@ -73,6 +91,7 @@ class EchoFilesParser:
         Retains only the specified columns.
 
         :param columns: list of columns to retain
+        :return: self
         """
         # TODO : include CMPD -> we need to get these column from HTS center
         if columns is None:

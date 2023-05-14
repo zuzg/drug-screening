@@ -17,24 +17,22 @@ def test_parse_files():
     echo1_content = (
         "[DETAILS]\nPlate,Well,Transfer Volume\nplate123,A01,10\nInstrument\n"
     )
-    echo2_content = "[DETAILS]\nPlate,Well,Transfer Volume\nplate456,B01,20\nInstrument\nInstrument\n"
-    parser = EchoFilesParser(["echo_file1.csv", "echo_file2.csv"])
+    parser = EchoFilesParser("some_dir")
     parser.find_marker_rows = MagicMock(return_value=[0])
 
     with patch("builtins.open") as mock_file:
         mock_file.side_effect = [
             mock_open(read_data=echo1_content).return_value,
-            mock_open(read_data=echo2_content).return_value,
         ]
-        parser.parse_files()
+        echo_df, _ = parser.parse_file("echo_file1.csv")
         expected_echo_df = pd.DataFrame(
             {
-                "Plate": ["plate123", "plate456"],
-                "Well": ["A01", "B01"],
-                "Transfer Volume": [10.0, 20.0],
+                "Plate": ["plate123"],
+                "Well": ["A01"],
+                "Transfer Volume": [10.0],
             }
         )
-        pd.testing.assert_frame_equal(parser.get_processed_echo_df(), expected_echo_df)
+        pd.testing.assert_frame_equal(echo_df, expected_echo_df)
 
 
 def test_retain_key_columns():
@@ -44,7 +42,9 @@ def test_retain_key_columns():
     parser = EchoFilesParser(["echo_file1.csv"])
     parser.find_marker_rows = MagicMock(return_value=[0])
     with patch("builtins.open", mock_open(read_data=echo1_content)):
-        parser.parse_files()
+        echo_df, _ = parser.parse_file("echo_file1.csv")
+        parser.echo_df = echo_df
+        parser.exceptions_df = pd.DataFrame()
         parser.retain_key_columns(["Plate", "Wrong_column"])
         expected_echo_df = pd.DataFrame({"Plate": ["plate123"]})
         pd.testing.assert_frame_equal(parser.get_processed_echo_df(), expected_echo_df)

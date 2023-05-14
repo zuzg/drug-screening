@@ -53,3 +53,29 @@ def plate_summary():
     z_wo, outliers_mask = calculate_z_outliers(plate)
     summary = get_summary_tuple(plate, z_wo)
     return summary
+
+
+@pytest.fixture
+def df_stats():
+    data = {
+        "barcode": ["1234"],
+        "std_cmpd": [1],
+        "std_pos": [1.5],
+        "std_neg": [1.0],
+        "mean_cmpd": [2],
+        "mean_pos": [3],
+        "mean_neg": [2],
+        "z_factor": [-2],
+        "z_factor_no_outliers": [2],
+    }
+    return pd.DataFrame.from_dict(data)
+
+
+@pytest.fixture
+def values_dict():
+    return {
+        "activation": np.array([[1.0, 2.0], [3.0, 4.0]]),
+        "inhibition": np.array([[0.5, 0.2], [0.1, 0.3]]),
+        "z_score": np.array([[-1.0, 0.5], [1.0, -0.5]]),
+        "outliers": np.array([[0, 0], [1, 0]]),
+    }

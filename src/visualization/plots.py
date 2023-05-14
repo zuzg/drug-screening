@@ -203,7 +203,7 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     return fig
 
 
-def visualise_activation_inhibition_zscore(
+def visualize_activation_inhibition_zscore(
     compounds_df: pd.DataFrame,
     control_pos_df: pd.DataFrame,
     control_neg_df: pd.DataFrame,
