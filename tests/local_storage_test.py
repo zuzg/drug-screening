@@ -1,6 +1,6 @@
 import pytest
 
-from app.storage import LocalFileStorage
+from dashboard.storage import LocalFileStorage
 
 
 def test_save_file_saves_corectly(tmp_path):
