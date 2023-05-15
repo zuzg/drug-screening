@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from functools import reduce
-from src.data.bmg_plate import get_activation_inhibition_zscore_dict, Mode
+from dashboard.data.bmg_plate import get_activation_inhibition_zscore_dict, Mode
 
 
 # NOTE: to be removed

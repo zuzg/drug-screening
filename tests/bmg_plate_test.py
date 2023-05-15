@@ -1,8 +1,8 @@
 import numpy as np
 from unittest.mock import mock_open, patch
-from src.data.bmg_plate import Mode
+from dashboard.data.bmg_plate import Mode
 
-from src.data.bmg_plate import (
+from dashboard.data.bmg_plate import (
     well_to_ids,
     parse_bmg_file,
     calculate_activation_inhibition_zscore,

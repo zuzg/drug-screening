@@ -1,12 +1,12 @@
 import numpy as np
 import pandas as pd
-from src.data.combine import (
+from dashboard.data.combine import (
     values_array_to_column,
     get_activation_inhibition_zscore_df,
     split_compounds_controls,
     combine_bmg_echo_data,
 )
-from src.data.bmg_plate import Mode
+from dashboard.data.bmg_plate import Mode
 
 
 def test_values_array_to_column():

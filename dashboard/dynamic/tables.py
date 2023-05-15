@@ -2,7 +2,7 @@ import pandas as pd
 
 from dash import html, dash_table
 
-from src.data.utils import is_chemical_result
+from dashboard.data.utils import is_chemical_result
 
 
 def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:

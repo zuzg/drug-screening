@@ -16,11 +16,11 @@ from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from umap import UMAP
 
-from src.data.parse import parse_bytes_to_dataframe
-from src.data.combine import combine_assays
-from src.data.controls import generate_controls, controls_index_annotator
-from src.data.utils import get_chemical_columns, generate_dummy_links_dataframe
-from src.data.preprocess import MergedAssaysPreprocessor
+from dashboard.data.parse import parse_bytes_to_dataframe
+from dashboard.data.combine import combine_assays
+from dashboard.data.controls import generate_controls, controls_index_annotator
+from dashboard.data.utils import get_chemical_columns, generate_dummy_links_dataframe
+from dashboard.data.preprocess import MergedAssaysPreprocessor
 
 from .tables import table_from_df, table_from_df_with_selected_columns
 from .figures import make_scatterplot, make_projection_plot
@@ -97,11 +97,11 @@ def on_data_upload(
         .restrict_to_chemicals()
         .drop_na()
         .group_duplicates_by_function("max")
-        .append_ecbd_links(ecbd_links)
+        .dashboardend_ecbd_links(ecbd_links)
     )
 
     for projector, name in base_projector_specs:
-        main_preprocessor.apply_projection(projector, name)
+        main_preprocessor.dashboardly_projection(projector, name)
     processed_df = main_preprocessor.get_processed_df()
 
     # ==== END ====
@@ -110,7 +110,9 @@ def on_data_upload(
     controls_df = generate_controls(chemical_columns)
     controls_preprocessor = MergedAssaysPreprocessor(controls_df, chemical_columns)
     for projector, name in base_projector_specs:
-        controls_preprocessor.apply_projection(projector, name, just_transform=True)
+        controls_preprocessor.dashboardly_projection(
+            projector, name, just_transform=True
+        )
     processed_controls_df = controls_preprocessor.get_processed_df()
 
     # ==== END ====
@@ -121,7 +123,7 @@ def on_data_upload(
 
     tsne_preprocessor = MergedAssaysPreprocessor(controls_with_main, chemical_columns)
     for projector, name in combined_projector_specs:
-        tsne_preprocessor.apply_projection(projector, name)
+        tsne_preprocessor.dashboardly_projection(projector, name)
     merged_processed_df = tsne_preprocessor.annotate_by_index(
         controls_index_annotator
     ).get_processed_df()
@@ -289,13 +291,13 @@ def on_page_change(*args):
     return PAGE_HOME
 
 
-def register_callbacks(app: Dash, file_storage: FileStorage) -> None:
+def register_callbacks(dashboard: Dash, file_storage: FileStorage) -> None:
     """
-    Registers application callbacks.
+    Registers dashboardlication callbacks.
 
-    :param app: dash application
+    :param dashboard: dash dashboardlication
     """
-    app.callback(
+    dashboard.callback(
         [
             Output("user-uuid", "data"),
             Output("dummy-loader", "children"),
@@ -304,12 +306,12 @@ def register_callbacks(app: Dash, file_storage: FileStorage) -> None:
         Input("upload-data", "contents"),
         [State("upload-data", "filename"), State("user-uuid", "data")],
     )(functools.partial(on_data_upload, file_storage=file_storage))
-    app.callback(
+    dashboard.callback(
         Output("preview-table", "data"),
         Input("projection-plot", "relayoutData"),
         [State("projection-type-dropdown", "value"), State("user-uuid", "data")],
     )(functools.partial(on_projection_plot_selection, file_storage=file_storage))
-    app.callback(
+    dashboard.callback(
         Output("basic-plot-slot", "children"),
         [
             Input("x-axis-dropdown", "value"),
@@ -317,7 +319,7 @@ def register_callbacks(app: Dash, file_storage: FileStorage) -> None:
         ],
         State("user-uuid", "data"),
     )(functools.partial(on_axis_change, file_storage=file_storage))
-    app.callback(
+    dashboard.callback(
         Output("projection-plot-slot", "children"),
         [
             Input("projection-type-dropdown", "value"),
@@ -327,13 +329,13 @@ def register_callbacks(app: Dash, file_storage: FileStorage) -> None:
         State("user-uuid", "data"),
     )(functools.partial(on_projection_settings_change, file_storage=file_storage))
 
-    app.callback(
+    dashboard.callback(
         Output("page-layout", "children"),
         Input("home-button", "n_clicks"),
         Input("about-button", "n_clicks"),
     )(on_page_change)
 
-    app.callback(
+    dashboard.callback(
         [
             Output("description-table-slot", "children"),
             Output("preview-table-slot", "children"),
