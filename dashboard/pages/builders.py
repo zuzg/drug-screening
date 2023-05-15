@@ -22,6 +22,12 @@ class PageBuilder:
         )
 
     def extend_layout(self, layout: dash.html.Div, position: int = 0) -> None:
+        """
+        Add a layout to the page layout
+
+        :param layout: new element to add
+        :param position: position where element is to be added, defaults to 0, i.e. at the beginning
+        """
         self.layout.children.insert(position, layout)
 
     def _regsiter_callbacks(self) -> None:
@@ -37,11 +43,21 @@ class PageBuilder:
         )
 
     def build(self) -> dash.html.Div:
+        """
+        Build the page layout and register callbacks
+
+        :return: built page layout
+        """
         self._regsiter_callbacks()
         return self.layout
 
     @property
     def elements(self) -> dict[str, str]:
+        """
+        Get ids of special elements
+
+        :return: dictionary of special elements ids
+        """
         return {
             "PAGE_CONTAINER": self.page_container_id,
         }
@@ -51,15 +67,17 @@ class ProcessPageBuilder(PageBuilder):
     def __init__(self, name: str):
         super().__init__(name)
         self.stages = []
-        self.stages_container_id = f"stages_container_{name}"
-        self.stages_store_id = f"stages_store_{name}"
-        self.next_stage_btn_id = f"next_stage_{name}"
-        self.previous_stage_btn_id = f"previous_stage_{name}"
+        self.stages_container_id = f"stages_container_{self.page_name}"
+        self.stages_store_id = f"stages_store_{self.page_name}"
+        self.next_stage_btn_id = f"next_stage_{self.page_name}"
+        self.previous_stage_btn_id = f"previous_stage_{self.page_name}"
         self.stage_blocker_id = f"stage_blocker_{self.page_name}"
         self.layout.children.extend(
             [
-                dash.html.Div(children=[], id=self.stages_container_id),
                 dash.dcc.Store(id=self.stages_store_id, data=0),
+                dash.html.Div(
+                    children=[], id=self.stages_container_id, className="flex-grow-1"
+                ),
                 make_page_controls(
                     previous_stage_btn_id=self.previous_stage_btn_id,
                     next_stage_btn_id=self.next_stage_btn_id,
@@ -73,12 +91,22 @@ class ProcessPageBuilder(PageBuilder):
         )
 
     def add_stage(self, stage: dash.html.Div) -> None:
+        """
+        Register new stage in the process page
+
+        :param stage: stage to be added (layout)
+        """
         if type(stage.children) is not list:
             stage.children = [stage.children]
         stage.children.insert(0, self.make_stage_blocker())
         self.stages.append(stage)
 
     def add_stages(self, stages: list[dash.html.Div]) -> None:
+        """
+        Register new stages in the process page
+
+        :param stages: stages to be added (layouts)
+        """
         for stage in stages:
             self.add_stage(stage)
 
@@ -125,6 +153,11 @@ class ProcessPageBuilder(PageBuilder):
 
     @property
     def elements_raw(self) -> dict[str, str]:
+        """
+        Get ids of special elements
+
+        :return: dictionary of special elements ids
+        """
         return {
             "STAGES_CONTAINER": self.stages_container_id,
             "STAGES_STORE": self.stages_store_id,
@@ -133,6 +166,3 @@ class ProcessPageBuilder(PageBuilder):
             "BLOCKER": self.stage_blocker_id,
             **super().elements_raw,
         }
-
-    def build(self) -> dash.html.Div:
-        return super().build()

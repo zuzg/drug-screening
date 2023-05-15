@@ -66,12 +66,16 @@ def make_footer(version: str) -> html.Footer:
     )
 
 
+# Extra elements that are not part of the main layout
+# Invisible or detached from the main layout
+# Common for all pages
 EXTRA = html.Div(
     id="extra",
     children=[
         html.Div(id="error-box", style={"color": "red"}),
         dcc.Store(id="error-msg", data=""),
         html.Div(id="dummy"),
+        dcc.Store(id="user-uuid", storage_type="local"),
     ],
 )
 
