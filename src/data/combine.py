@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from functools import reduce
-from src.data.bmg_plate import get_activation_inhibition_zscore_dict
+from src.data.bmg_plate import get_activation_inhibition_zscore_dict, Mode
 
 
 # NOTE: to be removed
@@ -13,8 +13,7 @@ def combine_assays(
 ):
     """
     Combine assays into a single dataframe.
-    Performs initial preprocessing needed for valid merge, e.g.
-    dropping controls and setting uniform ID column
+    Performs initial preprocessing needed for valid merge, e.g. dropping controls and setting uniform ID column.
 
     :param dataframes: list of dataframes to merge
     :param names: list of names for the dataframes
@@ -55,6 +54,7 @@ def values_array_to_column(
     """
     Convert a 2D numpy array of values to a dataframe with two column (well, value), but only if the corresponding
     value in outliers is not equal to 1.
+
     :param values: numpy array of values (both activation/inhibition and outlier mask)
     :param outliers: numpy array of outlier mask
     :param column: name of the column
@@ -73,6 +73,7 @@ def get_activation_inhibition_zscore_df(
 ) -> pd.DataFrame:
     """
     Get a dataframe with activation and inhibition values.
+
     :param barcode: barcode of the plate
     :param values_dict: dictionary with activation and inhibition values
     :return: dataframe with activation and inhibition values
@@ -107,16 +108,18 @@ def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
     plate_values: np.ndarray,
-    modes: dict[str],
+    modes: dict[Mode],
     echo_keys: tuple[str] = ("Destination Plate Barcode", "Destination Well"),
 ) -> pd.DataFrame:
     """
     Combine Echo data with activation and inhibition values.
+
     :param echo_df: dataframe with Echo data
     :param df_stats: dataframe containing statistics for each plate
     :param plate_values: numpy array with activation and inhibition values - shape: (#plates, 2, 16, 24)
     :param modes: dictionary with modes for each plate
     :param echo_keys: keys used to merge Echo data with activation and inhibition values #TODO: maybe not necessary and should be hard-coded?
+    :return: dataframe with Echo data and activation and inhibition values
     """
     act_inh_dict = get_activation_inhibition_zscore_dict(df_stats, plate_values, modes)
     dfs = []

@@ -1,5 +1,6 @@
 import numpy as np
 from unittest.mock import mock_open, patch
+from src.data.bmg_plate import Mode
 
 from src.data.bmg_plate import (
     well_to_ids,
@@ -45,16 +46,14 @@ def test_outliers(plate_summary):
 def test_calculate_activation_inhibition_zscore(df_stats):
     values = np.array([5, 3, 3])
     activation, inhibition, z_score = calculate_activation_inhibition_zscore(
-        df_stats.iloc[0], values, mode="all"
+        df_stats.iloc[0], values, mode=Mode.ALL
     )
-    print(activation, inhibition, z_score)
     assert activation[2] == 100.0 and inhibition[1] == 100.0 and z_score[0] == 3.0
 
 
 def test_get_activation_inhibition_zscore_dict(df_stats):
     values = np.array([[5, 3, 3], [0, 1, 0]])
     z_dict = get_activation_inhibition_zscore_dict(df_stats, values, modes=dict())
-    print(z_dict)
     assert z_dict == {
         "1234": {
             "activation": 300.0,

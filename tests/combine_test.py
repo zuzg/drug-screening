@@ -6,6 +6,7 @@ from src.data.combine import (
     split_compounds_controls,
     combine_bmg_echo_data,
 )
+from src.data.bmg_plate import Mode
 
 
 def test_values_array_to_column():
@@ -65,7 +66,7 @@ def test_combine_bmg_echo_data(df_stats):
     }
     echo_df = pd.DataFrame.from_dict(echo_data)
     plate_values = np.random.rand(1, 2, 16, 24)
-    modes = {"1234": "activation"}
+    modes = {"1234": Mode.ACTIVATION}
     combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, modes)
 
     assert len(combined_df) == 96

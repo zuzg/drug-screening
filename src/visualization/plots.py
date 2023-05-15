@@ -292,10 +292,18 @@ def visualize_activation_inhibition_zscore(
 
     if column.upper() == "Z-SCORE" and z_score_limits is not None:
         fig.add_hline(
-            y=z_score_limits[0], line_width=3, line_dash="dash", line_color="red"
+            y=z_score_limits[0],
+            line_width=3,
+            line_dash="dash",
+            line_color="gray",
         )
         fig.add_hline(
-            y=z_score_limits[1], line_width=3, line_dash="dash", line_color="red"
+            y=z_score_limits[1],
+            line_width=3,
+            line_dash="dash",
+            line_color="gray",
+            annotation_text="Z-score limits",
+            annotation_font_color="gray",
         )
 
     return fig
