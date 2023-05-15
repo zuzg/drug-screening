@@ -2,14 +2,23 @@ import os
 import numpy as np
 import pandas as pd
 from collections import namedtuple
+from enum import Enum, auto
+
+
+class Mode(Enum):
+    ACTIVATION = auto()
+    INHIBITION = auto()
+    ALL = auto()
 
 
 PlateSummary = namedtuple(
     "PlateSummary",
     [
         "barcode",
+        "std_cmpd",
         "std_pos",
         "std_neg",
+        "mean_cmpd",
         "mean_pos",
         "mean_neg",
         "z_factor",
@@ -110,10 +119,15 @@ def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
         plate.pos, plate.neg
     )
 
+    std_cmpd = np.nanstd(plate.plate_array[:, :22])
+    mean_cmpd = np.nanmean(plate.plate_array[:, :22])
+
     plate_summary = PlateSummary(
         plate.barcode,
+        std_cmpd,
         std_pos,
         std_neg,
+        mean_cmpd,
         mean_pos,
         mean_neg,
         z_factor,
@@ -176,3 +190,70 @@ def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
     df = pd.DataFrame(plate_summaries)
     plate_values = np.asarray(plate_values)
     return df, plate_values
+
+
+def calculate_activation_inhibition_zscore(
+    df_stats: pd.Series,
+    values: np.ndarray,
+    mode: Mode = Mode.ALL,
+    without_pos: bool = False,
+) -> tuple[np.ndarray]:
+    """
+    Calculates the activation and inhibition values for each well.
+
+    :param df_stats: dataframe with pre-calculated statistics
+    :param values: values to calculate activation/inhibition and an outlier mask
+    :param mode: mode of calculation, either "all", "activation" or "inhibition"
+    :param without_pos: whether to calculate without positive controls (in case of "activation" mode)
+    :return: activation, inhibition and z-score values
+    """
+    activation, inhibition = None, None
+    if mode == Mode.ACTIVATION or mode == Mode.ALL:
+        # NOTE: for now `without_pos` is not used
+        if without_pos:
+            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
+        else:
+            activation = (
+                (values - df_stats["mean_neg"])
+                / (df_stats["mean_pos"] - df_stats["mean_neg"])
+                * 100
+            )
+
+    if mode == Mode.INHIBITION or mode == Mode.ALL:
+        inhibition = (
+            1
+            - ((values - df_stats["mean_pos"]))
+            / (df_stats["mean_neg"] - df_stats["mean_pos"])
+        ) * 100
+
+    z_score = (values - df_stats["mean_cmpd"]) / df_stats["std_cmpd"]
+
+    return activation, inhibition, z_score
+
+
+def get_activation_inhibition_zscore_dict(
+    df_stats: pd.DataFrame, plate_values: np.ndarray, modes: list[Mode]
+) -> dict[str, dict[str, float]]:
+    """
+    Calculates activation and inhibition for each compound in the plates.
+
+    :param df_stats: dataframe with statistics for each plate
+    :param plate_values: array with values in the plate
+    :param mode: list of modes to calculate activation and inhibition
+    :return: dictionary with activation and inhibition values for each compound in the plate
+    """
+    act_inh_dict = {}
+    for (_, row_stats), v in zip(df_stats.iterrows(), plate_values):
+        mode = (
+            modes[row_stats["barcode"]] if row_stats["barcode"] in modes else Mode.ALL
+        )
+        activation, inhibition, z_score = calculate_activation_inhibition_zscore(
+            row_stats, v[0], mode=mode
+        )
+        act_inh_dict[row_stats["barcode"]] = {
+            "activation": activation,
+            "inhibition": inhibition,
+            "z_score": z_score,
+            "outliers": v[1],
+        }
+    return act_inh_dict

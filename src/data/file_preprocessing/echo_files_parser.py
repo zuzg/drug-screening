@@ -1,18 +1,19 @@
 from __future__ import annotations
 import pandas as pd
+import os
 
 
 class EchoFilesParser:
     def __init__(
         self,
-        echo_files: list[str],
+        echo_files_dir: str,
     ):
         """
-        :param echo_files: list of echo file names
+        Parser for csv echo files.
+
+        :param echo_files_dir: directory containing echo files
         """
-        self.echo_files = echo_files
-        self.echo_df = pd.DataFrame()
-        self.exceptions_df = pd.DataFrame()
+        self.echo_files_dir = echo_files_dir
 
     def find_marker_rows(self, file: str, markers: tuple[str]) -> list[int]:
         """
@@ -28,84 +29,87 @@ class EchoFilesParser:
                     markers_rows.append(i)
                 if len(markers_rows) == len(markers):
                     return markers_rows
-        if len(markers_rows) == 0:
-            raise ValueError("No marker found in file.")
         return markers_rows
 
-    def parse_files(self) -> EchoFilesParser:
+    def parse_file(self, filename: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         """
-        Preprocesses csv echo files, splits regular records from exceptions.
+        Preprocesses a csv echo file and stores it in a dataframe (exceptions separated).
+
+        :param filename: path to the file
+        :return: dataframe with echo data, dataframe with exceptions
         """
-        if not (all(file.endswith(".csv") for file in self.echo_files)):
-            raise ValueError(
-                f"Expected files to be of '*.csv' type, provided: {self.echo_files}"
+        markers = self.find_marker_rows(filename, ("[EXCEPTIONS]", "[DETAILS]"))
+
+        if len(markers) == 2:
+            exceptions_line, details_line = markers
+            exceptions_df = pd.read_csv(
+                filename,
+                skiprows=exceptions_line + 1,
+                nrows=(details_line - 1) - exceptions_line - 2,
             )
+            echo_df = pd.read_csv(filename, skiprows=details_line + 1)
+        elif len(markers) == 1:
+            exceptions_df = pd.DataFrame()
+            echo_df = pd.read_csv(filename, skiprows=markers[0] + 1)
+        else:
+            exceptions_df = pd.read_csv(filename)
+            echo_df = None
 
+        if echo_df is not None:
+            mask = (
+                echo_df[echo_df.columns[0]]
+                .astype(str)
+                .str.lower()
+                .str.startswith("instrument", na=False)
+            )
+            echo_df = echo_df[~mask]
+        return echo_df, exceptions_df
+
+    def parse_files_from_dir(self) -> EchoFilesParser:
+        """
+        Preprocesses csv echo files from a directory and stores them in dataframes (exceptions separated).
+
+        :return: self
+        """
         exception_dfs, echo_dfs = [], []
-        for filename in self.echo_files:
-            markers = self.find_marker_rows(filename, ("[EXCEPTIONS]", "[DETAILS]"))
-
-            if len(markers) == 2:
-                exceptions_line, details_line = markers
-                exceptions_df = pd.read_csv(
-                    filename,
-                    skiprows=exceptions_line + 1,
-                    nrows=(details_line - 1) - exceptions_line - 2,
-                )
-                echo_df = pd.read_csv(filename, skiprows=details_line + 1)
-            else:
-                exceptions_df = pd.DataFrame()
-                echo_df = pd.read_csv(filename, skiprows=markers[0] + 1)
-
-            echo_df = echo_df[
-                ~echo_df[echo_df.columns[0]].str.lower().str.startswith("instrument")
-            ]
+        for filename in os.listdir(self.echo_files_dir):
+            if not (filename.endswith(".csv")):
+                continue
+            filepath = os.path.join(self.echo_files_dir, filename)
+            echo_df, exceptions_df = self.parse_file(filepath)
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 
+        if echo_df is not None:
+            self.echo_df = pd.concat(echo_dfs, ignore_index=True)
         self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
-        self.echo_df = pd.concat(echo_dfs, ignore_index=True)
 
         return self
 
-    def link_bmg_files(
-        self,
-        bmg_files: list[str],
-        bmg_columns: list[str] = ("Well", "Value"),
-        bmg_keys: list[str] = ("Plate_barcode", "Well"),
-        echo_keys: list[str] = ("Destination Plate Barcode", "Destination Well"),
-    ) -> EchoFilesParser:
-        """
-        Links bmg files to the echo files.
-
-        :param bmg_files: list of bmg files
-        :param echo_keys: list of echo keys to merge on
-        :param bmg_keys: list of bmg keys to merge on
-        """
-        echo_bmg_linked_dfs = []
-
-        for bmg_file in bmg_files:
-            plate_barcode = bmg_file.split(".")[0].split("\\")[-1]
-            bmg_df = pd.read_csv(bmg_file, sep="\t", names=bmg_columns)
-            bmg_df[bmg_keys[0]] = plate_barcode
-
-            echo_bmg_linked_dfs.append(
-                self.echo_df.merge(bmg_df, left_on=echo_keys, right_on=bmg_keys)
-            )
-        self.echo_df = pd.concat(echo_bmg_linked_dfs, ignore_index=True)
-        return self
-
-    def retain_columns(self, columns: list[str]) -> EchoFilesParser:
+    def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """
         Retains only the specified columns.
 
         :param columns: list of columns to retain
+        :return: self
         """
-        # TODO: check whether it is beneficial to split this into two methods (we need to include exceptions in the report)
+        # TODO : include CMPD -> we need to get these column from HTS center
+        if columns is None:
+            columns = [
+                "CMPD ID",
+                "Source Plate Barcode",
+                "Source Well",
+                "Destination Plate Barcode",
+                "Destination Well",
+                "Actual Volume",
+            ]
+
         retain_echo = list(set(columns).intersection(self.echo_df.columns))
         self.echo_df = self.echo_df[retain_echo]
 
-        retain_exceptions = list(set(columns).intersection(self.exceptions_df.columns))
+        retain_exceptions = list(
+            set(columns + ["Transfer Status"]).intersection(self.exceptions_df.columns)
+        )
         self.exceptions_df = self.exceptions_df[retain_exceptions].sort_index(axis=1)
         return self
 

@@ -1,7 +1,13 @@
 import numpy as np
 from unittest.mock import mock_open, patch
+from src.data.bmg_plate import Mode
 
-from src.data.bmg_plate import well_to_ids, parse_bmg_file, get_summary_tuple
+from src.data.bmg_plate import (
+    well_to_ids,
+    parse_bmg_file,
+    calculate_activation_inhibition_zscore,
+    get_activation_inhibition_zscore_dict,
+)
 
 
 def test_well_to_ids():
@@ -35,3 +41,24 @@ def test_plate_class(plate_summary):
 
 def test_outliers(plate_summary):
     assert plate_summary.z_factor == plate_summary.z_factor_no_outliers
+
+
+def test_calculate_activation_inhibition_zscore(df_stats):
+    values = np.array([5, 3, 3])
+    activation, inhibition, z_score = calculate_activation_inhibition_zscore(
+        df_stats.iloc[0], values, mode=Mode.ALL
+    )
+    assert activation[2] == 100.0 and inhibition[1] == 100.0 and z_score[0] == 3.0
+
+
+def test_get_activation_inhibition_zscore_dict(df_stats):
+    values = np.array([[5, 3, 3], [0, 1, 0]])
+    z_dict = get_activation_inhibition_zscore_dict(df_stats, values, modes=dict())
+    assert z_dict == {
+        "1234": {
+            "activation": 300.0,
+            "inhibition": 300.0,
+            "outliers": 3,
+            "z_score": 3.0,
+        }
+    }
