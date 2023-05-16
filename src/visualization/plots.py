@@ -61,7 +61,9 @@ def plot_projection_2d(
     return fig
 
 
-def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> go.Figure:
+def visualize_multiple_plates(
+    df: pd.DataFrame, plate_array: np.ndarray, rows: int = 3, cols: int = 3
+) -> go.Figure:
     """
     Visualize plate values on subplots 3x3
 
@@ -69,10 +71,11 @@ def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> go.F
     :param plate_array: array with plate values
     :return: plot with visualized plates
     """
-    row, col = 3, 3
-    fig = make_subplots(row, col, horizontal_spacing=0.01)
-    ids = product([1, 2, 3], [1, 2, 3])
-    for i, p, plate, barcode in zip(range(1, 10), ids, plate_array, df.barcode):
+    fig = make_subplots(rows, cols, horizontal_spacing=0.01)
+    ids = product(list(range(1, rows + 1)), list(range(1, cols + 1)))
+    for i, p, plate, barcode in zip(
+        range(1, rows * cols + 1), ids, plate_array, df.barcode
+    ):
         fig.add_trace(
             go.Heatmap(
                 z=plate[0],
@@ -83,7 +86,7 @@ def visualize_multiple_plates(df: pd.DataFrame, plate_array: np.ndarray) -> go.F
             p[0],
             p[1],
         )
-        fig.update_xaxes(title_text=barcode, row=p[0], col=p[1])
+        fig.update_xaxes(title_text=barcode, title_font_size=10, row=p[0], col=p[1])
         fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}})
 
     fig.update_layout(
