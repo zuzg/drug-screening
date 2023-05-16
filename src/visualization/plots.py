@@ -69,6 +69,8 @@ def visualize_multiple_plates(
 
     :param df: DataFrame with plates
     :param plate_array: array with plate values
+    :param rows: number of rows in plot grid
+    :param cols: number of cols in plot grid
     :return: plot with visualized plates
     """
     fig = make_subplots(rows, cols, horizontal_spacing=0.01)
@@ -206,6 +208,44 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     return fig
 
 
+def plot_z_per_plate(df: pd.DataFrame) -> go.Figure:
+    """
+    Visualize z factor per plate
+
+    :param df: DataFrame with plate statistics
+    :return: plotly figure
+    """
+    fig = go.Figure(
+        layout_title_text="Z' per plates",
+        layout={
+            "xaxis": {
+                "title": "Barcode assay plate",
+                "visible": True,
+                "showticklabels": True,
+            },
+            "yaxis": {
+                "title": "Z' after outliers removal",
+                "visible": True,
+                "showticklabels": True,
+            },
+            "margin": dict(
+                l=10,
+                r=10,
+                t=50,
+                b=10,
+            ),
+        },
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=df.barcode,
+            y=df.z_factor,
+            mode="markers",
+        )
+    )
+    return fig
+
+
 def visualize_activation_inhibition_zscore(
     compounds_df: pd.DataFrame,
     control_pos_df: pd.DataFrame,
@@ -213,7 +253,9 @@ def visualize_activation_inhibition_zscore(
     column: str,
     z_score_limits: tuple = None,
 ) -> go.Figure:
-    """Visualise activation and inhibition z-scores from one plate
+    """
+    Visualise activation and inhibition z-scores from one plate
+
     :param compounds_df: DataFrame with compounds values
     :param control_pos_df: DataFrame with positive control values
     :param control_neg_df: DataFrame with negative control values
@@ -310,8 +352,3 @@ def visualize_activation_inhibition_zscore(
         )
 
     return fig
-
-
-def plot_z_per_plate(df: pd.DataFrame) -> plt.Figure:
-    # TODO after outlier removal
-    ...
