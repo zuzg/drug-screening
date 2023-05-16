@@ -31,15 +31,6 @@ BMG_INPUT_STAGE = html.Div(
                             html.A("Select Files"),
                         ]
                     ),
-                    style={
-                        "width": "100%",
-                        "height": "100%",
-                        "lineHeight": "60px",
-                        "borderWidth": "1px",
-                        "borderStyle": "dashed",
-                        "borderRadius": "5px",
-                        "textAlign": "center",
-                    },
                     multiple=True,
                     className="text-center upload-box",
                 ),
