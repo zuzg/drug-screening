@@ -1,6 +1,6 @@
 import pandas as pd
 from unittest.mock import mock_open, MagicMock, patch
-from src.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 
 
 def test_find_marker_rows():

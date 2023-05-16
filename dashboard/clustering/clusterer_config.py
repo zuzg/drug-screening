@@ -4,7 +4,7 @@ import numpy as np
 from typing import Callable, Iterable
 from dataclasses import dataclass
 
-from src.clustering import GeneralClustererFinder
+from dashboard.clustering import GeneralClustererFinder
 from .general_clusterer_finder import Clusterer
 
 RANDOM_STATE = 31

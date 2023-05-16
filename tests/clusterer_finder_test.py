@@ -2,7 +2,7 @@ import numpy as np
 
 from unittest.mock import Mock
 
-from src.clustering import GeneralClustererFinder
+from dashboard.clustering import GeneralClustererFinder
 
 
 class MockScorer:

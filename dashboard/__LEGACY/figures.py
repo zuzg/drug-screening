@@ -3,8 +3,8 @@ import plotly.express as px
 
 from dash import dcc
 
-from src.visualization.plots import plot_projection_2d
-from src.visualization.overlay import projection_plot_overlay_controls
+from dashboard.visualization.plots import plot_projection_2d
+from dashboard.visualization.overlay import projection_plot_overlay_controls
 
 
 def make_scatterplot(
