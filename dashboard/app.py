@@ -11,7 +11,7 @@ VERSION = "v1.0.0-dev"
 
 fs_dir = os.environ.get("DRUG_SCREENING_DATA_DIR", ".drug-screening-data")
 
-file_storage = LocalFileStorage(fs_dir)
+file_storage = LocalFileStorage.set_data_folder(fs_dir)
 
 app = Dash(__name__, external_stylesheets=[BOOTSTRAP_CDN], use_pages=True)
 
