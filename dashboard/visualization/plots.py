@@ -211,11 +211,12 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     return fig
 
 
-def plot_z_per_plate(df: pd.DataFrame) -> go.Figure:
+def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
     """
     Visualize z factor per plate
 
-    :param df: DataFrame with plate statistics
+    :param barcode: series containing plate barcodes
+    :param z_factor: series containing plate z factors
     :return: plotly figure
     """
     fig = go.Figure(
@@ -241,8 +242,8 @@ def plot_z_per_plate(df: pd.DataFrame) -> go.Figure:
     )
     fig.add_trace(
         go.Scatter(
-            x=df.barcode,
-            y=df.z_factor,
+            x=barcode,
+            y=z_factor,
             mode="markers",
         )
     )

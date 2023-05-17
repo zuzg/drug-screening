@@ -271,7 +271,6 @@ def filter_low_quality_plates(
     :param threshold: Z factor threshold value
     :return: high quality plates
     """
-    quality_df = df.copy()
     quality_mask = df.z_factor > threshold
     quality_df = df[quality_mask]
     low_quality_ids = np.where(quality_mask == False)

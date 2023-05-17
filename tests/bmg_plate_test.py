@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from unittest.mock import mock_open, patch
 from dashboard.data.bmg_plate import Mode
 
@@ -7,6 +8,7 @@ from dashboard.data.bmg_plate import (
     parse_bmg_file,
     calculate_activation_inhibition_zscore,
     get_activation_inhibition_zscore_dict,
+    filter_low_quality_plates,
 )
 
 
@@ -62,3 +64,10 @@ def test_get_activation_inhibition_zscore_dict(df_stats):
             "z_score": 3.0,
         }
     }
+
+
+def test_filter_low_quality_plates(df_stats):
+    values = np.array([[5, 3, 3], [0, 1, 0]])
+    quality_df, quality_plates = filter_low_quality_plates(df_stats, values, -2.5)
+    df_diff = pd.concat([df_stats, quality_df]).drop_duplicates(keep=False)
+    assert df_diff.empty and np.array_equal(quality_plates, values)
