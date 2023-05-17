@@ -100,6 +100,7 @@ def visualize_multiple_plates(
             t=50,
             b=10,
         ),
+        template="plotly_white",
     )
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
@@ -155,6 +156,7 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
             opacity=0.75,
         )
     )
+    fig.update_layout(template="plotly_white")
     return fig
 
 
@@ -204,6 +206,7 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
             t=50,
             b=10,
         ),
+        template="plotly_white",
     )
     return fig
 
@@ -243,6 +246,7 @@ def plot_z_per_plate(df: pd.DataFrame) -> go.Figure:
             mode="markers",
         )
     )
+    fig.update_layout(template="plotly_white")
     return fig
 
 
@@ -325,6 +329,7 @@ def visualize_activation_inhibition_zscore(
         title=f"{column} - plate {plate_barcode}",
         xaxis=dict(title="Row"),
         yaxis=dict(title=column),
+        template="plotly_white",
     )
 
     fig.update_traces(
