@@ -3,7 +3,8 @@
 import pytest
 import numpy as np
 import pandas as pd
-from src.data.bmg_plate import Plate, get_summary_tuple, calculate_z_outliers
+
+from dashboard.data.bmg_plate import Plate, get_summary_tuple, calculate_z_outliers
 
 
 @pytest.fixture

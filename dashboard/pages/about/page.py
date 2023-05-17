@@ -1,10 +1,13 @@
-"""
-Contains elements for the about page.
-"""
+from dash import register_page, html
 
-from dash import html
+from dashboard.pages.builders import PageBuilder
 
-about_container = html.Main(
+NAME = "About"
+register_page(path="/about", name=NAME, module=__name__)
+
+pb = PageBuilder(name=NAME)
+
+ABOUT_CONTENT = html.Main(
     className="container-xl flex-grow-1",
     children=[
         html.Div(
@@ -62,3 +65,8 @@ about_container = html.Main(
         ),
     ],
 )
+
+
+pb.extend_layout(ABOUT_CONTENT)
+
+layout = pb.build()
