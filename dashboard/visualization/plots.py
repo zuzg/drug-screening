@@ -8,6 +8,9 @@ from itertools import product
 import string
 
 
+PLOTLY_TEMPLATE = "plotly_white"
+
+
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
@@ -57,6 +60,7 @@ def plot_projection_2d(
         margin=dict(r=35, l=15, b=0),
         title_x=0.5,
         coloraxis_colorbar=dict(orientation="h", thickness=15),
+        template=PLOTLY_TEMPLATE,
     )
     return fig
 
@@ -100,7 +104,7 @@ def visualize_multiple_plates(
             t=50,
             b=10,
         ),
-        template="plotly_white",
+        template=PLOTLY_TEMPLATE,
     )
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
@@ -156,7 +160,7 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
             opacity=0.75,
         )
     )
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(template=PLOTLY_TEMPLATE)
     return fig
 
 
@@ -206,7 +210,7 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
             t=50,
             b=10,
         ),
-        template="plotly_white",
+        template=PLOTLY_TEMPLATE,
     )
     return fig
 
@@ -330,7 +334,7 @@ def visualize_activation_inhibition_zscore(
         title=f"{column} - plate {plate_barcode}",
         xaxis=dict(title="Row"),
         yaxis=dict(title=column),
-        template="plotly_white",
+        template=PLOTLY_TEMPLATE,
     )
 
     fig.update_traces(
