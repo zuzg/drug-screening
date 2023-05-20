@@ -158,7 +158,7 @@ def read_io_file(file: str) -> list[str]:
 
 def parse_bmg_file_iostring(filename: str, filecontent: str) -> np.array:
     """
-    Read data from txt file to np.array
+    Read data from iostring file to np.array
 
     :return: array with plate values
     """
@@ -178,9 +178,9 @@ def parse_bmg_file_iostring(filename: str, filecontent: str) -> np.array:
 
 def parse_bmg_files_from_iostring(files: list[(str,str)]) -> tuple[pd.DataFrame, np.ndarray]:
     """
-    Parse file from directory with BMG files to DataFrame
+    Parse file from iostring with BMG files to DataFrame
 
-    :param dir: directory consisting of BMG files
+    :param files: list containing names and content of files
     :return: DataFrame with BMG files (=plates) as rows
     """
     plate_summaries = []
