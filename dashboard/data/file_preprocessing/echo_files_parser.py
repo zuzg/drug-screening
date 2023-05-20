@@ -6,14 +6,74 @@ import os
 class EchoFilesParser:
     def __init__(
         self,
-        echo_files_dir: str,
     ):
         """
         Parser for csv echo files.
-
-        :param echo_files_dir: directory containing echo files
         """
-        self.echo_files_dir = echo_files_dir
+
+
+    def read_io_file(self, file: str) -> list[str]:
+    
+        readed = []
+        line = file.readline()
+        while(line):
+            readed.append(line)
+            line = file.readline()
+        return readed
+
+    def find_marker_rows_iostring(self, file: str, markers: tuple[str]) -> list[int]:
+        """
+        Finds the row numbers of marker lines in a ioString file.
+
+        :param file: file to search
+        :param markers: markers to search for
+        """
+        
+        markers_rows = list()
+        for i, line in enumerate(file):
+            if line.strip() in markers:
+                markers_rows.append(i)
+            if len(markers_rows) == len(markers):
+                return markers_rows
+        if len(markers_rows) == 0:
+            raise ValueError("No marker found in file.")
+        return markers_rows
+
+    def parse_files_iostring(self, echo_files: list[str,str]) -> EchoFilesParser:
+        """
+        Preprocesses csv echo ioString files, splits regular records from exceptions.
+        """
+        exception_dfs, echo_dfs = [], []
+        for filename, filecontent in echo_files:
+            file = self.read_io_file(filecontent)
+            markers = self.find_marker_rows_iostring(file, ("[EXCEPTIONS]", "[DETAILS]"))
+            file = [line[:-2].split(",") for line in file]
+            
+            if len(markers) == 2:
+                exceptions_line, details_line = markers
+                exceptions_df = pd.DataFrame(
+                    file[exceptions_line + 2: details_line - 1], columns = file[exceptions_line + 1]
+                )
+                echo_df = pd.DataFrame(file[details_line + 2:], columns = file[details_line + 1])
+                
+            else:
+                exceptions_df = pd.DataFrame()
+                echo_df = pd.DataFrame(file[markers[0] + 2:], columns = file[markers[0] + 1])
+
+            echo_df = echo_df[
+                ~echo_df[echo_df.columns[0]].str.lower().str.startswith("instrument")
+            ]
+            echo_df = echo_df[
+                ~echo_df[echo_df.columns[0]].isin([""])
+            ]
+            exception_dfs.append(exceptions_df)
+            echo_dfs.append(echo_df)
+
+        if echo_df is not None:
+            self.echo_df = pd.concat(echo_dfs, ignore_index=True)
+        self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
+
+        return self
 
     def find_marker_rows(self, file: str, markers: tuple[str]) -> list[int]:
         """
@@ -65,17 +125,17 @@ class EchoFilesParser:
             echo_df = echo_df[~mask]
         return echo_df, exceptions_df
 
-    def parse_files_from_dir(self) -> EchoFilesParser:
+    def parse_files_from_dir(self, echo_files_dir) -> EchoFilesParser:
         """
         Preprocesses csv echo files from a directory and stores them in dataframes (exceptions separated).
 
         :return: self
         """
         exception_dfs, echo_dfs = [], []
-        for filename in os.listdir(self.echo_files_dir):
+        for filename in os.listdir(echo_files_dir):
             if not (filename.endswith(".csv")):
                 continue
-            filepath = os.path.join(self.echo_files_dir, filename)
+            filepath = os.path.join(echo_files_dir, filename)
             echo_df, exceptions_df = self.parse_file(filepath)
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
