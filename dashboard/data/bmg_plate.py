@@ -195,6 +195,27 @@ def parse_bmg_files_from_iostring(files: list[(str,str)]) -> tuple[pd.DataFrame,
     plate_values = np.asarray(plate_values)
     return df, plate_values
 
+def parse_bmg_file(filepath: str) -> tuple[str, np.ndarray]:
+    """
+    Read data from txt file to np.array
+
+    :param filepath: path to the file with bmg plate
+    :return: barcode and array with plate values
+    """
+    plate = np.zeros(shape=(16, 24))
+    barcode = filepath.split("/")[-1].split(".")[0].split("\\")[-1]
+    with open(filepath) as f:
+        for i, line in enumerate(f.readlines()):
+            # handle different formatting (as in FIREFLY)
+            if i == 0 and "A" not in line:
+                df = pd.read_csv(filepath, header=None)
+                plate = df.to_numpy()
+                break
+            well, value = line.split()
+            i, j = well_to_ids(well)
+            plate[i, j] = value
+    return barcode, plate
+
 def calculate_activation_inhibition_zscore(
     df_stats: pd.Series,
     values: np.ndarray,
