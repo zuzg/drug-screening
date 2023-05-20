@@ -156,7 +156,7 @@ def read_io_file(file: str) -> list[str]:
             line = file.readline()
         return readed
 
-def parse_bmg_file(filename: str, filecontent: str) -> np.array:
+def parse_bmg_file_iostring(filename: str, filecontent: str) -> np.array:
     """
     Read data from txt file to np.array
 
@@ -176,7 +176,7 @@ def parse_bmg_file(filename: str, filecontent: str) -> np.array:
         plate[i, j] = value
     return barcode, plate
 
-def parse_bmg_files_from_dir(files: list[(str,str)]) -> tuple[pd.DataFrame, np.ndarray]:
+def parse_bmg_files_from_iostring(files: list[(str,str)]) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Parse file from directory with BMG files to DataFrame
 
@@ -186,7 +186,7 @@ def parse_bmg_files_from_dir(files: list[(str,str)]) -> tuple[pd.DataFrame, np.n
     plate_summaries = []
     plate_values = []
     for filename, filecontent in files:
-        barcode, plate_array = parse_bmg_file(filename, filecontent)
+        barcode, plate_array = parse_bmg_file_iostring(filename, filecontent)
         plate = Plate(barcode, plate_array)
         z_wo, outliers_mask = calculate_z_outliers(plate)
         plate_summaries.append(get_summary_tuple(plate, z_wo))
