@@ -1,4 +1,5 @@
 import os
+import io
 import numpy as np
 import pandas as pd
 from collections import namedtuple
@@ -149,10 +150,12 @@ def well_to_ids(well_name: str) -> tuple[int, int]:
     return ord(head) - 65, int(tail) - 1
 
 
-def parse_bmg_file_iostring(filename: str, filecontent: str) -> np.array:
+def parse_bmg_file_iostring(filename: str, filecontent: io.StringIO) -> np.ndarray:
     """
     Read data from iostring file to np.array
 
+    :param filename: name of file needed to extract barcode
+    "param filecontent: content of file
     :return: array with plate values
     """
     plate = np.zeros(shape=(16, 24))
@@ -175,7 +178,7 @@ def parse_bmg_file_iostring(filename: str, filecontent: str) -> np.array:
 
 
 def parse_bmg_files_from_iostring(
-    files: tuple[(str, str)]
+    files: tuple[str, io.StringIO]
 ) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Parse file from iostring with BMG files to DataFrame

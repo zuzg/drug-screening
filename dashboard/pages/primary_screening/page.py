@@ -15,8 +15,6 @@ pb = ProcessPageBuilder(name=NAME)
 pb.add_stages(STAGES)
 layout = pb.build()
 
-fs_dir = os.environ.get("DRUG_SCREENING_DATA_DIR", ".drug-screening-data")
 file_storage = LocalFileStorage()
-file_storage.set_data_folder(fs_dir)
 
 register_callbacks(pb.elements, file_storage)

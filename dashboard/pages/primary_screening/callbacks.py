@@ -9,7 +9,6 @@ import functools
 import uuid
 
 
-@throwable(1)
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
         return no_update
@@ -26,7 +25,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
             decoded = base64.b64decode(content_string)
             bmg_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
 
-    if len(bmg_files):
+    if bmg_files:
         bmg_df, val = parse_bmg_files_from_iostring(tuple(bmg_files))
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
@@ -44,13 +43,9 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     )
 
 
-@throwable(1)
 def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
         return no_update
-
-    if not stored_uuid:
-        stored_uuid = str(uuid.uuid4())
 
     echo_files = []
 
@@ -61,7 +56,7 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
             decoded = base64.b64decode(content_string)
             echo_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
 
-    if len(echo_files):
+    if echo_files:
         echo_parser = EchoFilesParser()
         echo_parser.parse_files_iostring(tuple(echo_files))
         echo_df = echo_parser.echo_df
@@ -88,13 +83,11 @@ def register_callbacks(elements, file_storage):
         [
             Output("bmg-filenames", "children"),
             Output("user-uuid", "data"),
-            Output("dummy", "children"),
         ],
         Input("upload-bmg-data", "contents"),
         Input("upload-bmg-data", "filename"),
         Input("upload-bmg-data", "last_modified"),
         State("user-uuid", "data"),
-        prevent_initial_call=True,
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
     callback(
         Output("echo-filenames", "children"),
@@ -102,5 +95,4 @@ def register_callbacks(elements, file_storage):
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
         State("user-uuid", "data"),
-        prevent_initial_call=True,
     )(functools.partial(upload_echo_data, file_storage=file_storage))

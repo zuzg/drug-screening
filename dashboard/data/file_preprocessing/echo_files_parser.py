@@ -1,6 +1,7 @@
 from __future__ import annotations
 import pandas as pd
 import os
+import io
 
 
 class EchoFilesParser:
@@ -29,9 +30,14 @@ class EchoFilesParser:
             raise ValueError("No marker found in file.")
         return markers_rows
 
-    def parse_files_iostring(self, echo_files: tuple[str, str]) -> EchoFilesParser:
+    def parse_files_iostring(
+        self, echo_files: tuple[str, io.StringIO]
+    ) -> EchoFilesParser:
         """
         Preprocesses csv echo ioString files, splits regular records from exceptions.
+
+        :param echo_files: tuple with filenames and filecontets
+        :return self
         """
         exception_dfs, echo_dfs = [], []
         for filename, filecontent in echo_files:
@@ -125,10 +131,11 @@ class EchoFilesParser:
             echo_df = echo_df[~mask]
         return echo_df, exceptions_df
 
-    def parse_files_from_dir(self, echo_files_dir) -> EchoFilesParser:
+    def parse_files_from_dir(self, echo_files_dir: str) -> EchoFilesParser:
         """
         Preprocesses csv echo files from a directory and stores them in dataframes (exceptions separated).
 
+        :param echo_files_dir: name of directory containing files
         :return: self
         """
         exception_dfs, echo_dfs = [], []
