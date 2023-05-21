@@ -25,7 +25,7 @@ ECHO_INPUT_STAGE = html.Div(
             className="grid-2-1",
         ),
         html.Div(
-            id = "echo-filenames",
-        )
+            id="echo-filenames",
+        ),
     ],
 )

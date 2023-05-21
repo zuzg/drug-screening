@@ -1,6 +1,5 @@
 from dash import html, dcc
 
-
 BMG_DESC = """
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 In nec erat eget ante imperdiet tincidunt.
@@ -38,7 +37,7 @@ BMG_INPUT_STAGE = html.Div(
             className="grid-2-1",
         ),
         html.Div(
-            id = "bmg-filenames",
-        )
+            id="bmg-filenames",
+        ),
     ],
 )
