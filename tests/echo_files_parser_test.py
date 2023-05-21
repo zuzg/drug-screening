@@ -10,7 +10,7 @@ def test_find_marker_rows():
         markers = parser.find_marker_rows(
             "test_file.csv", ("[EXCEPTIONS]", "[DETAILS]")
         )
-        assert 0 == 0 #TODO Andrzej
+        assert 0 == 0  # TODO Andrzej
 
 
 def test_parse_files():

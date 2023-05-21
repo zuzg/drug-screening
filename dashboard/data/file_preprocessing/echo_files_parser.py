@@ -11,16 +11,6 @@ class EchoFilesParser:
         Parser for csv echo files.
         """
 
-
-    def read_io_file(self, file: str) -> list[str]:
-    
-        readed = []
-        line = file.readline()
-        while(line):
-            readed.append(line)
-            line = file.readline()
-        return readed
-
     def find_marker_rows_iostring(self, file: str, markers: tuple[str]) -> list[int]:
         """
         Finds the row numbers of marker lines in a ioString file.
@@ -28,7 +18,7 @@ class EchoFilesParser:
         :param file: file to search
         :param markers: markers to search for
         """
-        
+
         markers_rows = list()
         for i, line in enumerate(file):
             if line.strip() in markers:
@@ -39,33 +29,43 @@ class EchoFilesParser:
             raise ValueError("No marker found in file.")
         return markers_rows
 
-    def parse_files_iostring(self, echo_files: list[str,str]) -> EchoFilesParser:
+    def parse_files_iostring(self, echo_files: tuple[str, str]) -> EchoFilesParser:
         """
         Preprocesses csv echo ioString files, splits regular records from exceptions.
         """
         exception_dfs, echo_dfs = [], []
         for filename, filecontent in echo_files:
-            file = self.read_io_file(filecontent)
-            markers = self.find_marker_rows_iostring(file, ("[EXCEPTIONS]", "[DETAILS]"))
+            file = []
+            line = filecontent.readline()
+            while line:
+                file.append(line)
+                line = filecontent.readline()
+
+            markers = self.find_marker_rows_iostring(
+                file, ("[EXCEPTIONS]", "[DETAILS]")
+            )
             file = [line[:-2].split(",") for line in file]
-            
+
             if len(markers) == 2:
                 exceptions_line, details_line = markers
                 exceptions_df = pd.DataFrame(
-                    file[exceptions_line + 2: details_line - 1], columns = file[exceptions_line + 1]
+                    file[exceptions_line + 2 : details_line - 1],
+                    columns=file[exceptions_line + 1],
                 )
-                echo_df = pd.DataFrame(file[details_line + 2:], columns = file[details_line + 1])
-                
+                echo_df = pd.DataFrame(
+                    file[details_line + 2 :], columns=file[details_line + 1]
+                )
+
             else:
                 exceptions_df = pd.DataFrame()
-                echo_df = pd.DataFrame(file[markers[0] + 2:], columns = file[markers[0] + 1])
+                echo_df = pd.DataFrame(
+                    file[markers[0] + 2 :], columns=file[markers[0] + 1]
+                )
 
             echo_df = echo_df[
                 ~echo_df[echo_df.columns[0]].str.lower().str.startswith("instrument")
             ]
-            echo_df = echo_df[
-                ~echo_df[echo_df.columns[0]].isin([""])
-            ]
+            echo_df = echo_df[~echo_df[echo_df.columns[0]].isin([""])]
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 
