@@ -64,7 +64,7 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
 
     if echo_files:
         echo_parser = EchoFilesParser()
-        echo_parser.parse_files_iostring(tuple(echo_files))
+        echo_parser.parse_files(tuple(echo_files))
         echo_df = echo_parser.echo_df
         exceptions_df = echo_parser.exceptions_df
         serialized_processed_df = echo_df.reset_index().to_parquet()
