@@ -1,7 +1,7 @@
 from dash import html, no_update, callback, Output, Input, State
 
 from ..error import throwable
-from ...data.bmg_plate import parse_bmg_files_from_iostring
+from ...data.bmg_plate import parse_bmg_files
 from ...data.file_preprocessing.echo_files_parser import EchoFilesParser
 import io
 import base64
@@ -26,7 +26,8 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
             bmg_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
 
     if bmg_files:
-        bmg_df, val = parse_bmg_files_from_iostring(tuple(bmg_files))
+        bmg_df, val = parse_bmg_files(tuple(bmg_files))
+        print(bmg_df, val)
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 
