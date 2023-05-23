@@ -23,7 +23,6 @@ def test_parse_bmg_file():
     file_content = "\t28670,\t30315,\t32035,\t24320"
     with patch("builtins.open", mock_open(read_data=file_content)):
         barcode, plate = parse_bmg_file(filename, file_content)
-        print(barcode, plate)
         assert barcode == "1234" and plate[0, 0] == 28670
 
 
