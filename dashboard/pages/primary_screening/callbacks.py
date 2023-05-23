@@ -7,6 +7,8 @@ import io
 import base64
 import functools
 import uuid
+import numpy as np
+import pandas
 
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
@@ -27,7 +29,10 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
 
     if bmg_files:
         bmg_df, val = parse_bmg_files(tuple(bmg_files))
-        print(bmg_df, val)
+        stream = io.BytesIO()
+        np.savez_compressed(stream, val)
+        stream.seek(0)
+        file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 

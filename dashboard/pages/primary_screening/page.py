@@ -6,7 +6,6 @@ from dashboard.pages.primary_screening.stages import STAGES
 from dashboard.pages.primary_screening.callbacks import register_callbacks
 from dashboard.storage.local import LocalFileStorage
 
-import os
 
 NAME = "Primary Screening"
 register_page(path="/primary-screening", name=NAME, module=__name__)
