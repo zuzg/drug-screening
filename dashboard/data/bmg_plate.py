@@ -154,7 +154,7 @@ def parse_bmg_file(filename: str, filecontent: io.StringIO) -> np.ndarray:
     Read data from iostring file to np.array
 
     :param filename: name of file needed to extract barcode
-    "param filecontent: content of file
+    :param filecontent: content of file
     :return: array with plate values
     """
     plate = np.zeros(shape=(16, 24))
