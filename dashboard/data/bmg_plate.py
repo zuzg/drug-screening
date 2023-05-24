@@ -1,4 +1,4 @@
-import os
+import io
 import numpy as np
 import pandas as pd
 from collections import namedtuple
@@ -149,44 +149,43 @@ def well_to_ids(well_name: str) -> tuple[int, int]:
     return ord(head) - 65, int(tail) - 1
 
 
-def parse_bmg_file(filepath: str) -> tuple[str, np.ndarray]:
+def parse_bmg_file(filename: str, filecontent: io.StringIO) -> np.ndarray:
     """
-    Read data from txt file to np.array
+    Read data from iostring file to np.array
 
-    :param filepath: path to the file with bmg plate
-    :return: barcode and array with plate values
+    :param filename: name of file needed to extract barcode
+    :param filecontent: content of file
+    :return: array with plate values
     """
     plate = np.zeros(shape=(16, 24))
-    barcode = filepath.split("/")[-1].split(".")[0].split("\\")[-1]
-    with open(filepath) as f:
-        for i, line in enumerate(f.readlines()):
-            # handle different formatting (as in FIREFLY)
-            if i == 0 and "A" not in line:
-                df = pd.read_csv(filepath, header=None)
-                plate = df.to_numpy()
-                break
-            well, value = line.split()
-            i, j = well_to_ids(well)
-            plate[i, j] = value
+    barcode = filename.split(".")[0].split("\\")[-1]
+    for i, line in enumerate(filecontent):
+        # handle different formatting (as in FIREFLY)
+        if i == 0 and "A" not in line:
+            df = pd.read_csv(filecontent, header=None)
+            plate = df.to_numpy()
+            break
+        well, value = line.split()
+        i, j = well_to_ids(well)
+        plate[i, j] = value
     return barcode, plate
 
 
-def parse_bmg_files_from_dir(dir: str) -> tuple[pd.DataFrame, np.ndarray]:
+def parse_bmg_files(files: tuple[str, io.StringIO]) -> tuple[pd.DataFrame, np.ndarray]:
     """
-    Parse file from directory with BMG files to DataFrame
+    Parse file from iostring with BMG files to DataFrame
 
-    :param dir: directory consisting of BMG files
-    :return: DataFrame with BMG files (=plates) as rows, array with plate values
+    :param files: tuple containing names and content of files
+    :return: DataFrame with BMG files (=plates) as rows
     """
     plate_summaries = []
     plate_values = []
-    for filename in os.listdir(dir):
-        barcode, plate_array = parse_bmg_file(os.path.join(dir, filename))
+    for filename, filecontent in files:
+        barcode, plate_array = parse_bmg_file(filename, filecontent)
         plate = Plate(barcode, plate_array)
         z_wo, outliers_mask = calculate_z_outliers(plate)
         plate_summaries.append(get_summary_tuple(plate, z_wo))
         plate_values.append([plate.plate_array, outliers_mask])
-
     df = pd.DataFrame(plate_summaries)
     plate_values = np.asarray(plate_values)
     return df, plate_values

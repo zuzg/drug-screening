@@ -1,6 +1,5 @@
 from dash import html, dcc
 
-
 BMG_DESC = """
 Lorem ipsum dolor sit amet, consectetur adipiscing elit.
 In nec erat eget ante imperdiet tincidunt.
@@ -24,7 +23,7 @@ BMG_INPUT_STAGE = html.Div(
             children=[
                 html.P(BMG_DESC, className="text-justify"),
                 dcc.Upload(
-                    id="upload-data",
+                    id="upload-bmg-data",
                     children=html.Div(
                         [
                             "Drag and Drop or ",
@@ -36,6 +35,9 @@ BMG_INPUT_STAGE = html.Div(
                 ),
             ],
             className="grid-2-1",
+        ),
+        html.Div(
+            id="bmg-filenames",
         ),
     ],
 )
