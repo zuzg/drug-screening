@@ -77,11 +77,11 @@ def visualize_multiple_plates(
     :param cols: number of cols in plot grid
     :return: plot with visualized plates
     """
-    fig = make_subplots(rows, cols, horizontal_spacing=0.01)
+    fig = make_subplots(
+        rows, cols, horizontal_spacing=0.01, subplot_titles=df.barcode.to_list()
+    )
     ids = product(list(range(1, rows + 1)), list(range(1, cols + 1)))
-    for i, p, plate, barcode in zip(
-        range(1, rows * cols + 1), ids, plate_array, df.barcode
-    ):
+    for i, p, plate in zip(range(1, rows * cols + 1), ids, plate_array):
         fig.add_trace(
             go.Heatmap(
                 z=plate[0],
@@ -92,7 +92,7 @@ def visualize_multiple_plates(
             p[0],
             p[1],
         )
-        fig.update_xaxes(title_text=barcode, title_font_size=10, row=p[0], col=p[1])
+
         fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}})
 
     fig.update_layout(
