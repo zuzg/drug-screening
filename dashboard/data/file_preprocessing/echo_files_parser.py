@@ -1,7 +1,9 @@
 from __future__ import annotations
-import pandas as pd
-import os
+
 import io
+import os
+
+import pandas as pd
 
 
 class EchoFilesParser:
@@ -11,6 +13,8 @@ class EchoFilesParser:
         """
         Parser for csv echo files.
         """
+        self.echo_df = None
+        self.exceptions_df = None
 
     def find_marker_rows(self, file: str, markers: tuple[str]) -> list[int]:
         """
@@ -25,8 +29,6 @@ class EchoFilesParser:
                 markers_rows.append(i)
             if len(markers_rows) == len(markers):
                 return markers_rows
-        if len(markers_rows) == 0:
-            raise ValueError("No marker found in file.")
         return markers_rows
 
     def parse_files(self, echo_files: tuple[str, io.StringIO]) -> EchoFilesParser:
