@@ -152,7 +152,7 @@ class ProcessPageBuilder(PageBuilder):
             return cant_go_backward, cant_go_forward
 
     @property
-    def elements_raw(self) -> dict[str, str]:
+    def elements(self) -> dict[str, str]:
         """
         Get ids of special elements
 
@@ -164,5 +164,5 @@ class ProcessPageBuilder(PageBuilder):
             "NEXT_BTN": self.next_stage_btn_id,
             "PREV_BTN": self.previous_stage_btn_id,
             "BLOCKER": self.stage_blocker_id,
-            **super().elements_raw,
+            **super().elements,
         }

@@ -1,14 +1,21 @@
-from dash import html, no_update, callback, Output, Input, State
-
-from ..error import throwable
-from ...data.bmg_plate import parse_bmg_files
-from ...data.file_preprocessing.echo_files_parser import EchoFilesParser
 import io
 import base64
 import functools
 import uuid
 import numpy as np
-import pandas
+from dash import html, no_update, callback, Output, Input, State
+from dashboard.storage import FileStorage
+import pandas as pd
+import pyarrow as pa
+import plotly.graph_objects as go
+
+from dashboard.data.bmg_plate import parse_bmg_files
+from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.visualization.plots import (
+    plot_control_values,
+    plot_row_col_means,
+    plot_z_per_plate,
+)
 
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
@@ -84,6 +91,24 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
     )
 
 
+# === STAGE 3 ===
+
+
+def on_stage_3_entry(
+    current_stage: int, stored_uuid: str, file_storage: FileStorage
+) -> tuple[go.Figure]:
+    if current_stage != 2:
+        return no_update
+    raw_bmg = file_storage.read_file(f"{stored_uuid}_bmg_df.pq")
+    bmg_df = pd.read_parquet(pa.BufferReader(raw_bmg))
+    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
+    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
+    control_values_fig = plot_control_values(bmg_df)
+    row_col_fig = plot_row_col_means(bmg_vals)
+    z_fig = plot_z_per_plate(bmg_df.barcode, bmg_df.z_factor)
+    return control_values_fig, row_col_fig, z_fig
+
+
 def register_callbacks(elements, file_storage):
     callback(
         [
@@ -95,6 +120,13 @@ def register_callbacks(elements, file_storage):
         Input("upload-bmg-data", "last_modified"),
         State("user-uuid", "data"),
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
+    callback(
+        Output("control-values", "figure"),
+        Output("mean-cols-rows", "figure"),
+        Output("z-per-plate", "figure"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_stage_3_entry, file_storage=file_storage))
     callback(
         Output("echo-filenames", "children"),
         Input("upload-echo-data", "contents"),
