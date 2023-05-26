@@ -1,4 +1,38 @@
-from dash import html, dcc
+from dash import html, dcc, dash_table
+
+_COMPOUNDS_DATATABLE = dash_table.DataTable(
+    id="plates-table",
+    style_table={
+        "overflowX": "auto",
+        "overflowY": "auto",
+    },
+    style_cell={
+        "textAlign": "right",
+        "minWidth": "100px",
+        "width": "100px",
+        "padding": "0 5px",
+    },
+    style_header={
+        "backgroundColor": "rgb(230, 230, 230)",
+        "fontWeight": "bold",
+    },
+    style_data_conditional=[
+        {
+            "if": {"row_index": "odd"},
+            "backgroundColor": "rgb(248, 248, 248)",
+        },
+    ],
+    columns=[
+        {"name": "Barcode", "id": "barcode"},
+        {"name": "Z Factor", "id": "z_factor"},
+        {"name": "STD Compund", "id": "std_cmpd"},
+        {"name": "Mean Compund", "id": "mean_cmpd"},
+        {"name": "STD Control [+]", "id": "std_pos"},
+        {"name": "Mean Control [+]", "id": "mean_pos"},
+        {"name": "STD Control [-]", "id": "std_neg"},
+        {"name": "Mean Control [-]", "id": "mean_neg"},
+    ],
+)
 
 OUTLIERS_PURGING_STAGE = html.Div(
     id="outliers_purging_stage",
@@ -12,7 +46,7 @@ OUTLIERS_PURGING_STAGE = html.Div(
             className="row",
             children=[
                 html.Div(
-                    className="col",
+                    className="col w-50",
                     children=[
                         html.Div(
                             children=[
@@ -22,10 +56,16 @@ OUTLIERS_PURGING_STAGE = html.Div(
                                 ),
                                 dcc.Graph(
                                     id="plates-heatmap-graph",
+                                    figure={},
                                 ),
                                 html.Div(
                                     className="d-flex justify-content-center gap-2 mt-3",
                                     children=[
+                                        html.Button(
+                                            id="heatmap-first-btn",
+                                            children=["First"],
+                                            className="btn btn-secondary fixed-width-100",
+                                        ),
                                         html.Button(
                                             id="heatmap-previous-btn",
                                             children=["Previous"],
@@ -41,17 +81,100 @@ OUTLIERS_PURGING_STAGE = html.Div(
                                             children=["Next"],
                                             className="btn btn-primary fixed-width-100",
                                         ),
+                                        html.Button(
+                                            id="heatmap-last-btn",
+                                            children=["Last"],
+                                            className="btn btn-secondary fixed-width-100",
+                                        ),
+                                    ],
+                                ),
+                                html.Div(
+                                    className="d-flex justify-content-center gap-2 mt-3",
+                                    children=[
+                                        dcc.Checklist(
+                                            id="heatmap-outliers-checklist",
+                                            options=["Show only with outliers"],
+                                            inputClassName="me-2",
+                                        ),
                                     ],
                                 ),
                             ]
                         ),
                     ],
-                    style={"border": "1px dashed red"},  # TODO: REMOVE
                 ),
                 html.Div(
-                    className="col",
-                    children="TEST2",
-                    style={"border": "1px dashed red"},  # TODO: REMOVE
+                    className="col d-flex flex-column gap-3 w-50",
+                    children=[
+                        html.Div(
+                            className="d-flex flex-column gap-3 flex-grow-1",
+                            children=[
+                                html.H2(
+                                    children=["Plates Summary"],
+                                    className="text-center",
+                                ),
+                                html.Div(
+                                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
+                                    children=[_COMPOUNDS_DATATABLE],
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            className="d-flex flex-column gap-3 mb-5",
+                            children=[
+                                html.H2(
+                                    children=["Assay Stats"],
+                                    className="text-center",
+                                ),
+                                html.Div(
+                                    className="mx-5",
+                                    children=[
+                                        html.Div(
+                                            className="row border-bottom",
+                                            children=[
+                                                html.H3(
+                                                    children=["Total Plates:"],
+                                                    className="col-6 text-start my-auto fs-4",
+                                                ),
+                                                html.H3(
+                                                    id="total-plates",
+                                                    children=["0"],
+                                                    className="col-6 text-end pe-3 my-auto fs-4",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="row border-bottom",
+                                            children=[
+                                                html.H3(
+                                                    children=["Total Compounds:"],
+                                                    className="col-6 text-start my-auto fs-4",
+                                                ),
+                                                html.H3(
+                                                    id="total-compounds",
+                                                    children=["0"],
+                                                    className="col-6 text-end pe-3 my-auto fs-4",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="row border-bottom",
+                                            children=[
+                                                html.H3(
+                                                    children=["Total Outliers:"],
+                                                    className="col-6 text-start my-auto fs-4",
+                                                ),
+                                                html.H3(
+                                                    id="total-outliers",
+                                                    children=["0"],
+                                                    className="col-6 text-end pe-3 my-auto fs-4",
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
                 ),
             ],
         ),
