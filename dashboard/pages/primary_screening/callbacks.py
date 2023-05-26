@@ -70,6 +70,18 @@ def on_heatmap_controls_clicked(
     current_index: int,
     max_index: int,
 ) -> int:
+    """
+    Callback for heatmap pagination controls.
+    Updates the index of the first plate to be displayed.
+
+    :param n_clicks_prev: previous button click count
+    :param n_clicks_next: next button click count
+    :param n_clicks_first: first button click count
+    :param n_clicks_last: last button click count
+    :param current_index: current index of the first plate to be displayed
+    :param max_index: maximum index of the first plate to be displayed
+    :return: new index of the first plate to be displayed
+    """
     triggered = callback_context.triggered[0]["prop_id"].split(".")[0]
 
     going_backwards = triggered == "heatmap-previous-btn"
