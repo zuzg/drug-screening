@@ -1,6 +1,6 @@
+import dash_bootstrap_components as dbc
 from dash import dash_table, dcc, html
 from dash.dash_table.Format import Format, Scheme
-import dash_bootstrap_components as dbc
 
 PRECISION = 5
 _ACT_INH_DATATABLE = dash_table.DataTable(
@@ -28,7 +28,7 @@ _ACT_INH_DATATABLE = dash_table.DataTable(
             format=Format(precision=PRECISION, scheme=Scheme.fixed),
         ),
     ],
-    style_table={"overflowX": "auto"},
+    style_table={"overflowX": "auto", "overflowY": "auto"},
     style_data={
         "padding-left": "10px",
         "padding-right": "10px",
@@ -40,6 +40,16 @@ _ACT_INH_DATATABLE = dash_table.DataTable(
         "font-family": "sans-serif",
         "font-size": "12px",
     },
+    style_header={
+        "backgroundColor": "rgb(230, 230, 230)",
+        "fontWeight": "bold",
+    },
+    style_data_conditional=[
+        {
+            "if": {"row_index": "odd"},
+            "backgroundColor": "rgb(248, 248, 248)",
+        },
+    ],
     filter_action="native",
     filter_options={"case": "insensitive"},
     sort_action="native",
@@ -51,9 +61,14 @@ SUMMARY_STAGE = html.Div(
     id="summary_stage",
     className="container",
     children=[
-        html.H1(
-            children=["Summary"],
-            className="text-center",
+        html.Div(
+            className="mb-2",
+            children=[
+                html.H1(
+                    children=["Summary"],
+                    className="text-center",
+                ),
+            ],
         ),
         dcc.Tabs(
             id="summary-tabs",
@@ -123,11 +138,19 @@ SUMMARY_STAGE = html.Div(
         html.Div(
             className="my-4",
             children=[
-                html.H2(
-                    children=["Compounds Data"],
-                    className="text-center",
+                html.Div(
+                    className="mb-2",
+                    children=[
+                        html.H2(
+                            children=["Compounds Data"],
+                            className="text-center",
+                        ),
+                    ],
                 ),
-                _ACT_INH_DATATABLE,
+                html.Div(
+                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
+                    children=[_ACT_INH_DATATABLE],
+                ),
             ],
         ),
     ],
