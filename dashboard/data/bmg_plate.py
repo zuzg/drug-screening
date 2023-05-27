@@ -231,7 +231,7 @@ def calculate_activation_inhibition_zscore(
 
 
 def get_activation_inhibition_zscore_dict(
-    df_stats: pd.DataFrame, plate_values: np.ndarray, modes: list[Mode]
+    df_stats: pd.DataFrame, plate_values: np.ndarray, modes: dict[Mode]
 ) -> dict[str, dict[str, float]]:
     """
     Calculates activation and inhibition for each compound in the plates.

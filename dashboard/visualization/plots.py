@@ -1,12 +1,12 @@
+import string
+from itertools import product
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from itertools import product
-import string
-
 
 PLOTLY_TEMPLATE = "plotly_white"
 
@@ -272,7 +272,7 @@ def visualize_activation_inhibition_zscore(
     :param z_score_limits: tuple with z-score limits
     :return: plotly figure
     """
-    plate_barcode = compounds_df["Destination Plate Barcode"].unique()[0]
+    # plate_barcode = compounds_df["Destination Plate Barcode"].unique()[0]
     mask = compounds_df["Destination Well"].str[0]
     mask_control_pos = control_pos_df["Destination Well"].str[0]
     mask_control_neg = control_neg_df["Destination Well"].str[0]
@@ -331,7 +331,7 @@ def visualize_activation_inhibition_zscore(
 
     fig.update_layout(
         legend=dict(itemclick=False, itemdoubleclick=False, itemsizing="constant"),
-        title=f"{column} - plate {plate_barcode}",
+        title=f"{column} values of compounds",
         xaxis=dict(title="Row"),
         yaxis=dict(title=column),
         template=PLOTLY_TEMPLATE,

@@ -10,8 +10,10 @@ import pyarrow as pa
 from dash import Input, Output, State, callback, html, no_update
 
 from dashboard.data.bmg_plate import parse_bmg_files
+from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.storage import FileStorage
+from dashboard.visualization.plots import visualize_activation_inhibition_zscore
 
 from ...data.bmg_plate import parse_bmg_files
 from ...data.file_preprocessing.echo_files_parser import EchoFilesParser
@@ -99,14 +101,39 @@ def on_stage_5_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     echo_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_echo_df.pq"))
     )
-    return (
-        html.Div(
-            [
-                html.H5("STAGE 5 ECHO FILES"),
-            ]
-        ),
-        echo_df,
+    echo_df["CMPD ID"] = "TODO"
+
+    bmg_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_bmg_df.pq"))
     )
+    bmg_vals = np.load(
+        io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
+    )["arr_0"]
+
+    echo_bmg_combined = combine_bmg_echo_data(echo_df, bmg_df, bmg_vals)
+    compounds_df, control_pos_df, control_neg_df = split_compounds_controls(
+        echo_bmg_combined
+    )
+
+    echo_bmg_combined = (
+        echo_bmg_combined.drop_duplicates()
+    )  # TODO: inform the user about it/allow for deciding what to do
+
+    echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
+
+    fig_z_score = visualize_activation_inhibition_zscore(
+        compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
+    )
+
+    fig_activation = visualize_activation_inhibition_zscore(
+        compounds_df, control_pos_df, control_neg_df, "% ACTIVATION"
+    )
+
+    fig_inhibition = visualize_activation_inhibition_zscore(
+        compounds_df, control_pos_df, control_neg_df, "% INHIBITION"
+    )
+
+    return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
 
 
 def register_callbacks(elements, file_storage):
@@ -129,8 +156,10 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(upload_echo_data, file_storage=file_storage))
     (functools.partial(upload_bmg_data, file_storage=file_storage))
     callback(
-        Output("stage-5", "children"),
-        Output("act-inh-table", "data"),
+        Output("echo-bmg-combined", "data"),
+        Output("z-score-plot", "figure"),
+        Output("activation-plot", "figure"),
+        Output("inhibition-plot", "figure"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_stage_5_entry, file_storage=file_storage))

@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
 from functools import reduce
-from dashboard.data.bmg_plate import get_activation_inhibition_zscore_dict, Mode
+
+import numpy as np
+import pandas as pd
+
+from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
 
 
 # NOTE: to be removed
@@ -108,7 +110,7 @@ def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
     plate_values: np.ndarray,
-    modes: dict[Mode],
+    modes: dict[Mode] = dict(),
     echo_keys: tuple[str] = ("Destination Plate Barcode", "Destination Well"),
 ) -> pd.DataFrame:
     """
