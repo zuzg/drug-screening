@@ -263,86 +263,83 @@ def visualize_activation_inhibition_zscore(
     z_score_limits: tuple = None,
 ) -> go.Figure:
     """
-    Visualise activation and inhibition z-scores from one plate
-
-    :param compounds_df: DataFrame with compounds values
-    :param control_pos_df: DataFrame with positive control values
-    :param control_neg_df: DataFrame with negative control values
-    :param column: values to visualise
+    Visualize activation/inhibition z-score for each compound
+    :param compounds_df: dataframe with compounds
+    :param control_pos_df: dataframe with positive controls
+    :param control_neg_df: dataframe with negative controls
+    :param column: column to visualize
     :param z_score_limits: tuple with z-score limits
     :return: plotly figure
     """
-    # plate_barcode = compounds_df["Destination Plate Barcode"].unique()[0]
-    mask = compounds_df["Destination Well"].str[0]
-    mask_control_pos = control_pos_df["Destination Well"].str[0]
-    mask_control_neg = control_neg_df["Destination Well"].str[0]
-    fig = go.Figure()
+    dest_wells = pd.concat(
+        [
+            compounds_df["Destination Well"],
+            control_pos_df["Destination Well"],
+            control_neg_df["Destination Well"],
+        ],
+        axis=0,
+        ignore_index=True,
+    )
+    dest_wells = pd.DataFrame(
+        dest_wells, columns=["Destination Well"]
+    ).drop_duplicates()
 
-    for letter in string.ascii_uppercase[:16]:
-        if letter == "A":
-            showlegend = True
-        else:
-            showlegend = False
-
-        df = compounds_df[mask == letter]
-        fig.add_trace(
-            go.Box(
-                x=df["Destination Well"].str[0],
-                y=df[column],
-                hovertemplate="CMPD ID: TODO<br>well: %{text}<br>"
-                + column
-                + ": %{y:.2f}<extra></extra>",
-                text=df["Destination Well"],
-                marker=dict(color="rgb(66, 167, 244)"),
-                name="COMPOUNDS",
-                showlegend=showlegend,
-            )
-        )
-
-        df = control_pos_df[mask_control_pos == letter]
-        fig.add_trace(
-            go.Box(
-                x=df["Destination Well"].str[0],
-                y=df[column],
-                hovertemplate="CONTROL POS<br>well: %{text}<br>"
-                + column
-                + ": %{y:.2f}<extra></extra>",
-                text=df["Destination Well"],
-                marker=dict(color="green", size=8),
-                name="CONTROL_POS",
-                showlegend=showlegend,
-            )
-        )
-
-        df = control_neg_df[mask_control_neg == letter]
-        fig.add_trace(
-            go.Box(
-                x=df["Destination Well"].str[0],
-                y=df[column],
-                hovertemplate="CONTROL NEG<br>well: %{text}<br>"
-                + column
-                + ": %{y:.2f}<extra></extra>",
-                text=df["Destination Well"],
-                marker=dict(color="red", size=8),
-                name="CONTROL_NEG",
-                showlegend=showlegend,
-            )
-        )
-
-    fig.update_layout(
-        legend=dict(itemclick=False, itemdoubleclick=False, itemsizing="constant"),
-        title=f"{column} values of compounds",
-        xaxis=dict(title="Row"),
-        yaxis=dict(title=column),
-        template=PLOTLY_TEMPLATE,
+    sorted_wells = sorted(
+        dest_wells["Destination Well"], key=lambda x: (x[0], int(x[1:]))
     )
 
-    fig.update_traces(
-        boxpoints="all",
-        jitter=1.0,
-        pointpos=0,
-        line=dict(color="rgba(0,0,0,0)"),
-        fillcolor="rgba(0,0,0,0)",
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=compounds_df["Destination Well"],
+            y=compounds_df[column],
+            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            + column
+            + ": %{y:.2f}<extra></extra>",
+            text=compounds_df["Destination Plate Barcode"],
+            mode="markers",
+            marker=dict(color="rgb(66, 167, 244)", size=8),
+            name="COMPOUNDS",
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=control_pos_df["Destination Well"],
+            y=control_pos_df[column],
+            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            + column
+            + ": %{y:.2f}<extra></extra>",
+            text=control_pos_df["Destination Plate Barcode"],
+            mode="markers",
+            marker=dict(color="green", size=10),
+            name="POSITIVE CONTROLS",
+        )
+    )
+
+    fig.add_trace(
+        go.Scatter(
+            x=control_neg_df["Destination Well"],
+            y=control_neg_df[column],
+            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            + column
+            + ": %{y:.2f}<extra></extra>",
+            text=control_neg_df["Destination Plate Barcode"],
+            mode="markers",
+            marker=dict(color="red", size=10),
+            name="NEGATIVE CONTROLS",
+        )
+    )
+
+    fig.update_xaxes(type="category", categoryorder="array", categoryarray=sorted_wells)
+
+    fig.update_layout(
+        legend_itemsizing="constant",
+        title=f"{column} values of compounds",
+        xaxis_title="Well",
+        yaxis_title=column,
+        template=PLOTLY_TEMPLATE,
     )
 
     if column.upper() == "Z-SCORE" and z_score_limits is not None:
