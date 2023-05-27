@@ -78,7 +78,11 @@ def visualize_multiple_plates(
     :return: plot with visualized plates
     """
     fig = make_subplots(
-        rows, cols, horizontal_spacing=0.01, subplot_titles=df.barcode.to_list()
+        rows,
+        cols,
+        horizontal_spacing=0.01,
+        vertical_spacing=0.05,
+        subplot_titles=df.barcode.to_list(),
     )
     ids = product(list(range(1, rows + 1)), list(range(1, cols + 1)))
     for i, p, plate in zip(range(1, rows * cols + 1), ids, plate_array):
@@ -93,7 +97,7 @@ def visualize_multiple_plates(
             p[1],
         )
 
-        fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}})
+        fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}, "autosize": True})
 
     fig.update_layout(
         coloraxis={"colorscale": "viridis"},
@@ -101,11 +105,12 @@ def visualize_multiple_plates(
         margin=dict(
             l=10,
             r=10,
-            t=50,
+            t=20,
             b=10,
         ),
         template=PLOTLY_TEMPLATE,
     )
+    fig.update_annotations(font_size=10)
     fig.update_xaxes(showticklabels=False)
     fig.update_yaxes(showticklabels=False)
     return fig

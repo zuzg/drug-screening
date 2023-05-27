@@ -71,3 +71,25 @@
 .fixed-width-150 {
     width: 150px;
 }
+
+.dash-spreadsheet-container {
+    max-height: 200px;
+}
+
+@media only screen and (min-height: 800px) {
+    .dash-spreadsheet-container {
+        max-height: 250px;
+    }
+}
+
+@media only screen and (min-height: 900px) {
+    .dash-spreadsheet-container {
+        max-height: 350px;
+    }
+}
+
+@media only screen and (min-height: 1000px) {
+    .dash-spreadsheet-container {
+        max-height: 450px;
+    }
+}

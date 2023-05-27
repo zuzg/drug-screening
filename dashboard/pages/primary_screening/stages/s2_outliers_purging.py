@@ -5,12 +5,15 @@ _COMPOUNDS_DATATABLE = dash_table.DataTable(
     style_table={
         "overflowX": "auto",
         "overflowY": "auto",
+        # "height": "100%",
     },
     style_cell={
         "textAlign": "right",
         "minWidth": "100px",
         "width": "100px",
         "padding": "0 5px",
+        "font-family": "sans-serif",
+        "font-size": "12px",
     },
     style_header={
         "backgroundColor": "rgb(230, 230, 230)",
@@ -36,27 +39,34 @@ _COMPOUNDS_DATATABLE = dash_table.DataTable(
 
 OUTLIERS_PURGING_STAGE = html.Div(
     id="outliers_purging_stage",
-    className="container",
+    className="container h-100 d-flex flex-column",
     children=[
         html.H1(
             children=["Outliers Purging"],
             className="text-center",
         ),
         html.Div(
-            className="row",
+            className="row flex-grow-1",
             children=[
                 html.Div(
-                    className="col w-50",
+                    className="col w-50 h-100",
                     children=[
                         html.Div(
+                            className="d-flex flex-column gap-3 h-100",
                             children=[
                                 html.H2(
                                     children=["Plates Heatmap"],
                                     className="text-center",
                                 ),
-                                dcc.Graph(
-                                    id="plates-heatmap-graph",
-                                    figure={},
+                                html.Div(
+                                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
+                                    children=[
+                                        dcc.Graph(
+                                            id="plates-heatmap-graph",
+                                            figure={},
+                                            style={"height": "100%"},
+                                        ),
+                                    ],
                                 ),
                                 html.Div(
                                     className="d-flex justify-content-center gap-2 mt-3",
@@ -98,15 +108,15 @@ OUTLIERS_PURGING_STAGE = html.Div(
                                         ),
                                     ],
                                 ),
-                            ]
+                            ],
                         ),
                     ],
                 ),
                 html.Div(
-                    className="col d-flex flex-column gap-3 w-50",
+                    className="col d-flex flex-column gap-3 w-50 h-100",
                     children=[
                         html.Div(
-                            className="d-flex flex-column gap-3 flex-grow-1",
+                            className="d-flex flex-column gap-3 flex-grow-1 h-100",
                             children=[
                                 html.H2(
                                     children=["Plates Summary"],
