@@ -76,7 +76,9 @@ class ProcessPageBuilder(PageBuilder):
             [
                 dash.dcc.Store(id=self.stages_store_id, data=0),
                 dash.html.Div(
-                    children=[], id=self.stages_container_id, className="flex-grow-1"
+                    children=[],
+                    id=self.stages_container_id,
+                    className="flex-grow-1 w-100",
                 ),
                 make_page_controls(
                     previous_stage_btn_id=self.previous_stage_btn_id,
@@ -152,7 +154,7 @@ class ProcessPageBuilder(PageBuilder):
             return cant_go_backward, cant_go_forward
 
     @property
-    def elements_raw(self) -> dict[str, str]:
+    def elements(self) -> dict[str, str]:
         """
         Get ids of special elements
 
@@ -164,5 +166,5 @@ class ProcessPageBuilder(PageBuilder):
             "NEXT_BTN": self.next_stage_btn_id,
             "PREV_BTN": self.previous_stage_btn_id,
             "BLOCKER": self.stage_blocker_id,
-            **super().elements_raw,
+            **super().elements,
         }
