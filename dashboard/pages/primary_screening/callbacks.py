@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, html, no_update
+from dash import Input, Output, Patch, State, callback, dcc, html, no_update
 
 from dashboard.data.bmg_plate import parse_bmg_files
 from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
@@ -136,6 +136,61 @@ def on_stage_5_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
 
 
+def on_z_score_range_update(min_value, max_value, figure):
+    new_figure = go.Figure(figure)
+
+    shapes = []
+    annotations = []
+    if min_value is not None and (max_value is None or min_value <= max_value):
+        shapes.append(
+            {
+                "type": "line",
+                "y0": min_value,
+                "y1": min_value,
+                "line": {
+                    "color": "gray",
+                    "width": 3,
+                    "dash": "dash",
+                },
+            }
+        )
+        annotations.append(
+            {
+                "y": min_value,
+                "text": f"MIN: {min_value:.2f}",
+                "showarrow": False,
+                "font": {"color": "gray"},
+            }
+        )
+
+    if max_value is not None and (min_value is None or min_value <= max_value):
+        shapes.append(
+            {
+                "type": "line",
+                "y0": max_value,
+                "y1": max_value,
+                "line": {
+                    "color": "gray",
+                    "width": 3,
+                    "dash": "dash",
+                },
+            }
+        )
+        annotations.append(
+            {
+                "x": 1,
+                "xanchor": "right",
+                "y": max_value,
+                "text": f"MAX: {max_value:.2f}",
+                "showarrow": False,
+                "font": {"color": "gray"},
+            }
+        )
+
+    new_figure.update_layout(shapes=shapes, annotations=annotations)
+    return new_figure
+
+
 def register_callbacks(elements, file_storage):
     callback(
         [
@@ -163,3 +218,9 @@ def register_callbacks(elements, file_storage):
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_stage_5_entry, file_storage=file_storage))
+    callback(
+        Output("z-score-plot", "figure", allow_duplicate=True),
+        [Input("input-z-score-min", "value"), Input("input-z-score-max", "value")],
+        State("z-score-plot", "figure"),
+        prevent_initial_call=True,
+    )(functools.partial(on_z_score_range_update))

@@ -351,13 +351,15 @@ def visualize_activation_inhibition_zscore(
             line_width=3,
             line_dash="dash",
             line_color="gray",
+            annotation_text=f"MIN: {z_score_limits[0]:.2f}",
+            annotation_font_color="gray",
         )
         fig.add_hline(
             y=z_score_limits[1],
             line_width=3,
             line_dash="dash",
             line_color="gray",
-            annotation_text="Z-score limits",
+            annotation_text=f"MAX: {z_score_limits[1]:.2f}",
             annotation_font_color="gray",
         )
 

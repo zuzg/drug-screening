@@ -57,6 +57,26 @@ SUMMARY_STAGE = html.Div(
                 html.Div(
                     className="col",
                     children=[
+                        html.H5("Z-Score range:"),
+                        html.Div(
+                            className="d-flex gap-2 mb-3",
+                            children=[
+                                dcc.Input(
+                                    id="input-z-score-min",
+                                    type="number",
+                                    value=-3,
+                                    className="form-control",
+                                    style={"width": "120px"},
+                                ),
+                                dcc.Input(
+                                    id="input-z-score-max",
+                                    type="number",
+                                    value=3,
+                                    className="form-control",
+                                    style={"width": "120px"},
+                                ),
+                            ],
+                        ),
                         dcc.Graph(
                             id="z-score-plot",
                             figure={},
