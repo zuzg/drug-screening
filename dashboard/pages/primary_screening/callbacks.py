@@ -223,7 +223,7 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
 # === STAGE 5 ===
 
 
-def on_stage_5_entry(current_stage: int, stored_uuid: str, file_storage: FileStorage):
+def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileStorage):
     if current_stage != 4:
         return no_update
     echo_df = pd.read_parquet(
@@ -238,7 +238,7 @@ def on_stage_5_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
         io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
     )["arr_0"]
 
-    echo_bmg_combined = combine_bmg_echo_data(echo_df, bmg_df, bmg_vals)
+    echo_bmg_combined = combine_bmg_echo_data(echo_df, bmg_df, bmg_vals, None)
     compounds_df, control_pos_df, control_neg_df = split_compounds_controls(
         echo_bmg_combined
     )
@@ -264,7 +264,8 @@ def on_stage_5_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
 
 
-def on_z_score_range_update(min_value, max_value, figure):
+def on_z_score_range_update(n_clicks, figure, range):
+    min_value, max_value = range
     new_figure = go.Figure(figure)
 
     shapes = []
@@ -370,10 +371,11 @@ def register_callbacks(elements, file_storage):
         Output("inhibition-plot", "figure"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
-    )(functools.partial(on_stage_5_entry, file_storage=file_storage))
+    )(functools.partial(on_summary_entry, file_storage=file_storage))
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        [Input("input-z-score-min", "value"), Input("input-z-score-max", "value")],
+        Input("z-score-button", "n_clicks"),
         State("z-score-plot", "figure"),
+        State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))

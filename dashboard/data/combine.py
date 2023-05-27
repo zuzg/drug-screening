@@ -110,7 +110,7 @@ def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
     plate_values: np.ndarray,
-    modes: dict[Mode] = dict(),
+    modes: dict[Mode],
     echo_keys: tuple[str] = ("Destination Plate Barcode", "Destination Well"),
 ) -> pd.DataFrame:
     """
@@ -123,6 +123,8 @@ def combine_bmg_echo_data(
     :param echo_keys: keys used to merge Echo data with activation and inhibition values #TODO: maybe not necessary and should be hard-coded?
     :return: dataframe with Echo data and activation and inhibition values
     """
+    if modes is None:
+        modes = dict()
     act_inh_dict = get_activation_inhibition_zscore_dict(df_stats, plate_values, modes)
     dfs = []
     for barcode, values_dict in act_inh_dict.items():

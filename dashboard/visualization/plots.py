@@ -301,7 +301,7 @@ def visualize_activation_inhibition_zscore(
             y=compounds_df[column],
             hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
             + column
-            + ": %{y:.2f}<extra></extra>",
+            + ": %{y:.4f}<extra></extra>",
             text=compounds_df["Destination Plate Barcode"],
             mode="markers",
             marker=dict(color="rgb(66, 167, 244)", size=8),
@@ -315,7 +315,7 @@ def visualize_activation_inhibition_zscore(
             y=control_pos_df[column],
             hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
             + column
-            + ": %{y:.2f}<extra></extra>",
+            + ": %{y:.4f}<extra></extra>",
             text=control_pos_df["Destination Plate Barcode"],
             mode="markers",
             marker=dict(color="green", size=10),
@@ -329,7 +329,7 @@ def visualize_activation_inhibition_zscore(
             y=control_neg_df[column],
             hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
             + column
-            + ": %{y:.2f}<extra></extra>",
+            + ": %{y:.4f}<extra></extra>",
             text=control_neg_df["Destination Plate Barcode"],
             mode="markers",
             marker=dict(color="red", size=10),

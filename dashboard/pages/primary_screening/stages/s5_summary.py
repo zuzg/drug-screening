@@ -1,5 +1,6 @@
 from dash import dash_table, dcc, html
-from dash.dash_table.Format import Format, Scheme, Trim
+from dash.dash_table.Format import Format, Scheme
+import dash_bootstrap_components as dbc
 
 PRECISION = 5
 _ACT_INH_DATATABLE = dash_table.DataTable(
@@ -35,13 +36,16 @@ _ACT_INH_DATATABLE = dash_table.DataTable(
         "autosize": {"type": "fit", "resize": True},
         "overflow": "hidden",
     },
+    style_cell={
+        "font-family": "sans-serif",
+        "font-size": "12px",
+    },
     filter_action="native",
     filter_options={"case": "insensitive"},
     sort_action="native",
     column_selectable=False,
     page_size=15,
 )
-
 
 SUMMARY_STAGE = html.Div(
     id="summary_stage",
@@ -51,45 +55,53 @@ SUMMARY_STAGE = html.Div(
             children=["Summary"],
             className="text-center",
         ),
-        html.Div(
-            className="row",
+        dcc.Tabs(
+            id="summary-tabs",
             children=[
-                html.Div(
-                    className="col",
+                dcc.Tab(
+                    label="Z-Score",
                     children=[
-                        html.H5("Z-Score range:"),
                         html.Div(
-                            className="d-flex gap-2 mb-3",
+                            className="my-4",
                             children=[
-                                dcc.Input(
-                                    id="input-z-score-min",
-                                    type="number",
-                                    value=-3,
-                                    className="form-control",
-                                    style={"width": "120px"},
+                                html.H5("Z-Score range:"),
+                                html.Div(
+                                    className="row",
+                                    children=[
+                                        html.Div(
+                                            className="col mb-4",
+                                            children=[
+                                                dcc.RangeSlider(
+                                                    -10,
+                                                    10,
+                                                    value=[-3, 3],
+                                                    tooltip={
+                                                        "placement": "bottom",
+                                                        "always_visible": True,
+                                                    },
+                                                    id="z-score-slider",
+                                                )
+                                            ],
+                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dbc.Button("Apply", id="z-score-button")
+                                            ],
+                                        ),
+                                    ],
                                 ),
-                                dcc.Input(
-                                    id="input-z-score-max",
-                                    type="number",
-                                    value=3,
-                                    className="form-control",
-                                    style={"width": "120px"},
+                                dcc.Graph(
+                                    id="z-score-plot",
+                                    figure={},
                                 ),
                             ],
                         ),
-                        dcc.Graph(
-                            id="z-score-plot",
-                            figure={},
-                        ),
                     ],
                 ),
-            ],
-        ),
-        html.Div(
-            className="row",
-            children=[
-                html.Div(
-                    className="col",
+                dcc.Tab(
+                    label="Activation",
                     children=[
                         dcc.Graph(
                             id="activation-plot",
@@ -97,13 +109,8 @@ SUMMARY_STAGE = html.Div(
                         ),
                     ],
                 ),
-            ],
-        ),
-        html.Div(
-            className="row",
-            children=[
-                html.Div(
-                    className="col",
+                dcc.Tab(
+                    label="Inhibition",
                     children=[
                         dcc.Graph(
                             id="inhibition-plot",
@@ -114,18 +121,13 @@ SUMMARY_STAGE = html.Div(
             ],
         ),
         html.Div(
-            className="row",
+            className="my-4",
             children=[
-                html.Div(
-                    className="col my-4",
-                    children=[
-                        html.H2(
-                            children=["Compounds Data"],
-                            className="text-center",
-                        ),
-                        _ACT_INH_DATATABLE,
-                    ],
+                html.H2(
+                    children=["Compounds Data"],
+                    className="text-center",
                 ),
+                _ACT_INH_DATATABLE,
             ],
         ),
     ],
