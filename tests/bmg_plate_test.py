@@ -68,6 +68,6 @@ def test_get_activation_inhibition_zscore_dict(df_stats):
 
 def test_filter_low_quality_plates(df_stats):
     values = np.array([[5, 3, 3], [0, 1, 0]])
-    quality_df, quality_plates, num = filter_low_quality_plates(df_stats, values, -2.5)
+    quality_df, quality_plates = filter_low_quality_plates(df_stats, values, -2.5)
     df_diff = pd.concat([df_stats, quality_df]).drop_duplicates(keep=False)
     assert df_diff.empty and np.array_equal(quality_plates, values)

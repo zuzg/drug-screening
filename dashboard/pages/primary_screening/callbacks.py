@@ -116,19 +116,18 @@ def on_plates_stats_stage_entry(
     raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
     bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
 
-    quality_df, quality_plates, low_quality_num = filter_low_quality_plates(
-        bmg_df, bmg_vals, value
-    )
+    filtered_df, filtered_vals = filter_low_quality_plates(bmg_df, bmg_vals, value)
+    num_removed = bmg_df.shape[0] - filtered_df.shape[0]
 
-    control_values_fig = plot_control_values(quality_df)
-    row_col_fig = plot_row_col_means(quality_plates)
-    z_fig = plot_z_per_plate(quality_df.barcode, quality_df.z_factor)
+    control_values_fig = plot_control_values(filtered_df)
+    row_col_fig = plot_row_col_means(filtered_vals)
+    z_fig = plot_z_per_plate(filtered_df.barcode, filtered_df.z_factor)
     return (
         control_values_fig,
         row_col_fig,
         z_fig,
         f"Selected threshold: {value}",
-        f"Number of deleted plates: {low_quality_num}",
+        f"Number of deleted plates: {num_removed}",
     )
 
 

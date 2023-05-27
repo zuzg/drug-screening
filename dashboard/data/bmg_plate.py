@@ -267,11 +267,10 @@ def filter_low_quality_plates(
     :param df: DataFrame with control values
     :param plate_array: array with plate values
     :param threshold: Z factor threshold value
-    :return: high quality plates, number of deleted plates
+    :return: high quality plates
     """
     quality_mask = df.z_factor > threshold
     quality_df = df[quality_mask]
     low_quality_ids = np.where(quality_mask == False)
-    print(low_quality_ids)
     quality_plates = np.delete(plate_array, low_quality_ids, axis=0)
-    return quality_df, quality_plates, len(low_quality_ids[0])
+    return quality_df, quality_plates
