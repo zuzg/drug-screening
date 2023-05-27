@@ -7,16 +7,21 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, Patch, State, callback, dcc, html, no_update
+from dash import Input, Output, State, callback, callback_context, html, no_update
 
 from dashboard.data.bmg_plate import parse_bmg_files
 from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import visualize_activation_inhibition_zscore
+from dashboard.visualization.plots import (
+    visualize_activation_inhibition_zscore,
+    visualize_multiple_plates,
+)
 
 from ...data.bmg_plate import parse_bmg_files
 from ...data.file_preprocessing.echo_files_parser import EchoFilesParser
+
+# === STAGE 1 ===
 
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
@@ -55,6 +60,129 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         ),
         stored_uuid,
     )
+
+
+# === STAGE 2 ===
+
+DISPLAYED_PLATES = 9
+DIM = int(np.ceil(np.sqrt(DISPLAYED_PLATES)))
+
+
+def on_heatmap_controls_clicked(
+    n_clicks_prev: int,
+    n_clicks_next: int,
+    n_clicks_first: int,
+    n_clicks_last: int,
+    current_index: int,
+    max_index: int,
+) -> int:
+    """
+    Callback for heatmap pagination controls.
+    Updates the index of the first plate to be displayed.
+
+    :param n_clicks_prev: previous button click count
+    :param n_clicks_next: next button click count
+    :param n_clicks_first: first button click count
+    :param n_clicks_last: last button click count
+    :param current_index: current index of the first plate to be displayed
+    :param max_index: maximum index of the first plate to be displayed
+    :return: new index of the first plate to be displayed
+    """
+    triggered = callback_context.triggered[0]["prop_id"].split(".")[0]
+
+    going_backwards = triggered == "heatmap-previous-btn"
+    going_forwards = triggered == "heatmap-next-btn"
+    going_first = triggered == "heatmap-first-btn"
+    going_last = triggered == "heatmap-last-btn"
+
+    if going_first:
+        return 0
+
+    if going_last:
+        return max_index
+
+    if going_backwards:
+        if current_index - DISPLAYED_PLATES > max_index:
+            return 0
+        return max(0, current_index - DISPLAYED_PLATES)
+
+    if going_forwards and current_index < max_index:
+        return current_index + DISPLAYED_PLATES
+    return no_update
+
+
+def on_outlier_purge_stage_entry(
+    current_stage: int,
+    heatmap_start_index: int,
+    outliers_only_checklist: list[str] | None,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> tuple[go.Figure, int, str, int, int, int]:
+    """
+    Callback for the stage 2 entry.
+    Loads the data from the storage and prepares the visualization.
+
+    :param current_stage: current stage index of the process
+    :param heatmap_start_index: index of the first plate to be displayed
+    :param outliers_only_checklist: list selected values in the outliers only checklist
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: heatmap plot, max index, index numerator text, plates count, compounds count, outliers count
+    """
+    show_only_with_outliers = bool(outliers_only_checklist)
+    if current_stage != 1:
+        return no_update
+
+    raw_bmg = file_storage.read_file(f"{stored_uuid}_bmg_df.pq")
+    bmg_df = pd.read_parquet(pa.BufferReader(raw_bmg))
+    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
+    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
+
+    plates_count = bmg_vals.shape[0]
+    compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
+    outliers_count = (bmg_vals[:, 1] == 1).sum()
+
+    if show_only_with_outliers:
+        has_outliers_mask = np.any(bmg_vals[:, 1] == 1, axis=(-1, -2))
+        bmg_df = bmg_df[has_outliers_mask]
+        bmg_vals = bmg_vals[has_outliers_mask]
+
+    filtered_plates_count = bmg_vals.shape[0]
+
+    vis_bmg_df = bmg_df.iloc[
+        heatmap_start_index : heatmap_start_index + DISPLAYED_PLATES, :
+    ]
+    vis_bmg_vals = bmg_vals[
+        heatmap_start_index : heatmap_start_index + DISPLAYED_PLATES
+    ]
+
+    fig = visualize_multiple_plates(vis_bmg_df, vis_bmg_vals, DIM, DIM)
+    index_text = f"{heatmap_start_index + 1} - {heatmap_start_index + DISPLAYED_PLATES} / {bmg_vals.shape[0]}"
+
+    final_vis_df = (
+        vis_bmg_df.set_index("barcode")
+        .drop(columns=["index"])
+        .applymap(lambda x: f"{x:.3f}")
+        .reset_index()
+    )
+
+    max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
+
+    return (
+        fig,
+        max_index,
+        index_text,
+        plates_count,
+        compounds_count,
+        outliers_count,
+        final_vis_df.to_dict("records"),
+    )
+
+
+# === STAGE 3 ===
+
+
+# === STAGE 4 ===
 
 
 def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
@@ -202,6 +330,31 @@ def register_callbacks(elements, file_storage):
         Input("upload-bmg-data", "last_modified"),
         State("user-uuid", "data"),
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
+
+    callback(
+        Output("heatmap-start-index", "data"),
+        Input("heatmap-previous-btn", "n_clicks"),
+        Input("heatmap-next-btn", "n_clicks"),
+        Input("heatmap-first-btn", "n_clicks"),
+        Input("heatmap-last-btn", "n_clicks"),
+        State("heatmap-start-index", "data"),
+        State("max-heatmap-index", "data"),
+    )(on_heatmap_controls_clicked)
+
+    callback(
+        Output("plates-heatmap-graph", "figure"),
+        Output("max-heatmap-index", "data"),
+        Output("heatmap-index-display", "children"),
+        Output("total-plates", "children"),
+        Output("total-compounds", "children"),
+        Output("total-outliers", "children"),
+        Output("plates-table", "data"),
+        Input(elements["STAGES_STORE"], "data"),
+        Input("heatmap-start-index", "data"),
+        Input("heatmap-outliers-checklist", "value"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
+
     callback(
         Output("echo-filenames", "children"),
         Input("upload-echo-data", "contents"),
