@@ -76,7 +76,9 @@ class ProcessPageBuilder(PageBuilder):
             [
                 dash.dcc.Store(id=self.stages_store_id, data=0),
                 dash.html.Div(
-                    children=[], id=self.stages_container_id, className="flex-grow-1"
+                    children=[],
+                    id=self.stages_container_id,
+                    className="flex-grow-1 w-100",
                 ),
                 make_page_controls(
                     previous_stage_btn_id=self.previous_stage_btn_id,
