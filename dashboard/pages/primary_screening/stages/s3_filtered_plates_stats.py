@@ -6,8 +6,28 @@ FILTERED_PLATES_STATS_STAGE = html.Div(
     className="container",
     children=[
         html.H1(
-            children=["Filtered Plates Stats"],
+            children=["Plates Statistics"],
             className="text-center",
+        ),
+        html.Div(
+            className="row",
+            children=[
+                html.H4(
+                    className="text-center",
+                    children=["Filter low quality plates by Z threshold"],
+                ),
+                html.Div(
+                    className="col",
+                    children=[dcc.Slider(0.0, 1.0, value=0.5, id="z-slider")],
+                ),
+                html.Div(
+                    className="col",
+                    children=[
+                        html.H5(id="slider-output"),
+                        html.H5(id="plates-removed"),
+                    ],
+                ),
+            ],
         ),
         html.Div(
             className="row",

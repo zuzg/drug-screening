@@ -9,7 +9,7 @@ import pandas as pd
 import pyarrow as pa
 import plotly.graph_objects as go
 
-from dashboard.data.bmg_plate import parse_bmg_files
+from dashboard.data.bmg_plate import parse_bmg_files, filter_low_quality_plates
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.visualization.plots import (
     plot_control_values,
@@ -94,19 +94,42 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
 # === STAGE 3 ===
 
 
-def on_stage_3_entry(
-    current_stage: int, stored_uuid: str, file_storage: FileStorage
-) -> tuple[go.Figure]:
+def on_plates_stats_stage_entry(
+    current_stage: int, value: float, stored_uuid: str, file_storage: FileStorage
+) -> tuple[go.Figure, go.Figure, go.Figure, str, str]:
+    """
+    Callback for the stage 3 entry
+    Loads the data from storage and prepares visualizations, depending on the
+    Z threshold = slider value
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: control values plot, mean row col plot, z values plot, selected threshold,
+    number of deleted plates
+    """
     if current_stage != 2:
         return no_update
     raw_bmg = file_storage.read_file(f"{stored_uuid}_bmg_df.pq")
     bmg_df = pd.read_parquet(pa.BufferReader(raw_bmg))
     raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
     bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
-    control_values_fig = plot_control_values(bmg_df)
-    row_col_fig = plot_row_col_means(bmg_vals)
-    z_fig = plot_z_per_plate(bmg_df.barcode, bmg_df.z_factor)
-    return control_values_fig, row_col_fig, z_fig
+
+    quality_df, quality_plates, low_quality_num = filter_low_quality_plates(
+        bmg_df, bmg_vals, value
+    )
+
+    control_values_fig = plot_control_values(quality_df)
+    row_col_fig = plot_row_col_means(quality_plates)
+    z_fig = plot_z_per_plate(quality_df.barcode, quality_df.z_factor)
+    return (
+        control_values_fig,
+        row_col_fig,
+        z_fig,
+        f"Selected threshold: {value}",
+        f"Number of deleted plates: {low_quality_num}",
+    )
 
 
 def register_callbacks(elements, file_storage):
@@ -124,9 +147,12 @@ def register_callbacks(elements, file_storage):
         Output("control-values", "figure"),
         Output("mean-cols-rows", "figure"),
         Output("z-per-plate", "figure"),
+        Output("slider-output", "children"),
+        Output("plates-removed", "children"),
         Input(elements["STAGES_STORE"], "data"),
+        Input("z-slider", "value"),
         State("user-uuid", "data"),
-    )(functools.partial(on_stage_3_entry, file_storage=file_storage))
+    )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
     callback(
         Output("echo-filenames", "children"),
         Input("upload-echo-data", "contents"),
