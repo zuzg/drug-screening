@@ -49,6 +49,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 
+    NUM_COLS = 4
     return (
         html.Div(
             className="row",
@@ -61,27 +62,10 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
                         html.Div(
                             className="col",
                             children=html.Ul(
-                                children=[html.Li(i) for i in names[0::4]]
+                                children=[html.Li(name) for name in names[i::NUM_COLS]]
                             ),
-                        ),
-                        html.Div(
-                            className="col",
-                            children=html.Ul(
-                                children=[html.Li(i) for i in names[1::4]]
-                            ),
-                        ),
-                        html.Div(
-                            className="col",
-                            children=html.Ul(
-                                children=[html.Li(i) for i in names[2::4]]
-                            ),
-                        ),
-                        html.Div(
-                            className="col",
-                            children=html.Ul(
-                                children=[html.Li(i) for i in names[3::4]]
-                            ),
-                        ),
+                        )
+                        for i in range(NUM_COLS)
                     ],
                 ),
             ],
@@ -275,6 +259,8 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
             f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
         )
 
+    NUM_COLS = 3
+
     return html.Div(
         className="row",
         children=[
@@ -285,16 +271,11 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
                 children=[
                     html.Div(
                         className="col",
-                        children=html.Ul(children=[html.Li(i) for i in names[0::3]]),
-                    ),
-                    html.Div(
-                        className="col",
-                        children=html.Ul(children=[html.Li(i) for i in names[1::3]]),
-                    ),
-                    html.Div(
-                        className="col",
-                        children=html.Ul(children=[html.Li(i) for i in names[2::3]]),
-                    ),
+                        children=html.Ul(
+                            children=[html.Li(name) for name in names[i::NUM_COLS]]
+                        ),
+                    )
+                    for i in range(NUM_COLS)
                 ],
             ),
         ],
