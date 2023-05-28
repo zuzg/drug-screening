@@ -1,7 +1,9 @@
-import pandas as pd
-import numpy as np
 from functools import reduce
-from dashboard.data.bmg_plate import get_activation_inhibition_zscore_dict, Mode
+
+import numpy as np
+import pandas as pd
+
+from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
 
 
 # NOTE: to be removed
@@ -121,6 +123,8 @@ def combine_bmg_echo_data(
     :param echo_keys: keys used to merge Echo data with activation and inhibition values #TODO: maybe not necessary and should be hard-coded?
     :return: dataframe with Echo data and activation and inhibition values
     """
+    if modes is None:
+        modes = dict()
     act_inh_dict = get_activation_inhibition_zscore_dict(df_stats, plate_values, modes)
     dfs = []
     for barcode, values_dict in act_inh_dict.items():
