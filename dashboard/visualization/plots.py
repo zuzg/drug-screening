@@ -268,7 +268,8 @@ def visualize_activation_inhibition_zscore(
     z_score_limits: tuple = None,
 ) -> go.Figure:
     """
-    Visualize activation/inhibition z-score for each compound
+    Visualize activation/inhibition z-score for each compound.
+
     :param compounds_df: dataframe with compounds
     :param control_pos_df: dataframe with positive controls
     :param control_neg_df: dataframe with negative controls
