@@ -263,7 +263,6 @@ def filter_low_quality_plates(
 ) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Remove plates with Z factor lower than threshold
-    TODO Add alert in dash how many plates were deleted
 
     :param df: DataFrame with control values
     :param plate_array: array with plate values
