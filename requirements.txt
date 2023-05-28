@@ -9,10 +9,9 @@ PyYAML==6.0
 jenkspy
 numpy
 umap-learn
-dash
+dash>=2.9.0
 dash-bootstrap-components
 nbformat>=4.2.0
 plotly
 rdkit
 pyarrow
-dash_bootstrap_components

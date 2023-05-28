@@ -24,6 +24,7 @@ BMG_INPUT_STAGE = html.Div(
                 html.P(BMG_DESC, className="text-justify"),
                 dcc.Upload(
                     id="upload-bmg-data",
+                    accept=".txt",
                     children=html.Div(
                         [
                             "Drag and Drop or ",

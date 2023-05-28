@@ -51,12 +51,40 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
 
     return (
         html.Div(
-            [
-                html.H5("Loaded files"),
+            className="row",
+            children=[
+                html.H5(className="text-center", children="Loaded files"),
                 html.Hr(),
-                html.Ul(children=[html.Li(i) for i in names]),
-                html.Hr(),
-            ]
+                html.Div(
+                    className="row",
+                    children=[
+                        html.Div(
+                            className="col",
+                            children=html.Ul(
+                                children=[html.Li(i) for i in names[0::4]]
+                            ),
+                        ),
+                        html.Div(
+                            className="col",
+                            children=html.Ul(
+                                children=[html.Li(i) for i in names[1::4]]
+                            ),
+                        ),
+                        html.Div(
+                            className="col",
+                            children=html.Ul(
+                                children=[html.Li(i) for i in names[2::4]]
+                            ),
+                        ),
+                        html.Div(
+                            className="col",
+                            children=html.Ul(
+                                children=[html.Li(i) for i in names[3::4]]
+                            ),
+                        ),
+                    ],
+                ),
+            ],
         ),
         stored_uuid,
     )
@@ -248,12 +276,28 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
         )
 
     return html.Div(
-        [
-            html.H5("Loaded files"),
+        className="row",
+        children=[
+            html.H5(className="text-center", children="Loaded files"),
             html.Hr(),
-            html.Ul(children=[html.Li(i) for i in names]),
-            html.Hr(),
-        ]
+            html.Div(
+                className="row",
+                children=[
+                    html.Div(
+                        className="col",
+                        children=html.Ul(children=[html.Li(i) for i in names[0::3]]),
+                    ),
+                    html.Div(
+                        className="col",
+                        children=html.Ul(children=[html.Li(i) for i in names[1::3]]),
+                    ),
+                    html.Div(
+                        className="col",
+                        children=html.Ul(children=[html.Li(i) for i in names[2::3]]),
+                    ),
+                ],
+            ),
+        ],
     )
 
 
