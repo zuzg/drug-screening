@@ -1,12 +1,66 @@
-from dash import html
+from dash import html, dcc
+
 
 FILTERED_PLATES_STATS_STAGE = html.Div(
     id="filtered_plates_stats_stage",
     className="container",
     children=[
         html.H1(
-            children=["Filtered Plates Stats"],
+            children=["Plates Statistics"],
             className="text-center",
+        ),
+        html.Div(
+            className="row",
+            children=[
+                html.H4(
+                    className="text-center",
+                    children=["Filter low quality plates by Z threshold"],
+                ),
+                html.Div(
+                    className="col",
+                    children=[dcc.Slider(0.0, 1.0, value=0.5, id="z-slider")],
+                ),
+                html.Div(
+                    className="col",
+                    children=[
+                        html.H5(id="slider-output"),
+                        html.H5(id="plates-removed"),
+                    ],
+                ),
+            ],
+        ),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
+                    className="col",
+                    children=[
+                        html.Div(
+                            className="row",
+                            children=[
+                                dcc.Graph(id="control-values"),
+                                html.Div(
+                                    className="row",
+                                    children=[
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dcc.Graph(id="mean-cols-rows"),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dcc.Graph(id="z-per-plate"),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        )
+                    ],
+                ),
+            ],
         ),
     ],
 )
