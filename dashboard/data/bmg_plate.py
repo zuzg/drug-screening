@@ -260,7 +260,7 @@ def get_activation_inhibition_zscore_dict(
 
 def filter_low_quality_plates(
     df: pd.DataFrame, plate_array: np.ndarray, threshold: float = 0.5
-) -> tuple[pd.DataFrame, np.ndarray, int]:
+) -> tuple[pd.DataFrame, np.ndarray]:
     """
     Remove plates with Z factor lower than threshold
 
