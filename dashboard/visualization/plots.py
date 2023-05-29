@@ -128,8 +128,17 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
     fig = go.Figure(
         layout_title_text="Control values for plates: mean and std",
         layout={
-            "xaxis": {"title": "x-label", "visible": False, "showticklabels": False},
-            "yaxis": {"title": "Value", "visible": True, "showticklabels": True},
+            "xaxis": {
+                "title": "Barcode assay plate",
+                "visible": True,
+                "showticklabels": True,
+                "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},
+            },
+            "yaxis": {
+                "title": "Control value",
+                "visible": True,
+                "showticklabels": True,
+            },
             "margin": dict(
                 l=10,
                 r=10,
@@ -165,7 +174,14 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
             opacity=0.75,
         )
     )
-    fig.update_layout(template=PLOTLY_TEMPLATE)
+    fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        xaxis=dict(
+            tickmode="linear",
+            tick0=0.0,
+            dtick=10,
+        ),
+    )
     return fig
 
 
@@ -179,8 +195,13 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
     arrays = plate_array[:, 0]
     outliers = plate_array[:, 1]
     arrays = np.where(outliers == 1, np.nan, arrays)
-    params = [("column", 1), ("row", 2)]
-    fig = make_subplots(rows=1, cols=2)
+    params = [("Column", 1), ("Row", 2)]
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        shared_yaxes=True,
+        horizontal_spacing=0.01,
+    )
     ticks_all = []
     for p in params:
         name, axis = p
@@ -201,10 +222,21 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
             row=1,
             col=axis,
         )
-        fig.update_xaxes(title_text=f"{name}", row=1, col=axis)
+        fig.update_xaxes(title_text=f"{name} id", row=1, col=axis)
+    fig.update_yaxes(title_text="Mean value for column/row")
     fig.update_layout(
-        xaxis1=dict(tickmode="array", tickvals=ticks_all[0], ticktext=ticks_all[0]),
-        xaxis2=dict(tickmode="array", tickvals=ticks_all[1], ticktext=ticks_all[1]),
+        xaxis1=dict(
+            tickmode="array",
+            tickfont={"size": 8},
+            tickvals=ticks_all[0][::2],
+            ticktext=ticks_all[0][::2],
+        ),
+        xaxis2=dict(
+            tickmode="array",
+            tickfont={"size": 8},
+            tickvals=ticks_all[1][::2],
+            ticktext=ticks_all[1][::2],
+        ),
     )
     fig.update_layout(
         title_text="Mean values for columns and rows",
@@ -235,6 +267,7 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
                 "title": "Barcode assay plate",
                 "visible": True,
                 "showticklabels": True,
+                "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},
             },
             "yaxis": {
                 "title": "Z' after outliers removal",
@@ -256,7 +289,14 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
             mode="markers",
         )
     )
-    fig.update_layout(template="plotly_white")
+    fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        xaxis=dict(
+            tickmode="linear",
+            tick0=0.0,
+            dtick=10,
+        ),
+    )
     return fig
 
 

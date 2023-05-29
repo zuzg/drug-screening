@@ -12,19 +12,29 @@ FILTERED_PLATES_STATS_STAGE = html.Div(
         html.Div(
             className="row",
             children=[
-                html.H4(
-                    className="text-center",
-                    children=["Filter low quality plates by Z threshold"],
-                ),
                 html.Div(
                     className="col",
-                    children=[dcc.Slider(0.0, 1.0, value=0.5, id="z-slider")],
+                    children=[html.H6("Filter low quality plates by Z threshold:")],
                 ),
                 html.Div(
                     className="col",
                     children=[
-                        html.H5(id="slider-output"),
-                        html.H5(id="plates-removed"),
+                        dcc.Slider(
+                            0.0,
+                            1.0,
+                            value=0.5,
+                            id="z-slider",
+                            tooltip={
+                                "placement": "bottom",
+                                "always_visible": True,
+                            },
+                        )
+                    ],
+                ),
+                html.Div(
+                    className="col",
+                    children=[
+                        html.H6(id="plates-removed"),
                     ],
                 ),
             ],
