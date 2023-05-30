@@ -89,6 +89,10 @@ HEATMAP_SECTION = html.Div(
                             id="plates-heatmap-graph",
                             figure={},
                             style={"height": "100%"},
+                            config={
+                                "displayModeBar": False,
+                                "scrollZoom": False,
+                            },
                         ),
                     ],
                 ),
