@@ -64,8 +64,9 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
 
 # === STAGE 2 ===
 
-DISPLAYED_PLATES = 9
-DIM = int(np.ceil(np.sqrt(DISPLAYED_PLATES)))
+DISPLAYED_PLATES = 12
+N_ROWS = 4
+N_COLS = DISPLAYED_PLATES // N_ROWS
 
 
 def on_heatmap_controls_clicked(
@@ -156,7 +157,7 @@ def on_outlier_purge_stage_entry(
         heatmap_start_index : heatmap_start_index + DISPLAYED_PLATES
     ]
 
-    fig = visualize_multiple_plates(vis_bmg_df, vis_bmg_vals, DIM, DIM)
+    fig = visualize_multiple_plates(vis_bmg_df, vis_bmg_vals, N_ROWS, N_COLS)
     index_text = f"{heatmap_start_index + 1} - {heatmap_start_index + DISPLAYED_PLATES} / {bmg_vals.shape[0]}"
 
     final_vis_df = (

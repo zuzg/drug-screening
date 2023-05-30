@@ -37,6 +37,140 @@ _COMPOUNDS_DATATABLE = dash_table.DataTable(
     ],
 )
 
+CONTROLS = html.Div(
+    className="d-flex justify-content-center gap-2 mt-3",
+    children=[
+        html.Button(
+            id="heatmap-first-btn",
+            children=[
+                html.I(className="fa-solid fa-angles-left"),
+            ],
+            className="btn btn-primary",
+        ),
+        html.Button(
+            id="heatmap-previous-btn",
+            children=[
+                html.I(className="fa-solid fa-angle-left"),
+            ],
+            className="btn btn-primary",
+        ),
+        html.Div(
+            id="heatmap-index-display",
+            children=["0/0"],
+            className="text-center my-auto fixed-width-150 text-muted",
+        ),
+        html.Button(
+            id="heatmap-next-btn",
+            children=[
+                html.I(className="fa-solid fa-angle-right"),
+            ],
+            className="btn btn-primary",
+        ),
+        html.Button(
+            id="heatmap-last-btn",
+            children=[
+                html.I(className="fa-solid fa-angles-right"),
+            ],
+            className="btn btn-primary",
+        ),
+    ],
+)
+
+HEATMAP_SECTION = html.Div(
+    className="col w-50 h-100",
+    children=[
+        html.Div(
+            className="d-flex flex-column gap-3 h-100",
+            children=[
+                html.Div(
+                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
+                    children=[
+                        dcc.Graph(
+                            id="plates-heatmap-graph",
+                            figure={},
+                            style={"height": "100%"},
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    ],
+)
+DATATABLE_SECTION = html.Div(
+    className="col d-flex flex-column gap-3 w-50 h-100",
+    children=[
+        html.Div(
+            className="d-flex flex-column gap-3 flex-grow-1 h-100",
+            children=[
+                html.Div(
+                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
+                    children=[_COMPOUNDS_DATATABLE],
+                ),
+            ],
+        ),
+    ],
+)
+STATS_SECTION = html.Div(
+    className="d-flex flex-row justify-content-between align-items-center",
+    children=[
+        html.Div(
+            children=[
+                html.Span(
+                    className="mx-2",
+                    children=[
+                        html.Span(
+                            children=["Total Plates:"],
+                            className="me-2",
+                        ),
+                        html.Span(
+                            id="total-plates",
+                            children=["0"],
+                            className="",
+                        ),
+                    ],
+                ),
+                html.Span(
+                    className="mx-2",
+                    children=[
+                        html.Span(
+                            children=["Total Compounds:"],
+                            className="me-2",
+                        ),
+                        html.Span(
+                            id="total-compounds",
+                            children=["0"],
+                            className="",
+                        ),
+                    ],
+                ),
+                html.Span(
+                    className="mx-2",
+                    children=[
+                        html.Span(
+                            children=["Total Outliers:"],
+                            className="me-2",
+                        ),
+                        html.Span(
+                            id="total-outliers",
+                            children=["0"],
+                            className="",
+                        ),
+                    ],
+                ),
+            ]
+        ),
+        html.Div(
+            children=[
+                dcc.Checklist(
+                    id="heatmap-outliers-checklist",
+                    options=["Show only with outliers"],
+                    inputClassName="me-2",
+                ),
+            ],
+        ),
+    ],
+)
+
 OUTLIERS_PURGING_STAGE = html.Div(
     id="outliers_purging_stage",
     className="container h-100 d-flex flex-column",
@@ -46,146 +180,22 @@ OUTLIERS_PURGING_STAGE = html.Div(
             className="text-center",
         ),
         html.Div(
+            className="row mb-2 pb-2 border-bottom",
+            children=[
+                STATS_SECTION,
+            ],
+        ),
+        html.Div(
             className="row flex-grow-1",
             children=[
-                html.Div(
-                    className="col w-50 h-100",
-                    children=[
-                        html.Div(
-                            className="d-flex flex-column gap-3 h-100",
-                            children=[
-                                html.H2(
-                                    children=["Plates Heatmap"],
-                                    className="text-center",
-                                ),
-                                html.Div(
-                                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
-                                    children=[
-                                        dcc.Graph(
-                                            id="plates-heatmap-graph",
-                                            figure={},
-                                            style={"height": "100%"},
-                                        ),
-                                    ],
-                                ),
-                                html.Div(
-                                    className="d-flex justify-content-center gap-2 mt-3",
-                                    children=[
-                                        html.Button(
-                                            id="heatmap-first-btn",
-                                            children=["First"],
-                                            className="btn btn-secondary fixed-width-100",
-                                        ),
-                                        html.Button(
-                                            id="heatmap-previous-btn",
-                                            children=["Previous"],
-                                            className="btn btn-primary fixed-width-100",
-                                        ),
-                                        html.Div(
-                                            id="heatmap-index-display",
-                                            children=["0/0"],
-                                            className="text-center my-auto fixed-width-150 text-muted",
-                                        ),
-                                        html.Button(
-                                            id="heatmap-next-btn",
-                                            children=["Next"],
-                                            className="btn btn-primary fixed-width-100",
-                                        ),
-                                        html.Button(
-                                            id="heatmap-last-btn",
-                                            children=["Last"],
-                                            className="btn btn-secondary fixed-width-100",
-                                        ),
-                                    ],
-                                ),
-                                html.Div(
-                                    className="d-flex justify-content-center gap-2 mt-3",
-                                    children=[
-                                        dcc.Checklist(
-                                            id="heatmap-outliers-checklist",
-                                            options=["Show only with outliers"],
-                                            inputClassName="me-2",
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                html.Div(
-                    className="col d-flex flex-column gap-3 w-50 h-100",
-                    children=[
-                        html.Div(
-                            className="d-flex flex-column gap-3 flex-grow-1 h-100",
-                            children=[
-                                html.H2(
-                                    children=["Plates Summary"],
-                                    className="text-center",
-                                ),
-                                html.Div(
-                                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
-                                    children=[_COMPOUNDS_DATATABLE],
-                                ),
-                            ],
-                        ),
-                        html.Div(
-                            className="d-flex flex-column gap-3 mb-5",
-                            children=[
-                                html.H2(
-                                    children=["Assay Stats"],
-                                    className="text-center",
-                                ),
-                                html.Div(
-                                    className="mx-5",
-                                    children=[
-                                        html.Div(
-                                            className="row border-bottom",
-                                            children=[
-                                                html.H3(
-                                                    children=["Total Plates:"],
-                                                    className="col-6 text-start my-auto fs-4",
-                                                ),
-                                                html.H3(
-                                                    id="total-plates",
-                                                    children=["0"],
-                                                    className="col-6 text-end pe-3 my-auto fs-4",
-                                                ),
-                                            ],
-                                        ),
-                                        html.Div(
-                                            className="row border-bottom",
-                                            children=[
-                                                html.H3(
-                                                    children=["Total Compounds:"],
-                                                    className="col-6 text-start my-auto fs-4",
-                                                ),
-                                                html.H3(
-                                                    id="total-compounds",
-                                                    children=["0"],
-                                                    className="col-6 text-end pe-3 my-auto fs-4",
-                                                ),
-                                            ],
-                                        ),
-                                        html.Div(
-                                            className="row border-bottom",
-                                            children=[
-                                                html.H3(
-                                                    children=["Total Outliers:"],
-                                                    className="col-6 text-start my-auto fs-4",
-                                                ),
-                                                html.H3(
-                                                    id="total-outliers",
-                                                    children=["0"],
-                                                    className="col-6 text-end pe-3 my-auto fs-4",
-                                                ),
-                                            ],
-                                        ),
-                                    ],
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
+                HEATMAP_SECTION,
+                DATATABLE_SECTION,
+            ],
+        ),
+        html.Div(
+            className="row",
+            children=[
+                CONTROLS,
             ],
         ),
         dcc.Store(id="heatmap-start-index", data=0),
