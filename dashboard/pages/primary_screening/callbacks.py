@@ -214,7 +214,6 @@ def on_plates_stats_stage_entry(
         control_values_fig,
         row_col_fig,
         z_fig,
-        f"Selected threshold: {value}",
         f"Number of deleted plates: {num_removed}",
     )
 
@@ -397,7 +396,6 @@ def register_callbacks(elements, file_storage):
         Output("control-values", "figure"),
         Output("mean-cols-rows", "figure"),
         Output("z-per-plate", "figure"),
-        Output("slider-output", "children"),
         Output("plates-removed", "children"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
