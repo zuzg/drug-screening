@@ -49,23 +49,40 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 
-    NUM_COLS = 4
     return (
         html.Div(
             className="row",
             children=[
-                html.H5(className="text-center", children="Loaded files"),
-                html.Hr(),
                 html.Div(
-                    className="row",
+                    className="col",
                     children=[
+                        html.H5(
+                            className="text-center",
+                            children=f"Loaded files {val.shape[0]}/{len(names)}",
+                        ),
+                        html.Hr(),
                         html.Div(
                             className="col",
                             children=html.Ul(
-                                children=[html.Li(name) for name in names[i::NUM_COLS]]
+                                children=[html.Li(name) for name in names]
                             ),
-                        )
-                        for i in range(NUM_COLS)
+                        ),
+                    ],
+                ),
+                html.Div(
+                    className="col",
+                    children=[
+                        html.H5(
+                            className="text-center",
+                            children=f"Loaded files {val.shape[0]}/{len(names)}",
+                        ),
+                        html.Hr(),
+                        html.Div(
+                            className="col",
+                            children=html.Ul(
+                                children=[html.Li(name) for name in names]
+                            ),
+                        ),
                     ],
                 ),
             ],
