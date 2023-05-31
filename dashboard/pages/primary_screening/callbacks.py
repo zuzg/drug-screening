@@ -49,9 +49,10 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         serialized_processed_df = bmg_df.reset_index().to_parquet()
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 
+    NUM_COLS = 2
     return (
         html.Div(
-            className="row",
+            className="row mt-3",
             children=[
                 html.Div(
                     className="col",
@@ -62,10 +63,20 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
                         ),
                         html.Hr(),
                         html.Div(
-                            className="col",
-                            children=html.Ul(
-                                children=[html.Li(name) for name in names]
-                            ),
+                            className="row overflow-auto mh-50",
+                            style={"maxHeight": "200px"},
+                            children=[
+                                html.Div(
+                                    className="col",
+                                    children=html.Ul(
+                                        children=[
+                                            html.Li(name.split(".")[0])
+                                            for name in names[i::NUM_COLS]
+                                        ]
+                                    ),
+                                )
+                                for i in range(NUM_COLS)
+                            ],
                         ),
                     ],
                 ),
@@ -74,14 +85,13 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
                     children=[
                         html.H5(
                             className="text-center",
-                            children=f"Loaded files {val.shape[0]}/{len(names)}",
+                            children=f"Not loaded files {len(names) - val.shape[0]}/{len(names)}",
                         ),
                         html.Hr(),
                         html.Div(
-                            className="col",
-                            children=html.Ul(
-                                children=[html.Li(name) for name in names]
-                            ),
+                            className="row overflow-auto mh-50",
+                            style={"maxHeight": "200px"},
+                            children=[],
                         ),
                     ],
                 ),
@@ -276,23 +286,50 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
             f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
         )
 
-    NUM_COLS = 3
+    NUM_COLS = 1
 
     return html.Div(
-        className="row",
+        className="row mt-3",
         children=[
-            html.H5(className="text-center", children="Loaded files"),
-            html.Hr(),
             html.Div(
-                className="row",
+                className="col",
                 children=[
+                    html.H5(
+                        className="text-center",
+                        children=f"Loaded files {len(names)}/{len(names)}",
+                    ),
+                    html.Hr(),
                     html.Div(
-                        className="col",
-                        children=html.Ul(
-                            children=[html.Li(name) for name in names[i::NUM_COLS]]
-                        ),
-                    )
-                    for i in range(NUM_COLS)
+                        className="row overflow-auto mh-50",
+                        style={"maxHeight": "200px"},
+                        children=[
+                            html.Div(
+                                className="col",
+                                children=html.Ul(
+                                    children=[
+                                        html.Li(name.split(".")[0])
+                                        for name in names[i::NUM_COLS]
+                                    ]
+                                ),
+                            )
+                            for i in range(NUM_COLS)
+                        ],
+                    ),
+                ],
+            ),
+            html.Div(
+                className="col",
+                children=[
+                    html.H5(
+                        className="text-center",
+                        children=f"Not loaded files 0/{len(names)}",
+                    ),
+                    html.Hr(),
+                    html.Div(
+                        className="row overflow-auto mh-50",
+                        style={"maxHeight": "200px"},
+                        children=[],
+                    ),
                 ],
             ),
         ],
