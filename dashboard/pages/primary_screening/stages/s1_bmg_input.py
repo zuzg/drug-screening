@@ -1,14 +1,9 @@
 from dash import html, dcc
 
-BMG_DESC = """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-In nec erat eget ante imperdiet tincidunt.
-Aenean facilisis vehicula metus, nec varius elit cursus ac.
-Proin quis viverra lectus. Fusce fermentum ligula mollis vulputate dignissim.
-Cras tempor lacinia tincidunt. Morbi porta tellus tellus, aliquam pharetra massa tincidunt quis.
-Suspendisse vitae diam et erat dapibus placerat ut eget felis.
-Fusce lacinia semper quam, ac lacinia nibh porta vel.
-Cras ullamcorper neque arcu, sit amet vulputate eros feugiat vitae.
+BMG_DESC = """BMG files in ".txt" format should be in the form of two columns,
+where the first column contains the well unique to the plate, e.g. A02, M13, P24, etc.
+The second column is the value for a given compound obtained in a given experiment.
+The name of each file is also the plate identifier.
 """
 
 BMG_INPUT_STAGE = html.Div(

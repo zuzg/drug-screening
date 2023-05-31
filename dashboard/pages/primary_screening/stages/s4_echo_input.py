@@ -1,14 +1,10 @@
 from dash import html, dcc
 
 ECHO_DESC = """
-Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-In nec erat eget ante imperdiet tincidunt.
-Aenean facilisis vehicula metus, nec varius elit cursus ac.
-Proin quis viverra lectus. Fusce fermentum ligula mollis vulputate dignissim.
-Cras tempor lacinia tincidunt. Morbi porta tellus tellus, aliquam pharetra massa tincidunt quis.
-Suspendisse vitae diam et erat dapibus placerat ut eget felis.
-Fusce lacinia semper quam, ac lacinia nibh porta vel.
-Cras ullamcorper neque arcu, sit amet vulputate eros feugiat vitae.
+ECHO files in ".csv" format should have [DETAILS] and (if there are exceptions in the file) [EXCEPTIONS] tags
+in the file. A file without any tags will be treated as containing only exceptions.
+Each row containing information about a compound should contain, among other things,
+the barcode and position on the plate so that it is possible to link ECHO files with BMG files.
 """
 
 ECHO_INPUT_STAGE = html.Div(
