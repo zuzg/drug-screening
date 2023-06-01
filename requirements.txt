@@ -15,4 +15,3 @@ nbformat>=4.2.0
 plotly
 rdkit
 pyarrow
-dash_bootstrap_components

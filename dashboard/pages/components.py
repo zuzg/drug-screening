@@ -90,3 +90,65 @@ def make_page_controls(
             html.Button("Next", id=next_stage_btn_id),
         ]
     )
+
+
+def make_file_list_component(
+    successfull_filenames: list[str], failed_filenames: list[str], num_cols: int
+) -> html.Div:
+    return html.Div(
+        className="row mt-3",
+        children=[
+            html.Div(
+                className="col",
+                children=[
+                    html.H5(
+                        className="text-center",
+                        children=f"Loaded files {len(successfull_filenames)}/{len(successfull_filenames) + len(failed_filenames)}",
+                    ),
+                    html.Hr(),
+                    html.Div(
+                        className="row overflow-auto mh-50",
+                        style={"maxHeight": "200px"},
+                        children=[
+                            html.Div(
+                                className="col",
+                                children=html.Ul(
+                                    children=[
+                                        html.Li(name.split(".")[0])
+                                        for name in successfull_filenames[i::num_cols]
+                                    ]
+                                ),
+                            )
+                            for i in range(num_cols)
+                        ],
+                    ),
+                ],
+            ),
+            html.Div(
+                className="col",
+                children=[
+                    html.H5(
+                        className="text-center",
+                        children=f"Not loaded files {len(failed_filenames)}/{len(successfull_filenames) + len(failed_filenames)}",
+                    ),
+                    html.Hr(),
+                    html.Div(
+                        className="row overflow-auto mh-50",
+                        style={"maxHeight": "200px"},
+                        children=[
+                            html.Div(
+                                className="col",
+                                children=html.Ul(
+                                    children=[
+                                        html.Li(name.split(".")[0])
+                                        for name in failed_filenames[i::num_cols]
+                                    ]
+                                ),
+                            )
+                            for i in range(num_cols)
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )

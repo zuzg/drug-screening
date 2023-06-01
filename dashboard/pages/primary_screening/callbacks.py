@@ -20,6 +20,7 @@ from dashboard.visualization.plots import (
     visualize_activation_inhibition_zscore,
     visualize_multiple_plates,
 )
+from dashboard.pages.components import make_file_list_component
 
 # === STAGE 1 ===
 
@@ -50,14 +51,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
 
     return (
-        html.Div(
-            [
-                html.H5("Loaded files"),
-                html.Hr(),
-                html.Ul(children=[html.Li(i) for i in names]),
-                html.Hr(),
-            ]
-        ),
+        make_file_list_component(names, [], 2),
         stored_uuid,
     )
 
@@ -246,14 +240,7 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
             f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
         )
 
-    return html.Div(
-        [
-            html.H5("Loaded files"),
-            html.Hr(),
-            html.Ul(children=[html.Li(i) for i in names]),
-            html.Hr(),
-        ]
-    )
+    return make_file_list_component(names, [], 1)
 
 
 # === STAGE 5 ===
