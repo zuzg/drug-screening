@@ -97,7 +97,17 @@ def visualize_multiple_plates(
             p[1],
         )
 
-        fig.update_layout({f"yaxis{i}": {"scaleanchor": f"x{i}"}, "autosize": True})
+        fig.update_layout(
+            {
+                f"xaxis{i}": {"fixedrange": True, "showgrid": False},
+                f"yaxis{i}": {
+                    "fixedrange": True,
+                    "showgrid": False,
+                    "scaleanchor": f"x{i}",
+                },
+                "autosize": True,
+            }
+        )
 
     fig.update_layout(
         coloraxis={"colorscale": "viridis"},
