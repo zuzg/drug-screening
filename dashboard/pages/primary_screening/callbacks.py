@@ -12,6 +12,7 @@ from dash import Input, Output, State, callback, callback_context, html, no_upda
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_control_values,
@@ -20,7 +21,7 @@ from dashboard.visualization.plots import (
     visualize_activation_inhibition_zscore,
     visualize_multiple_plates,
 )
-from dashboard.pages.components import make_file_list_component
+from dashboard.visualization.z_score_plot import plot_zscore
 
 # === STAGE 1 ===
 
@@ -273,9 +274,7 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
 
     echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
 
-    fig_z_score = visualize_activation_inhibition_zscore(
-        compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
-    )
+    fig_z_score = plot_zscore(compounds_df, control_pos_df, control_neg_df, (-3, 3))
 
     fig_activation = visualize_activation_inhibition_zscore(
         compounds_df, control_pos_df, control_neg_df, "% ACTIVATION"
