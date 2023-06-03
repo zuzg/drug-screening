@@ -79,7 +79,7 @@ class ProcessPageBuilder(PageBuilder):
                 dash.html.Div(
                     children=[],
                     id=self.stages_container_id,
-                    className="flex-grow-1 w-100",
+                    className="flex-grow-1 w-100 mt-4",
                 ),
             ]
         )

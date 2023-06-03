@@ -100,7 +100,7 @@ def make_page_controls_rich_widget(
     )
 
     return html.Div(
-        className="controls",
+        className="controls border-bottom",
         children=[
             html.Button(
                 id=previous_stage_btn_id,

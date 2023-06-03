@@ -86,8 +86,7 @@
 
 .controls__content {
     position: relative;
-    margin: 3rem 5rem;
-    margin-right: 7rem;
+    margin: 3rem 7rem 2rem 5rem;
     display: flex;
     justify-content: space-evenly;
     flex-grow: 1;

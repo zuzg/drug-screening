@@ -179,7 +179,7 @@ OUTLIERS_PURGING_STAGE = html.Div(
     className="container h-100 d-flex flex-column",
     children=[
         html.Div(
-            className="row mb-2 pb-2 border-bottom",
+            className="row mb-2 pb-2",
             children=[
                 STATS_SECTION,
             ],
