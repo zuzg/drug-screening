@@ -144,3 +144,14 @@
     width: 120px;
     transform: rotate(-20deg);
 }
+
+
+.btn--round {
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}

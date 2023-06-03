@@ -103,15 +103,19 @@ def make_page_controls_rich_widget(
         className="controls",
         children=[
             html.Button(
-                "Previous",
                 id=previous_stage_btn_id,
-                className="btn btn-primary fixed-width-100",
+                className="btn btn-primary btn--round",
+                children=[
+                    html.I(className="fa-solid fa-arrow-left"),
+                ],
             ),
             controls_content,
             html.Button(
-                "Next",
                 id=next_stage_btn_id,
-                className="btn btn-primary fixed-width-100",
+                className="btn btn-primary btn--round",
+                children=[
+                    html.I(className="fa-solid fa-arrow-right"),
+                ],
             ),
         ],
     )
