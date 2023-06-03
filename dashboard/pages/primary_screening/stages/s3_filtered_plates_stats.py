@@ -5,10 +5,6 @@ FILTERED_PLATES_STATS_STAGE = html.Div(
     id="filtered_plates_stats_stage",
     className="container",
     children=[
-        html.H1(
-            children=["Plates Statistics"],
-            className="text-center",
-        ),
         html.Div(
             className="row",
             children=[

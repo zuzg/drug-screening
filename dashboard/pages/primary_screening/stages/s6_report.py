@@ -4,10 +4,6 @@ REPORT_STAGE = html.Div(
     id="report_stage",
     className="container",
     children=[
-        html.H1(
-            children=["Report"],
-            className="text-center",
-        ),
         html.Div(
             className="my-4",
             children=[

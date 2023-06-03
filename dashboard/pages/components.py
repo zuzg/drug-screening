@@ -93,15 +93,39 @@ def make_page_controls(
 
 
 def make_page_controls_rich_widget(
-    previous_stage_btn_id: str,
-    next_stage_btn_id: str,
-    stages_count: int,
+    previous_stage_btn_id: str, next_stage_btn_id: str, stage_names: list[str]
 ) -> html.Div:
-    return html.Div(
+    controls_content = html.Ul(
+        className="controls__content",
         children=[
-            html.Button("Previous", id=previous_stage_btn_id),
-            html.Button("Next", id=next_stage_btn_id),
-        ]
+            html.Li(
+                className="controls__point",
+                children=[
+                    html.Span(
+                        className="controls__point__label",
+                        children=stage_name,
+                    ),
+                ],
+            )
+            for stage_name in stage_names
+        ],
+    )
+
+    return html.Div(
+        className="controls",
+        children=[
+            html.Button(
+                "Previous",
+                id=previous_stage_btn_id,
+                className="btn btn-primary fixed-width-100",
+            ),
+            controls_content,
+            html.Button(
+                "Next",
+                id=next_stage_btn_id,
+                className="btn btn-primary fixed-width-100",
+            ),
+        ],
     )
 
 

@@ -5,7 +5,6 @@ _COMPOUNDS_DATATABLE = dash_table.DataTable(
     style_table={
         "overflowX": "auto",
         "overflowY": "auto",
-        # "height": "100%",
     },
     style_cell={
         "textAlign": "right",
@@ -179,10 +178,6 @@ OUTLIERS_PURGING_STAGE = html.Div(
     id="outliers_purging_stage",
     className="container h-100 d-flex flex-column",
     children=[
-        html.H1(
-            children=["Outliers Purging"],
-            className="text-center",
-        ),
         html.Div(
             className="row mb-2 pb-2 border-bottom",
             children=[

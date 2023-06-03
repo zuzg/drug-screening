@@ -10,10 +10,6 @@ BMG_INPUT_STAGE = html.Div(
     id="bmg_input_stage",
     className="container",
     children=[
-        html.H1(
-            children=["BMG Input"],
-            className="text-center",
-        ),
         html.Div(
             children=[
                 html.P(BMG_DESC, className="text-justify"),

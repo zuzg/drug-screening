@@ -67,6 +67,7 @@ class ProcessPageBuilder(PageBuilder):
     def __init__(self, name: str):
         super().__init__(name)
         self.stages = []
+        self.stage_names = []
         self.stages_container_id = f"stages_container_{self.page_name}"
         self.stages_store_id = f"stages_store_{self.page_name}"
         self.next_stage_btn_id = f"next_stage_{self.page_name}"
@@ -80,10 +81,6 @@ class ProcessPageBuilder(PageBuilder):
                     id=self.stages_container_id,
                     className="flex-grow-1 w-100",
                 ),
-                # make_page_controls(
-                #     previous_stage_btn_id=self.previous_stage_btn_id,
-                #     next_stage_btn_id=self.next_stage_btn_id,
-                # ),
             ]
         )
 
@@ -92,25 +89,30 @@ class ProcessPageBuilder(PageBuilder):
             id={"type": self.stage_blocker_id, "index": len(self.stages)}, data=False
         )
 
-    def add_stage(self, stage: dash.html.Div) -> None:
+    def add_stage(self, stage: dash.html.Div, name: str) -> None:
         """
         Register new stage in the process page
 
         :param stage: stage to be added (layout)
+        :param name: name of the stage
         """
         if type(stage.children) is not list:
             stage.children = [stage.children]
         stage.children.insert(0, self.make_stage_blocker())
         self.stages.append(stage)
+        self.stage_names.append(name)
 
-    def add_stages(self, stages: list[dash.html.Div]) -> None:
+    def add_stages(self, stages: list[dash.html.Div], names: list[str]) -> None:
         """
         Register new stages in the process page
 
         :param stages: stages to be added (layouts)
+        :param names: names of the stages
         """
-        for stage in stages:
-            self.add_stage(stage)
+        if len(stages) != len(names):
+            raise ValueError("Number of stages and names must be equal")
+        for stage, name in zip(stages, names):
+            self.add_stage(stage, name)
 
     def _regsiter_callbacks(self):
         super()._regsiter_callbacks()
@@ -153,6 +155,16 @@ class ProcessPageBuilder(PageBuilder):
             cant_go_forward = (current_stage >= len(self.stages) - 1) or blocker
             return cant_go_backward, cant_go_forward
 
+        dash.clientside_callback(
+            """
+            function(n_clicks) {
+                onStageIndexChange(n_clicks);
+            }
+            """,
+            dash.Output("dummy", "children"),
+            dash.Input(self.stages_store_id, "data"),
+        )
+
     def build(self) -> dash.html.Div:
         """
         Build the page layout and register callbacks
@@ -164,7 +176,7 @@ class ProcessPageBuilder(PageBuilder):
             make_page_controls_rich_widget(
                 previous_stage_btn_id=self.previous_stage_btn_id,
                 next_stage_btn_id=self.next_stage_btn_id,
-                stages_count=len(self.stages),
+                stage_names=self.stage_names,
             ),
         )
         return super().build()

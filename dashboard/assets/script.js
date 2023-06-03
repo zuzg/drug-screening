@@ -8,3 +8,20 @@ function onPageLoad() {
         }
     });
 }
+
+
+function onStageIndexChange(newIndex) {
+    const points = document.querySelectorAll(".controls__point");
+    points.forEach((point, index) => {
+        if (index === newIndex) {
+            point.classList.add("controls__point--active");
+        } else {
+            point.classList.remove("controls__point--active");
+        }
+        if (index < newIndex) {
+            point.classList.add("controls__point--visited");
+        } else {
+            point.classList.remove("controls__point--visited");
+        }
+    });
+}
