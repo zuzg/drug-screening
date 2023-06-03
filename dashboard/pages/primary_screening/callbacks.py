@@ -2,12 +2,13 @@ import base64
 import functools
 import io
 import uuid
+from math import ceil, floor
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, html, no_update
+from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
@@ -274,7 +275,23 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
 
     echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
 
-    fig_z_score = plot_zscore(compounds_df, control_pos_df, control_neg_df, (-3, 3))
+    min_z, max_z = compounds_df["Z-SCORE"].min(), compounds_df["Z-SCORE"].max()
+    marks = {i: "{}".format(i) for i in range(0, ceil(max_z), 5)}
+    if floor(min_z) < 0:
+        marks.update({i: "{}".format(i) for i in range(floor(min_z), 0, 5)})
+    fig_z_score = plot_zscore(compounds_df, control_pos_df, control_neg_df)
+    z_score_slider = dcc.RangeSlider(
+        floor(min_z),
+        ceil(max_z),
+        value=[min_z, max_z],
+        tooltip={
+            "placement": "bottom",
+            "always_visible": True,
+        },
+        marks=marks,
+        allowCross=False,
+        id="z-score-slider",
+    )
 
     fig_activation = visualize_activation_inhibition_zscore(
         compounds_df, control_pos_df, control_neg_df, "% ACTIVATION"
@@ -284,7 +301,13 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
         compounds_df, control_pos_df, control_neg_df, "% INHIBITION"
     )
 
-    return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
+    return (
+        echo_bmg_combined,
+        fig_z_score,
+        fig_activation,
+        fig_inhibition,
+        z_score_slider,
+    )
 
 
 def on_z_score_range_update(n_clicks, figure, range):
@@ -401,6 +424,7 @@ def register_callbacks(elements, file_storage):
         Output("z-score-plot", "figure"),
         Output("activation-plot", "figure"),
         Output("inhibition-plot", "figure"),
+        Output("z-score-slider", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_summary_entry, file_storage=file_storage))

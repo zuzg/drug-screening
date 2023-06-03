@@ -85,18 +85,7 @@ SUMMARY_STAGE = html.Div(
                                     children=[
                                         html.Div(
                                             className="col mb-4",
-                                            children=[
-                                                dcc.RangeSlider(
-                                                    -10,
-                                                    10,
-                                                    value=[-3, 3],
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": True,
-                                                    },
-                                                    id="z-score-slider",
-                                                )
-                                            ],
+                                            id="z-score-slider",
                                             style={"width": "750px"},
                                         ),
                                         html.Div(
