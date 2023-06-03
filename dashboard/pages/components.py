@@ -92,6 +92,19 @@ def make_page_controls(
     )
 
 
+def make_page_controls_rich_widget(
+    previous_stage_btn_id: str,
+    next_stage_btn_id: str,
+    stages_count: int,
+) -> html.Div:
+    return html.Div(
+        children=[
+            html.Button("Previous", id=previous_stage_btn_id),
+            html.Button("Next", id=next_stage_btn_id),
+        ]
+    )
+
+
 def make_file_list_component(
     successfull_filenames: list[str], failed_filenames: list[str], num_cols: int
 ) -> html.Div:

@@ -1,6 +1,6 @@
 import dash
 
-from .components import make_page_controls
+from .components import make_page_controls_rich_widget
 
 
 class PageBuilder:
@@ -80,10 +80,10 @@ class ProcessPageBuilder(PageBuilder):
                     id=self.stages_container_id,
                     className="flex-grow-1 w-100",
                 ),
-                make_page_controls(
-                    previous_stage_btn_id=self.previous_stage_btn_id,
-                    next_stage_btn_id=self.next_stage_btn_id,
-                ),
+                # make_page_controls(
+                #     previous_stage_btn_id=self.previous_stage_btn_id,
+                #     next_stage_btn_id=self.next_stage_btn_id,
+                # ),
             ]
         )
 
@@ -152,6 +152,22 @@ class ProcessPageBuilder(PageBuilder):
             cant_go_backward = current_stage <= 0
             cant_go_forward = (current_stage >= len(self.stages) - 1) or blocker
             return cant_go_backward, cant_go_forward
+
+    def build(self) -> dash.html.Div:
+        """
+        Build the page layout and register callbacks
+
+        :return: built page layout
+        """
+        self.layout.children.insert(
+            0,
+            make_page_controls_rich_widget(
+                previous_stage_btn_id=self.previous_stage_btn_id,
+                next_stage_btn_id=self.next_stage_btn_id,
+                stages_count=len(self.stages),
+            ),
+        )
+        return super().build()
 
     @property
     def elements(self) -> dict[str, str]:
