@@ -14,7 +14,7 @@ def prepare_data_plot(df, well, col, id_pos="id_pos", range_max=None):
     else:
         df["lb"] = df["mean"] - df["std"]
         df["ub"] = df["mean"] + df["std"]
-    df = df.sort_values("mean")
+    df = df.sort_values("std")  # can be "mean" as well
 
     if range_max is not None:
         x_positions = [0]
@@ -25,7 +25,6 @@ def prepare_data_plot(df, well, col, id_pos="id_pos", range_max=None):
             i += frac
         df[id_pos] = x_positions
     else:
-        #     df[id_pos] = range(0, no_items, no_items/len(df))
         df[id_pos] = range(len(df))
 
     return df
@@ -149,7 +148,6 @@ def plot_zscore(
     fig.update_xaxes(showticklabels=False)
     fig.update_layout(
         title=f"Z-score plot",
-        # xaxis_title="Well",
         xaxis=dict(
             {
                 "title": "Well",

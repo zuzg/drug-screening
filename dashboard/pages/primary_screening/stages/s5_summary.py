@@ -91,7 +91,11 @@ SUMMARY_STAGE = html.Div(
                                         html.Div(
                                             className="col",
                                             children=[
-                                                dbc.Button("Apply", id="z-score-button")
+                                                dbc.Button(
+                                                    "Apply",
+                                                    id="z-score-button",
+                                                    disabled=True,
+                                                )
                                             ],
                                         ),
                                     ],

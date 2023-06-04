@@ -371,7 +371,7 @@ def on_z_score_range_update(value, figure):
     )
 
     new_figure.update_layout(shapes=shapes, annotations=annotations)
-    return new_figure
+    return new_figure, False
 
 
 def on_z_score_button_click(
@@ -473,7 +473,7 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_summary_entry, file_storage=file_storage))
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        # Input("z-score-button", "n_clicks"),
+        Output("z-score-button", "disabled"),
         Input("z-score-slider", "value"),
         State("z-score-plot", "figure"),
         prevent_initial_call=True,
