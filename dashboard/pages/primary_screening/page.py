@@ -11,7 +11,15 @@ NAME = "Primary Screening"
 register_page(path="/primary-screening", name=NAME, module=__name__)
 
 pb = ProcessPageBuilder(name=NAME)
-pb.add_stages(STAGES)
+STAGE_NAMES = [
+    "BMG Input",
+    "Outliers Preview",
+    "Statistics",
+    "Echo Input",
+    "Summary",
+    "Report",
+]
+pb.add_stages(STAGES, STAGE_NAMES)
 layout = pb.build()
 
 file_storage = LocalFileStorage()

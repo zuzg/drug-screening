@@ -5,6 +5,20 @@ Contains common elements for the pages.
 from dash import html, dcc
 
 
+# Extra elements that are not part of the main layout
+# Invisible or detached from the main layout
+# Common for all pages
+EXTRA = html.Div(
+    id="extra",
+    children=[
+        html.Div(id="error-box", style={"color": "red"}),
+        dcc.Store(id="error-msg", data=""),
+        html.Div(id="dummy"),
+        dcc.Store(id="user-uuid", storage_type="local"),
+    ],
+)
+
+
 def make_main_header(page_registry: dict):
     nav_bar = html.Ul(
         children=[
@@ -66,29 +80,44 @@ def make_footer(version: str) -> html.Footer:
     )
 
 
-# Extra elements that are not part of the main layout
-# Invisible or detached from the main layout
-# Common for all pages
-EXTRA = html.Div(
-    id="extra",
-    children=[
-        html.Div(id="error-box", style={"color": "red"}),
-        dcc.Store(id="error-msg", data=""),
-        html.Div(id="dummy"),
-        dcc.Store(id="user-uuid", storage_type="local"),
-    ],
-)
-
-
-def make_page_controls(
-    previous_stage_btn_id: str,
-    next_stage_btn_id: str,
+def make_page_controls_rich_widget(
+    previous_stage_btn_id: str, next_stage_btn_id: str, stage_names: list[str]
 ) -> html.Div:
-    return html.Div(
+    controls_content = html.Ul(
+        className="controls__content",
         children=[
-            html.Button("Previous", id=previous_stage_btn_id),
-            html.Button("Next", id=next_stage_btn_id),
-        ]
+            html.Li(
+                className="controls__point",
+                children=[
+                    html.Span(
+                        className="controls__point__label",
+                        children=stage_name,
+                    ),
+                ],
+            )
+            for stage_name in stage_names
+        ],
+    )
+
+    return html.Div(
+        className="controls border-bottom",
+        children=[
+            html.Button(
+                id=previous_stage_btn_id,
+                className="btn btn-primary btn--round",
+                children=[
+                    html.I(className="fa-solid fa-arrow-left"),
+                ],
+            ),
+            controls_content,
+            html.Button(
+                id=next_stage_btn_id,
+                className="btn btn-primary btn--round",
+                children=[
+                    html.I(className="fa-solid fa-arrow-right"),
+                ],
+            ),
+        ],
     )
 
 
