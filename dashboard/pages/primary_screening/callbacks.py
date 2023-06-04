@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
+import pyarrow.parquet as pq
 from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -279,7 +280,13 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     marks = {i: "{}".format(i) for i in range(0, ceil(max_z), 5)}
     if floor(min_z) < 0:
         marks.update({i: "{}".format(i) for i in range(floor(min_z), 0, 5)})
-    fig_z_score = plot_zscore(compounds_df, control_pos_df, control_neg_df)
+
+    # NOTE: here I only added the position that is required for the plot_zscore function
+    fig_z_score, new_echo_df = plot_zscore(compounds_df, control_pos_df, control_neg_df)
+
+    serialized_new_echo_df = new_echo_df.reset_index().to_parquet()
+    file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialized_new_echo_df)
+
     z_score_slider = dcc.RangeSlider(
         floor(min_z),
         ceil(max_z),
@@ -310,59 +317,95 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     )
 
 
-def on_z_score_range_update(n_clicks, figure, range):
-    min_value, max_value = range
+def on_z_score_range_update(value, figure):
+    min_value, max_value = value
     new_figure = go.Figure(figure)
 
     shapes = []
     annotations = []
-    if min_value is not None and (max_value is None or min_value <= max_value):
-        shapes.append(
-            {
-                "type": "line",
-                "y0": min_value,
-                "y1": min_value,
-                "line": {
-                    "color": "gray",
-                    "width": 3,
-                    "dash": "dash",
-                },
-            }
-        )
-        annotations.append(
-            {
-                "y": min_value,
-                "text": f"MIN: {min_value:.2f}",
-                "showarrow": False,
-                "font": {"color": "gray"},
-            }
-        )
 
-    if max_value is not None and (min_value is None or min_value <= max_value):
-        shapes.append(
-            {
-                "type": "line",
-                "y0": max_value,
-                "y1": max_value,
-                "line": {
-                    "color": "gray",
-                    "width": 3,
-                    "dash": "dash",
-                },
-            }
-        )
-        annotations.append(
-            {
-                "x": 1,
-                "xanchor": "right",
-                "y": max_value,
-                "text": f"MAX: {max_value:.2f}",
-                "showarrow": False,
-                "font": {"color": "gray"},
-            }
-        )
+    shapes.append(
+        {
+            "type": "line",
+            "y0": min_value,
+            "y1": min_value,
+            "line": {
+                "color": "gray",
+                "width": 3,
+                "dash": "dash",
+            },
+        }
+    )
+
+    shapes.append(
+        {
+            "type": "line",
+            "y0": max_value,
+            "y1": max_value,
+            "line": {
+                "color": "gray",
+                "width": 3,
+                "dash": "dash",
+            },
+        }
+    )
+
+    annotations.append(
+        {
+            "y": min_value,
+            "text": f"MIN: {min_value:.2f}",
+            "showarrow": False,
+            "font": {"color": "gray"},
+        }
+    )
+
+    annotations.append(
+        {
+            "x": 1,
+            "xanchor": "right",
+            "y": max_value,
+            "text": f"MAX: {max_value:.2f}",
+            "showarrow": False,
+            "font": {"color": "gray"},
+        }
+    )
 
     new_figure.update_layout(shapes=shapes, annotations=annotations)
+    return new_figure
+
+
+def on_z_score_button_click(
+    n_clicks, stored_uuid, value, figure, file_storage: FileStorage
+):
+    min_value, max_value = value
+    new_figure = go.Figure(figure)
+    selector = dict(name="COMPOUNDS OUTSIDE")
+
+    id_pos = "id_pos"
+    PLATE = "Destination Plate Barcode"
+    WELL = "Destination Well"
+    Z_SCORE = "Z-SCORE"
+
+    echo_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_echo_df.pq"))
+    )
+
+    # TBD: use pa.ParquetDataset
+    compounds_outside_df = echo_df[
+        (echo_df[id_pos].notnull())
+        & ((echo_df[Z_SCORE] < min_value) | (echo_df[Z_SCORE] > max_value))
+    ][[id_pos, PLATE, WELL, Z_SCORE]]
+
+    new_figure.update_traces(
+        x=compounds_outside_df[id_pos],
+        y=compounds_outside_df[Z_SCORE],
+        customdata=np.stack(
+            (compounds_outside_df[PLATE], compounds_outside_df[WELL]), axis=-1
+        ),
+        hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>CMPD ID</extra>",
+        mode="markers",
+        selector=selector,
+    )
     return new_figure
 
 
@@ -430,8 +473,16 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_summary_entry, file_storage=file_storage))
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        Input("z-score-button", "n_clicks"),
+        # Input("z-score-button", "n_clicks"),
+        Input("z-score-slider", "value"),
         State("z-score-plot", "figure"),
-        State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
+    callback(
+        Output("z-score-plot", "figure", allow_duplicate=True),
+        Input("z-score-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("z-score-slider", "value"),
+        State("z-score-plot", "figure"),
+        prevent_initial_call=True,
+    )(functools.partial(on_z_score_button_click, file_storage=file_storage))

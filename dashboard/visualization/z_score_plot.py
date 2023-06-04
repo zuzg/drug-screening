@@ -5,7 +5,7 @@ import plotly.graph_objs as go
 PLOTLY_TEMPLATE = "plotly_white"
 
 
-def prepare_data_plot(df, well, col, id_pos="index", range_max=None):
+def prepare_data_plot(df, well, col, id_pos="id_pos", range_max=None):
     df = df.groupby(well)[col].agg(["mean", "std"]).reset_index()
     if df["std"].isna().any():
         df["std"] = 0.0
@@ -37,7 +37,7 @@ def plot_zscore(
     control_neg_df: pd.DataFrame,
     z_score_limits: tuple = None,
 ) -> go.Figure:
-    id_pos = "index"
+    id_pos = "id_pos"
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
     Z_SCORE = "Z-SCORE"
@@ -118,6 +118,16 @@ def plot_zscore(
                 hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>CMPD ID</extra>",
             )
         )
+    else:
+        fig.add_trace(
+            go.Scatter(
+                x=list(),
+                y=list(),
+                mode="markers",
+                marker=dict(color="rgb(31, 119, 180)", size=8),
+                name="COMPOUNDS OUTSIDE",
+            )
+        )
 
     fig.add_hline(
         y=z_score_limits[0],
@@ -153,4 +163,11 @@ def plot_zscore(
         template=PLOTLY_TEMPLATE,
     )
 
-    return fig
+    compounds_df = compounds_df.merge(
+        plot_compounds_df[[WELL, id_pos]], how="left", on=WELL
+    )
+    control_pos_df[id_pos] = np.nan
+    control_neg_df[id_pos] = np.nan
+    result = pd.concat([compounds_df, control_pos_df, control_neg_df])
+
+    return fig, result
