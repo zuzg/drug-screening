@@ -61,15 +61,6 @@ SUMMARY_STAGE = html.Div(
     id="summary_stage",
     className="container",
     children=[
-        html.Div(
-            className="mb-2",
-            children=[
-                html.H1(
-                    children=["Summary"],
-                    className="text-center",
-                ),
-            ],
-        ),
         dcc.Tabs(
             id="summary-tabs",
             children=[

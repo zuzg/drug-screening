@@ -11,10 +11,6 @@ ECHO_INPUT_STAGE = html.Div(
     id="echo_input_stage",
     className="container",
     children=[
-        html.H1(
-            children=["ECHO Input"],
-            className="text-center",
-        ),
         html.Div(
             children=[
                 html.P(ECHO_DESC, className="text-justify"),
