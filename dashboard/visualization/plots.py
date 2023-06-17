@@ -1,7 +1,5 @@
-import string
 from itertools import product
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -416,4 +414,76 @@ def visualize_activation_inhibition_zscore(
             annotation_font_color="gray",
         )
 
+    return fig
+
+
+def concentration_confirmatory_plot(
+    act_inh_primary: np.ndarray,
+    act_inh_secondary: np.ndarray,
+    concentrations: np.ndarray,
+    reaction_type: str,
+) -> go.Figure:
+    """
+    Plot correlations of two screenings
+
+    :param act_inh_primary: 1D array with act/inh values from primary screening
+    :param act_inh_secondary: 1D array with act/inh values from secondary screening
+    :param concentrations: 1D array with type of concentration
+    :param reaction_type: inhibition or activation
+    :return: plot figure
+    """
+    fig = px.scatter(
+        x=act_inh_primary,
+        y=act_inh_secondary,
+        color=concentrations.astype(str),
+        labels={
+            "x": f"%{reaction_type} primary",
+            "y": f"%{reaction_type} confirmatory",
+            "color": "concentration",
+        },
+    )
+    fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        title=f"{reaction_type} in primary and confirmatory screenings",
+    )
+    return fig
+
+
+def concentration_plot(
+    ids: np.ndarray, concentrations: np.ndarray, reaction_type: str
+) -> go.Figure:
+    """
+    Plot activation/inhibition values for each compound by concentration
+
+    :param ids: array with ids of compounds
+    :param concentrations: array with concentrations, shaped (#compounds, #concentrations)
+    :param reaction_type: inhibition or activation
+    :return: plot figure
+    """
+    fig = go.Figure()
+    for id, conc in zip(ids, concentrations):
+        fig.add_trace(
+            go.Scatter(
+                x=["2.5", "10.0", "50.0"],
+                y=conc,
+                hovertemplate="id: %{text}<br>value: %{y}<extra></extra>",
+                marker_symbol="square",
+                marker_size=7,
+                line_width=1,
+                text=[str(id), str(id), str(id)],
+            )
+        )
+    fig.update_layout(
+        title_text="Concentrations",
+        xaxis_title="Concentration [uM]",
+        yaxis_title=reaction_type,
+        showlegend=False,
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+        template=PLOTLY_TEMPLATE,
+    )
     return fig
