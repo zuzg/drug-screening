@@ -5,16 +5,22 @@ import plotly.graph_objs as go
 PLOTLY_TEMPLATE = "plotly_white"
 
 
-def prepare_data_plot(df, well, col, id_pos="id_pos", range_max=None):
-    df = df.groupby(well)[col].agg(["mean", "std"]).reset_index()
+# TODO: move it to echo file parser (then no need for saving .pq twice)
+def get_well_stats(df, well, col, id_pos="id_pos", range_max=None):
+    """
+    Returns dataframe with well statistics.
+
+    :param df: dataframe with well statistics
+    :param well: well column name
+    :param col: column name with values (z-score)
+    :param id_pos: column name with position id
+    :param range_max: maximum value of x-axis
+    :return: dataframe with well statistics
+    """
+    df = df.groupby(well)[col].agg(["mean", "std", "min", "max"]).reset_index()
     if df["std"].isna().any():
         df["std"] = 0.0
-        df["lb"] = df["mean"]
-        df["ub"] = df["mean"]
-    else:
-        df["lb"] = df["mean"] - df["std"]
-        df["ub"] = df["mean"] + df["std"]
-    df = df.sort_values("std")  # can be "mean" as well
+    df = df.sort_values("mean")
 
     if range_max is not None:
         x_positions = [0]
@@ -26,7 +32,6 @@ def prepare_data_plot(df, well, col, id_pos="id_pos", range_max=None):
         df[id_pos] = x_positions
     else:
         df[id_pos] = range(len(df))
-
     return df
 
 
@@ -52,17 +57,15 @@ def plot_zscore(
         z_score_limits = compounds_df[Z_SCORE].min(), compounds_df[Z_SCORE].max()
         compounds_outside_df = None
 
-    # TBD: preserve this data somewhere
-    plot_compounds_df = prepare_data_plot(compounds_df, WELL, Z_SCORE)
+    plot_compounds_df = get_well_stats(compounds_df, WELL, Z_SCORE)
     range_max = len(plot_compounds_df)
-    plot_control_pos_df = prepare_data_plot(
+    plot_control_pos_df = get_well_stats(
         control_pos_df, WELL, Z_SCORE, range_max=range_max
     )
-    plot_control_neg_df = prepare_data_plot(
+    plot_control_neg_df = get_well_stats(
         control_neg_df, WELL, Z_SCORE, range_max=range_max
     )
 
-    # to be updated
     dfs = [plot_control_pos_df, plot_control_neg_df, plot_compounds_df]
     colors = ["rgb(0,128,0)", "rgb(255,0,0)", "rgb(31, 119, 180)"]
     colors_shade = ["rgba(0,128,0,0.2)", "rgba(255,0,0,0.2)", "rgba(31, 119, 180,0.4)"]
@@ -88,7 +91,7 @@ def plot_zscore(
                     [df[id_pos], df[id_pos][::-1]], ignore_index=True
                 ),  # well, then well reversed
                 y=pd.concat(
-                    [df["ub"], df["lb"][::-1]], ignore_index=True
+                    [df["max"], df["min"][::-1]], ignore_index=True
                 ),  # upper, then lower reversed
                 fill="toself",
                 fillcolor=colors_shade[i],
@@ -132,17 +135,17 @@ def plot_zscore(
         y=z_score_limits[0],
         line_width=3,
         line_dash="dash",
-        line_color="gray",
+        line_color="red",
         annotation_text=f"MIN: {z_score_limits[0]:.2f}",
-        annotation_font_color="gray",
+        annotation_font_color="red",
     )
     fig.add_hline(
         y=z_score_limits[1],
         line_width=3,
         line_dash="dash",
-        line_color="gray",
+        line_color="red",
         annotation_text=f"MAX: {z_score_limits[1]:.2f}",
-        annotation_font_color="gray",
+        annotation_font_color="red",
     )
 
     fig.update_xaxes(showticklabels=False)
@@ -164,6 +167,8 @@ def plot_zscore(
     compounds_df = compounds_df.merge(
         plot_compounds_df[[WELL, id_pos]], how="left", on=WELL
     )
+    print("COMPOUNDS DF")
+    print(compounds_df.head())
     control_pos_df[id_pos] = np.nan
     control_neg_df[id_pos] = np.nan
     result = pd.concat([compounds_df, control_pos_df, control_neg_df])

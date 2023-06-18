@@ -274,18 +274,24 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
         echo_bmg_combined.drop_duplicates()
     )  # TODO: inform the user about it/allow for deciding what to do
 
+    print(echo_bmg_combined.head())
     echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
 
+    # NOTE: check the range of the z-score that's needed
     min_z, max_z = compounds_df["Z-SCORE"].min(), compounds_df["Z-SCORE"].max()
     marks = {i: "{}".format(i) for i in range(0, ceil(max_z), 5)}
     if floor(min_z) < 0:
         marks.update({i: "{}".format(i) for i in range(floor(min_z), 0, 5)})
 
     # NOTE: here I only added the position that is required for the plot_zscore function
-    fig_z_score, new_echo_df = plot_zscore(compounds_df, control_pos_df, control_neg_df)
-
-    serialized_new_echo_df = new_echo_df.reset_index().to_parquet()
-    file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialized_new_echo_df)
+    if "id_pos" not in compounds_df.columns:
+        fig_z_score, new_echo_df = plot_zscore(
+            compounds_df, control_pos_df, control_neg_df
+        )
+        serialized_new_echo_df = new_echo_df.reset_index().to_parquet()
+        file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialized_new_echo_df)
+    else:
+        fig_z_score, _ = plot_zscore(compounds_df, control_pos_df, control_neg_df)
 
     z_score_slider = dcc.RangeSlider(
         floor(min_z),
@@ -330,7 +336,7 @@ def on_z_score_range_update(value, figure):
             "y0": min_value,
             "y1": min_value,
             "line": {
-                "color": "gray",
+                "color": "red",
                 "width": 3,
                 "dash": "dash",
             },
@@ -343,7 +349,7 @@ def on_z_score_range_update(value, figure):
             "y0": max_value,
             "y1": max_value,
             "line": {
-                "color": "gray",
+                "color": "red",
                 "width": 3,
                 "dash": "dash",
             },
@@ -355,18 +361,18 @@ def on_z_score_range_update(value, figure):
             "y": min_value,
             "text": f"MIN: {min_value:.2f}",
             "showarrow": False,
-            "font": {"color": "gray"},
+            "font": {"color": "red"},
         }
     )
 
     annotations.append(
         {
-            "x": 1,
-            "xanchor": "right",
+            # "x": 10,
+            # "xanchor": "right",
             "y": max_value,
             "text": f"MAX: {max_value:.2f}",
             "showarrow": False,
-            "font": {"color": "gray"},
+            "font": {"color": "red"},
         }
     )
 
