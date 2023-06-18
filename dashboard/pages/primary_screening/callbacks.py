@@ -8,10 +8,12 @@ import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, callback_context, html, no_update
+from flask import send_file
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_control_values,
@@ -247,7 +249,18 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
 # === STAGE 5 ===
 
 
-def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileStorage):
+def on_summary_entry(
+    current_stage: int, stored_uuid: str, file_storage: FileStorage
+) -> tuple[pd.DataFrame, go.Figure, go.Figure, go.Figure]:
+    """
+    Callback for the stage 5 entry
+    Loads the data from storage and prepares visualizations
+
+    :param current_stage: current stage index of the process
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: combined echo dataframe, control values plot, mean row col plot, z values plot
+    """
     if current_stage != 4:
         return no_update
     echo_df = pd.read_parquet(
@@ -268,10 +281,14 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     )
 
     echo_bmg_combined = (
-        echo_bmg_combined.drop_duplicates()
+        echo_bmg_combined.drop_duplicates().reset_index()
     )  # TODO: inform the user about it/allow for deciding what to do
 
-    echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
+    filename = f"{stored_uuid}_echo_bmg_combined_df.csv"
+    echo_bmg_combined.to_csv(filename, index=False)
+    file_storage.save_file(filename, open(filename, "rb").read())
+
+    echo_bmg_combined = echo_bmg_combined.to_dict("records")
 
     fig_z_score = visualize_activation_inhibition_zscore(
         compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
@@ -288,7 +305,18 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
 
 
-def on_z_score_range_update(n_clicks, figure, range):
+def on_z_score_range_update(
+    n_clicks: int, figure: go.Figure, range: tuple[float, float]
+):
+    """
+    Callback for the z-score range update button
+    Adds the range to the plot
+
+    :param n_clicks: number of clicks
+    :param figure: figure to update
+    :param range: range to add
+    :return: updated figure
+    """
     min_value, max_value = range
     new_figure = go.Figure(figure)
 
@@ -342,6 +370,26 @@ def on_z_score_range_update(n_clicks, figure, range):
 
     new_figure.update_layout(shapes=shapes, annotations=annotations)
     return new_figure
+
+
+# === STAGE 6 ===
+
+
+def on_save_results_click(n_clicks: int, stored_uuid: str, file_storage: FileStorage):
+    if n_clicks is None:
+        return False
+
+    file_path = f"../.drug-screening-data/{stored_uuid}_echo_bmg_combined_df.csv"
+    filename = "echo_bmg_results.csv"
+
+    resp = send_file(
+        file_path,
+        download_name=filename,
+        as_attachment=True,
+        max_age=0,
+    )
+    print(resp.headers)
+    return True
 
 
 def register_callbacks(elements, file_storage):
@@ -412,3 +460,8 @@ def register_callbacks(elements, file_storage):
         State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
+    callback(
+        Output("save-results-toast", "is_open"),
+        Input("save-results-button", "n_clicks"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_save_results_click, file_storage=file_storage))
