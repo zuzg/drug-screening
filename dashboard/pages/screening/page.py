@@ -1,9 +1,9 @@
 from dash import register_page, html
 
 from dashboard.pages.builders import ProcessPageBuilder
-from dashboard.pages.primary_screening.stages import STAGES
+from dashboard.pages.screening.stages import STAGES
 
-from dashboard.pages.primary_screening.callbacks import register_callbacks
+from dashboard.pages.screening.callbacks import register_callbacks
 from dashboard.storage.local import LocalFileStorage
 
 
