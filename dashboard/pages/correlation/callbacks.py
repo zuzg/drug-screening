@@ -6,7 +6,9 @@ import io
 import pandas as pd
 import pyarrow as pa
 
-from dash import Input, Output, State, callback, callback_context, html, no_update
+from plotly import graph_objects as go
+from plotly import express as px
+from dash import Input, Output, State, callback, html, no_update
 from dashboard.data import validation
 from dashboard.storage import FileStorage
 
@@ -26,10 +28,21 @@ SUFFIX_CORR_FILE1 = "corr_file1"
 SUFFIX_CORR_FILE2 = "corr_file2"
 
 
-def on_file_upload(content, stored_uuid, file_storage: FileStorage, store_suffix: str):
+def on_file_upload(
+    content: str | None, stored_uuid: str, file_storage: FileStorage, store_suffix: str
+):
+    """
+    Callback for file upload. It saves the file to the storage and returns an icon
+    indicating the status of the upload.
+
+    :param content: base64 encoded file content
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :param store_suffix: suffix for the file name
+    :return: icon indicating the status of the upload
+    """
     if content is None:
         return no_update
-
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -47,7 +60,21 @@ def on_file_upload(content, stored_uuid, file_storage: FileStorage, store_suffix
     return ICON_OK
 
 
-def on_both_files_uploaded(content1, content2, stored_uuid, file_storage: FileStorage):
+def on_both_files_uploaded(
+    content1: str | None,
+    content2: str | None,
+    stored_uuid: str,
+    file_storage: FileStorage,
+):
+    """
+    Callback for checking if both files are uploaded and compatible.
+
+    :param content1: base64 encoded file 1 content
+    :param content2: base64 encoded file 2 content
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: icon indicating the status of compatibility
+    """
     if content1 is None or content2 is None:
         return no_update
 
@@ -69,6 +96,37 @@ def on_both_files_uploaded(content1, content2, stored_uuid, file_storage: FileSt
         return ICON_ERROR
 
     return ICON_OK
+
+
+# === STAGE 2 ===
+
+
+def on_visualization_stage_entry(
+    current_stage: int, stored_uuid: str, file_storage: FileStorage
+) -> tuple[go.Figure, go.Figure]:
+    """
+    Callback for visualization stage entry. It loads the data from the storage and
+    returns the figures.
+
+    :param current_stage: current stage number
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figures
+    """
+    if current_stage != 1 or stored_uuid is None:
+        return no_update, no_update
+
+    saved_name_1 = f"{stored_uuid}_{SUFFIX_CORR_FILE1}.pq"
+    saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
+
+    corr_df_1 = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_1)))
+    corr_df_2 = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_2)))
+
+    # TODO: implement visualization
+    inhibition_fig = px.scatter([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+    concentration_fig = px.scatter([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+
+    return inhibition_fig, concentration_fig
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -98,3 +156,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),
     )(functools.partial(on_both_files_uploaded, file_storage=file_storage))
+
+    callback(
+        Output("inhibition-graph", "figure"),
+        Output("concentration-graph", "figure"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
