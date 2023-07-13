@@ -35,6 +35,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         stored_uuid = str(uuid.uuid4())
 
     bmg_files = []
+    callback_context.response
 
     for content, filename in zip(contents, names):
         name, extension = filename.split(".")
