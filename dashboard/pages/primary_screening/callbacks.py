@@ -21,6 +21,7 @@ from dashboard.visualization.plots import (
     visualize_multiple_plates,
 )
 from dashboard.pages.components import make_file_list_component
+from dashboard.report.report_generator import report_generator
 
 # === STAGE 1 ===
 
@@ -344,6 +345,38 @@ def on_z_score_range_update(n_clicks, figure, range):
     return new_figure
 
 
+# === STAGE 5 ===
+
+
+def on_report_generate_button_click(
+    n_clicks, stored_uuid: str, file_storage: FileStorage
+):
+    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
+    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
+
+    plates_count = bmg_vals.shape[0]
+    compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
+    outliers_count = (bmg_vals[:, 1] == 1).sum()
+
+    content = {
+        "plates_count": plates_count,
+        "compounds_count": compounds_count,
+        "outliers_count": outliers_count,
+    }
+    jinja_template = report_generator(content)
+    with open("report_primary_screening.html", "w") as f:
+        f.write(jinja_template)
+    return html.Div(
+        className="col",
+        children=[
+            html.H5(
+                className="text-center",
+                children=f"Report generated",
+            ),
+        ],
+    )
+
+
 def register_callbacks(elements, file_storage):
     callback(
         [
@@ -412,3 +445,8 @@ def register_callbacks(elements, file_storage):
         State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
+    callback(
+        Output("report_callback_receiver", "children"),
+        Input("generate-report-button", "n_clicks"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_report_generate_button_click, file_storage=file_storage))

@@ -14,5 +14,8 @@ REPORT_STAGE = html.Div(
                 ),
             ],
         ),
+        html.Div(
+            id="report_callback_receiver",
+        ),
     ],
 )
