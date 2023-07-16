@@ -32,7 +32,7 @@ class LocalFileStorage(FileStorage):
         with open(self.data_folder / name, "wb") as f:
             f.write(content)
 
-    def delete_file(self, name: str, seconds: int = 60) -> None:
+    def delete_file(self, name: str, seconds: int = 0) -> None:
         time.sleep(seconds)
         if not hasattr(self, "data_folder"):
             raise ValueError("data_folder is not set")

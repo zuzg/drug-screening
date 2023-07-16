@@ -408,7 +408,7 @@ def on_save_results_click(
     file_storage.save_file(filestorage_filename, csv_buffer)
 
     thread = threading.Thread(
-        target=file_storage.delete_file, args=(filestorage_filename,)
+        target=file_storage.delete_file, args=(filestorage_filename, 60)
     )
     thread.start()
 
