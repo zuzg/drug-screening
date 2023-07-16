@@ -1,17 +1,21 @@
 import base64
 import functools
 import io
+import threading
 import uuid
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, html, no_update
-from flask import send_file
+from dash import Input, Output, State, callback, callback_context, dcc, no_update
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
-from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
+from dashboard.data.combine import (
+    combine_bmg_echo_data,
+    reorder_bmg_echo_columns,
+    split_compounds_controls,
+)
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
@@ -22,7 +26,6 @@ from dashboard.visualization.plots import (
     visualize_activation_inhibition_zscore,
     visualize_multiple_plates,
 )
-from dashboard.pages.components import make_file_list_component
 
 # === STAGE 1 ===
 
@@ -265,7 +268,7 @@ def on_summary_entry(
     if current_stage != 4:
         return no_update
     echo_df = pd.read_parquet(
-        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_echo_df.pq"))
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_echo_df.pq")),
     )
     echo_df["CMPD ID"] = "TODO"
 
@@ -285,9 +288,7 @@ def on_summary_entry(
         echo_bmg_combined.drop_duplicates().reset_index()
     )  # TODO: inform the user about it/allow for deciding what to do
 
-    filename = f"{stored_uuid}_echo_bmg_combined_df.csv"
-    echo_bmg_combined.to_csv(filename, index=False)
-    file_storage.save_file(filename, open(filename, "rb").read())
+    # TODO: save the file to storage
 
     echo_bmg_combined = echo_bmg_combined.to_dict("records")
 
@@ -377,20 +378,42 @@ def on_z_score_range_update(
 
 
 def on_save_results_click(n_clicks: int, stored_uuid: str, file_storage: FileStorage):
-    if n_clicks is None:
-        return False
+    """
+    Callback for the save results button
 
-    file_path = f"../.drug-screening-data/{stored_uuid}_echo_bmg_combined_df.csv"
-    filename = "echo_bmg_results.csv"
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+    filename = f"echo_bmg_combined_custom.csv"
+    filestorage_filename = f"{stored_uuid}_echo_bmg_combined.csv"
 
-    resp = send_file(
-        file_path,
-        download_name=filename,
-        as_attachment=True,
-        max_age=0,
+    if file_storage.file_exists(filestorage_filename):
+        return dcc.send_file(
+            file_storage.data_folder / filestorage_filename, filename=filename
+        )
+
+    echo_bmg_combined_df = pd.read_parquet(
+        pa.BufferReader(
+            file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
+        ),
     )
-    print(resp.headers)
-    return True
+
+    echo_bmg_combined_df = reorder_bmg_echo_columns(echo_bmg_combined_df)
+    csv_buffer = echo_bmg_combined_df.to_csv(
+        index=False, columns=echo_bmg_combined_df
+    ).encode()
+    file_storage.save_file(filestorage_filename, csv_buffer)
+
+    thread = threading.Thread(
+        target=file_storage.delete_file, args=(filestorage_filename,)
+    )
+    thread.start()
+
+    return dcc.send_file(
+        file_storage.data_folder / filestorage_filename, filename=filename
+    )
 
 
 def register_callbacks(elements, file_storage):
@@ -462,7 +485,9 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
     callback(
-        Output("save-results-toast", "is_open"),
+        # Output("save-results-toast", "is_open"),
+        Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))

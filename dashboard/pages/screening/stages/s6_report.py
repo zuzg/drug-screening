@@ -1,5 +1,6 @@
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import html, dcc
+
 
 REPORT_STAGE = html.Div(
     id="report_stage",
@@ -22,6 +23,7 @@ REPORT_STAGE = html.Div(
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="save-results-button",
                                         ),
+                                        dcc.Download(id="download-echo-bmg-combined"),
                                     ],
                                 ),
                             ],
@@ -35,7 +37,7 @@ REPORT_STAGE = html.Div(
                             className="col-lg-6",
                             children=[
                                 dbc.Toast(
-                                    "Results saved to echo_bmg_results.csv",
+                                    "",
                                     id="save-results-toast",
                                     header="Saved successfully!",
                                     icon="success",

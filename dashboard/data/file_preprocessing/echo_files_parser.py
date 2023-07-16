@@ -84,6 +84,8 @@ class EchoFilesParser:
         :return: self
         """
         # TODO : include CMPD -> we need to get these column from HTS center
+        self.echo_df["CMPD ID"] = "TODO"
+
         if columns is None:
             columns = [
                 "CMPD ID",
@@ -94,13 +96,15 @@ class EchoFilesParser:
                 "Actual Volume",
             ]
 
-        retain_echo = list(set(columns).intersection(self.echo_df.columns))
+        retain_echo = [col for col in columns if col in self.echo_df.columns]
         self.echo_df = self.echo_df[retain_echo]
 
-        retain_exceptions = list(
-            set(columns + ["Transfer Status"]).intersection(self.exceptions_df.columns)
-        )
-        self.exceptions_df = self.exceptions_df[retain_exceptions].sort_index(axis=1)
+        retain_exceptions = [
+            col
+            for col in columns + ["Transfer Status"]
+            if col in self.exceptions_df.columns
+        ]
+        self.exceptions_df = self.exceptions_df[retain_exceptions]
         return self
 
     def get_processed_echo_df(self) -> pd.DataFrame:

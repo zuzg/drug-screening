@@ -106,6 +106,32 @@ def get_activation_inhibition_zscore_df(
     return df
 
 
+def reorder_bmg_echo_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Reorder columns of the dataframe with combined bmg echo Data Frame.
+
+    :param df: dataframe with combined bmg echo data
+    :return: dataframe with reordered columns
+    """
+
+    columns = [
+        "CMPD ID",
+        "Source Plate Barcode",
+        "Source Well",
+        "Destination Plate Barcode",
+        "Destination Well",
+        "Actual Volume",
+    ]
+
+    main_columns = [col for col in columns if col in df.columns]
+    remaining_columns = [
+        col
+        for col in df.columns
+        if col not in columns and col not in ["level_0", "index"]
+    ]
+    return df[main_columns + remaining_columns]
+
+
 def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
@@ -138,7 +164,13 @@ def combine_bmg_echo_data(
                 right_on=("Barcode", "Well"),
             )
         )
-    return pd.concat(dfs, ignore_index=True).drop(columns=["Barcode", "Well"])
+
+    bmg_echo_combined_df = pd.concat(dfs, ignore_index=True).drop(
+        columns=["Barcode", "Well"]
+    )
+    print(bmg_echo_combined_df.head())
+
+    return reorder_bmg_echo_columns(bmg_echo_combined_df)
 
 
 def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
