@@ -113,6 +113,7 @@ def on_outlier_purge_stage_entry(
     heatmap_start_index: int,
     outliers_only_checklist: list[str] | None,
     stored_uuid: str,
+    report_data: dict,
     file_storage: FileStorage,
 ) -> tuple[go.Figure, int, str, int, int, int]:
     """
@@ -138,6 +139,12 @@ def on_outlier_purge_stage_entry(
     plates_count = bmg_vals.shape[0]
     compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
     outliers_count = (bmg_vals[:, 1] == 1).sum()
+
+    if not report_data:
+        report_data = {}
+    report_data["plates_count"] = plates_count
+    report_data["compounds_count"] = compounds_count
+    report_data["outliers_count"] = outliers_count
 
     if show_only_with_outliers:
         has_outliers_mask = np.any(bmg_vals[:, 1] == 1, axis=(-1, -2))
@@ -173,6 +180,7 @@ def on_outlier_purge_stage_entry(
         compounds_count,
         outliers_count,
         final_vis_df.to_dict("records"),
+        report_data,
     )
 
 
@@ -346,25 +354,13 @@ def on_z_score_range_update(n_clicks, figure, range):
     return new_figure
 
 
-# === STAGE 5 ===
+# === STAGE 6 ===
 
 
 def on_report_generate_button_click(
-    n_clicks, stored_uuid: str, file_storage: FileStorage
+    n_clicks, stored_uuid: str, report_data: dict, file_storage: FileStorage
 ):
-    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
-    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
-
-    plates_count = bmg_vals.shape[0]
-    compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
-    outliers_count = (bmg_vals[:, 1] == 1).sum()
-
-    content = {
-        "plates_count": plates_count,
-        "compounds_count": compounds_count,
-        "outliers_count": outliers_count,
-    }
-    jinja_template = report_generator(content)
+    jinja_template = report_generator(report_data)
     with open("report_primary_screening.html", "w") as f:
         f.write(jinja_template)
     return html.Div(
@@ -408,10 +404,12 @@ def register_callbacks(elements, file_storage):
         Output("total-compounds", "children"),
         Output("total-outliers", "children"),
         Output("plates-table", "data"),
+        Output("report-data", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("heatmap-start-index", "data"),
         Input("heatmap-outliers-checklist", "value"),
         State("user-uuid", "data"),
+        State("report-data", "data"),
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
 
     callback(
@@ -450,4 +448,5 @@ def register_callbacks(elements, file_storage):
         Output("report_callback_receiver", "children"),
         Input("generate-report-button", "n_clicks"),
         State("user-uuid", "data"),
+        State("report-data", "data"),
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))

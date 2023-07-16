@@ -4,6 +4,7 @@ from datetime import datetime
 
 def report_generator(content: dict):
     now = datetime.now()
+    content["current_day"] = now.strftime("%d-%m-%y")
     content["current_time"] = now.strftime("%H:%M:%S")
     template_loader = jinja2.FileSystemLoader("dashboard/report")
     template_env = jinja2.Environment(loader=template_loader)
