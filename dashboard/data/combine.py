@@ -168,8 +168,6 @@ def combine_bmg_echo_data(
     bmg_echo_combined_df = pd.concat(dfs, ignore_index=True).drop(
         columns=["Barcode", "Well"]
     )
-    print(bmg_echo_combined_df.head())
-
     return reorder_bmg_echo_columns(bmg_echo_combined_df)
 
 

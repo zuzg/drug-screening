@@ -377,16 +377,20 @@ def on_z_score_range_update(
 # === STAGE 6 ===
 
 
-def on_save_results_click(n_clicks: int, stored_uuid: str, file_storage: FileStorage):
+def on_save_results_click(
+    n_clicks: int, stored_uuid: str, filename: str, file_storage: FileStorage
+):
     """
     Callback for the save results button
 
     :param n_clicks: number of clicks
     :param stored_uuid: uuid of the stored data
+    :param filename: filename to save the results to
     :param file_storage: storage object
     :return: None
     """
-    filename = f"echo_bmg_combined_custom.csv"
+
+    filename = filename + ".csv"
     filestorage_filename = f"{stored_uuid}_echo_bmg_combined.csv"
 
     if file_storage.file_exists(filestorage_filename):
@@ -485,9 +489,9 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
     callback(
-        # Output("save-results-toast", "is_open"),
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
+        State("save-csv-input", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))

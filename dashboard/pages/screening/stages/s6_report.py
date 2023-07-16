@@ -1,6 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import html, dcc
-
+from dash import dcc, html
 
 REPORT_STAGE = html.Div(
     id="report_stage",
@@ -9,8 +8,9 @@ REPORT_STAGE = html.Div(
         html.Div(
             className="my-4",
             children=[
+                html.Div(className="row", children=[html.H5("Save results:")]),
                 html.Div(
-                    className="row",
+                    className="row mt-2",
                     children=[
                         html.Div(
                             className="col-lg-6",
@@ -18,8 +18,14 @@ REPORT_STAGE = html.Div(
                                 html.Div(
                                     className="d-flex justify-content-between",
                                     children=[
+                                        dcc.Input(
+                                            id="save-csv-input",
+                                            type="text",
+                                            className="form-control input-text",
+                                            value="screening_results",
+                                        ),
                                         html.Button(
-                                            "Save Results",
+                                            "Generate CSV",
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="save-results-button",
                                         ),
@@ -36,30 +42,21 @@ REPORT_STAGE = html.Div(
                         html.Div(
                             className="col-lg-6",
                             children=[
-                                dbc.Toast(
-                                    "",
-                                    id="save-results-toast",
-                                    header="Saved successfully!",
-                                    icon="success",
-                                    dismissable=True,
-                                    is_open=False,
-                                    duration=3000,
-                                    className="mb-3",
-                                ),
-                            ],
-                        ),
-                    ],
-                ),
-                html.Div(
-                    className="row mt-2",
-                    children=[
-                        html.Div(
-                            className="col-lg-6",
-                            children=[
-                                html.Button(
-                                    "Generate Report",
-                                    className="btn btn-primary btn-lg btn-block btn-report",
-                                    id="generate-report-button",
+                                html.Div(
+                                    className="d-flex justify-content-between",
+                                    children=[
+                                        dcc.Input(
+                                            id="save-pdf-input",
+                                            type="text",
+                                            className="form-control input-text",
+                                            placeholder="screening_report (TODO)",
+                                        ),
+                                        html.Button(
+                                            "Generate PDF",
+                                            className="btn btn-primary btn-lg btn-block btn-report",
+                                            id="generate-report-button",
+                                        ),
+                                    ],
                                 ),
                             ],
                         ),

@@ -156,5 +156,9 @@
 }
 
 .btn-report {
-    width: 200px;
+    width: 350px;
+}
+
+.input-text {
+    margin-right: 10px;
 }
