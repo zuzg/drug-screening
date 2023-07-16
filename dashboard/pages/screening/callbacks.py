@@ -113,7 +113,6 @@ def on_outlier_purge_stage_entry(
     heatmap_start_index: int,
     outliers_only_checklist: list[str] | None,
     stored_uuid: str,
-    report_data: dict,
     file_storage: FileStorage,
 ) -> tuple[go.Figure, int, str, int, int, int]:
     """
@@ -140,8 +139,7 @@ def on_outlier_purge_stage_entry(
     compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
     outliers_count = (bmg_vals[:, 1] == 1).sum()
 
-    if not report_data:
-        report_data = {}
+    report_data = {}
     report_data["plates_count"] = plates_count
     report_data["compounds_count"] = compounds_count
     report_data["outliers_count"] = outliers_count
@@ -173,6 +171,7 @@ def on_outlier_purge_stage_entry(
     max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
 
     return (
+        report_data,
         fig,
         max_index,
         index_text,
@@ -180,7 +179,6 @@ def on_outlier_purge_stage_entry(
         compounds_count,
         outliers_count,
         final_vis_df.to_dict("records"),
-        report_data,
     )
 
 
@@ -215,11 +213,18 @@ def on_plates_stats_stage_entry(
     control_values_fig = plot_control_values(filtered_df)
     row_col_fig = plot_row_col_means(filtered_vals)
     z_fig = plot_z_per_plate(filtered_df.barcode, filtered_df.z_factor)
+
+    report_data = {
+        "control_values_fig": control_values_fig.to_html(
+            full_html=False, include_plotlyjs="cdn"
+        )
+    }
     return (
         control_values_fig,
         row_col_fig,
         z_fig,
         f"Number of deleted plates: {num_removed}",
+        report_data,
     )
 
 
@@ -358,9 +363,14 @@ def on_z_score_range_update(n_clicks, figure, range):
 
 
 def on_report_generate_button_click(
-    n_clicks, stored_uuid: str, report_data: dict, file_storage: FileStorage
+    n_clicks,
+    stored_uuid: str,
+    report_data_second_stage: dict,
+    report_data_third_stage: dict,
+    file_storage: FileStorage,
 ):
-    jinja_template = report_generator(report_data)
+    report_data_second_stage.update(report_data_third_stage)
+    jinja_template = report_generator(report_data_second_stage)
     with open("report_primary_screening.html", "w") as f:
         f.write(jinja_template)
     return html.Div(
@@ -397,6 +407,7 @@ def register_callbacks(elements, file_storage):
     )(on_heatmap_controls_clicked)
 
     callback(
+        Output("report-data-second-stage", "data"),
         Output("plates-heatmap-graph", "figure"),
         Output("max-heatmap-index", "data"),
         Output("heatmap-index-display", "children"),
@@ -404,12 +415,10 @@ def register_callbacks(elements, file_storage):
         Output("total-compounds", "children"),
         Output("total-outliers", "children"),
         Output("plates-table", "data"),
-        Output("report-data", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("heatmap-start-index", "data"),
         Input("heatmap-outliers-checklist", "value"),
         State("user-uuid", "data"),
-        State("report-data", "data"),
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
 
     callback(
@@ -417,6 +426,7 @@ def register_callbacks(elements, file_storage):
         Output("mean-cols-rows", "figure"),
         Output("z-per-plate", "figure"),
         Output("plates-removed", "children"),
+        Output("report-data-third-stage", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
         State("user-uuid", "data"),
@@ -448,5 +458,6 @@ def register_callbacks(elements, file_storage):
         Output("report_callback_receiver", "children"),
         Input("generate-report-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("report-data", "data"),
+        State("report-data-second-stage", "data"),
+        State("report-data-third-stage", "data"),
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
