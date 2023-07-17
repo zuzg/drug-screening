@@ -1,8 +1,6 @@
 import os
 import pathlib
 import typing
-import pandas as pd
-import time
 
 from .base import FileStorage
 
@@ -31,19 +29,3 @@ class LocalFileStorage(FileStorage):
             raise ValueError("data_folder is not set")
         with open(self.data_folder / name, "wb") as f:
             f.write(content)
-
-    def delete_file(self, name: str, seconds: int = 0) -> None:
-        time.sleep(seconds)
-        if not hasattr(self, "data_folder"):
-            raise ValueError("data_folder is not set")
-        file_path = self.data_folder / name
-        if file_path.exists():
-            os.remove(file_path)
-        else:
-            raise FileNotFoundError(f"File {file_path} does not exist")
-
-    def file_exists(self, name: str) -> bool:
-        if not hasattr(self, "data_folder"):
-            raise ValueError("data_folder is not set")
-        file_path = self.data_folder / name
-        return file_path.exists()

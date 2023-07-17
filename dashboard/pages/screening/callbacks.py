@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, callback_context, dcc, no_update
+from datetime import datetime
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
@@ -306,7 +307,7 @@ def on_summary_entry(
 
 def on_z_score_range_update(
     n_clicks: int, figure: go.Figure, range: tuple[float, float]
-):
+) -> go.Figure:
     """
     Callback for the z-score range update button
     Adds the range to the plot
@@ -375,25 +376,18 @@ def on_z_score_range_update(
 
 
 def on_save_results_click(
-    n_clicks: int, stored_uuid: str, filename: str, file_storage: FileStorage
-):
+    n_clicks: int, stored_uuid: str, file_storage: FileStorage
+) -> None:
     """
     Callback for the save results button
 
     :param n_clicks: number of clicks
     :param stored_uuid: uuid of the stored data
-    :param filename: filename to save the results to
     :param file_storage: storage object
     :return: None
     """
 
-    filename = filename + ".csv"
-    filestorage_filename = f"{stored_uuid}_echo_bmg_combined.csv"
-
-    if file_storage.file_exists(filestorage_filename):
-        return dcc.send_file(
-            file_storage.data_folder / filestorage_filename, filename=filename
-        )
+    filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
 
     echo_bmg_combined_df = pd.read_parquet(
         pa.BufferReader(
@@ -402,19 +396,7 @@ def on_save_results_click(
     )
 
     echo_bmg_combined_df = reorder_bmg_echo_columns(echo_bmg_combined_df)
-    csv_buffer = echo_bmg_combined_df.to_csv(
-        index=False, columns=echo_bmg_combined_df
-    ).encode()
-    file_storage.save_file(filestorage_filename, csv_buffer)
-
-    thread = threading.Thread(
-        target=file_storage.delete_file, args=(filestorage_filename, 60)
-    )
-    thread.start()
-
-    return dcc.send_file(
-        file_storage.data_folder / filestorage_filename, filename=filename
-    )
+    return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
 def register_callbacks(elements, file_storage):
@@ -489,6 +471,5 @@ def register_callbacks(elements, file_storage):
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("save-csv-input", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))

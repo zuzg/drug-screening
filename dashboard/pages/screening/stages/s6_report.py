@@ -18,14 +18,8 @@ REPORT_STAGE = html.Div(
                                 html.Div(
                                     className="d-flex justify-content-between",
                                     children=[
-                                        dcc.Input(
-                                            id="save-csv-input",
-                                            type="text",
-                                            className="form-control input-text",
-                                            value="screening_results",
-                                        ),
                                         html.Button(
-                                            "Generate CSV",
+                                            "Save screening results as CSV",
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="save-results-button",
                                         ),
@@ -45,14 +39,8 @@ REPORT_STAGE = html.Div(
                                 html.Div(
                                     className="d-flex justify-content-between",
                                     children=[
-                                        dcc.Input(
-                                            id="save-pdf-input",
-                                            type="text",
-                                            className="form-control input-text",
-                                            placeholder="screening_report (TODO)",
-                                        ),
                                         html.Button(
-                                            "Generate PDF",
+                                            "Generate PDF report",
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="generate-report-button",
                                         ),
