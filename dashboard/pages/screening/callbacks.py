@@ -1,7 +1,6 @@
 import base64
 import functools
 import io
-import threading
 import uuid
 
 import numpy as np
