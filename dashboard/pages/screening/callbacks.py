@@ -7,11 +7,17 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, html, no_update
+from dash import Input, Output, State, callback, callback_context, dcc, no_update, html
+from datetime import datetime
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
-from dashboard.data.combine import combine_bmg_echo_data, split_compounds_controls
+from dashboard.data.combine import (
+    combine_bmg_echo_data,
+    reorder_bmg_echo_columns,
+    split_compounds_controls,
+)
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_control_values,
@@ -262,7 +268,18 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
 # === STAGE 5 ===
 
 
-def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileStorage):
+def on_summary_entry(
+    current_stage: int, stored_uuid: str, file_storage: FileStorage
+) -> tuple[pd.DataFrame, go.Figure, go.Figure, go.Figure]:
+    """
+    Callback for the stage 5 entry
+    Loads the data from storage and prepares visualizations
+
+    :param current_stage: current stage index of the process
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: combined echo dataframe, control values plot, mean row col plot, z values plot
+    """
     if current_stage != 4:
         return no_update
     echo_df = pd.read_parquet(
@@ -285,7 +302,6 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     echo_bmg_combined = (
         echo_bmg_combined.drop_duplicates()
     )  # TODO: inform the user about it/allow for deciding what to do
-
     echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
 
     fig_z_score = visualize_activation_inhibition_zscore(
@@ -303,7 +319,18 @@ def on_summary_entry(current_stage: int, stored_uuid: str, file_storage: FileSto
     return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
 
 
-def on_z_score_range_update(n_clicks, figure, range):
+def on_z_score_range_update(
+    n_clicks: int, figure: go.Figure, range: tuple[float, float]
+) -> go.Figure:
+    """
+    Callback for the z-score range update button
+    Adds the range to the plot
+
+    :param n_clicks: number of clicks
+    :param figure: figure to update
+    :param range: range to add
+    :return: updated figure
+    """
     min_value, max_value = range
     new_figure = go.Figure(figure)
 
@@ -360,6 +387,30 @@ def on_z_score_range_update(n_clicks, figure, range):
 
 
 # === STAGE 6 ===
+
+
+def on_save_results_click(
+    n_clicks: int, stored_uuid: str, file_storage: FileStorage
+) -> None:
+    """
+    Callback for the save results button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+
+    filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
+
+    echo_bmg_combined_df = pd.read_parquet(
+        pa.BufferReader(
+            file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
+        ),
+    )
+
+    echo_bmg_combined_df = reorder_bmg_echo_columns(echo_bmg_combined_df)
+    return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
 def on_report_generate_button_click(
@@ -454,6 +505,12 @@ def register_callbacks(elements, file_storage):
         State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
+    callback(
+        Output("download-echo-bmg-combined", "data"),
+        Input("save-results-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_results_click, file_storage=file_storage))
     callback(
         Output("report_callback_receiver", "children"),
         Input("generate-report-button", "n_clicks"),
