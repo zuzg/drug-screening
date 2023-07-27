@@ -2,7 +2,7 @@ import jinja2
 from datetime import datetime
 
 
-def report_generator(content: dict):
+def generate_jinja_report(content: dict):
     now = datetime.now()
     content["current_day"] = now.strftime("%d-%m-%y")
     content["current_time"] = now.strftime("%H:%M:%S")

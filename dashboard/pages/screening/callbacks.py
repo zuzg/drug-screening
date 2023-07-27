@@ -21,7 +21,7 @@ from dashboard.visualization.plots import (
     visualize_multiple_plates,
 )
 from dashboard.pages.components import make_file_list_component
-from dashboard.report.report_generator import report_generator
+from dashboard.report.generate_jinja_report import generate_jinja_report
 
 # === STAGE 1 ===
 
@@ -370,7 +370,7 @@ def on_report_generate_button_click(
     file_storage: FileStorage,
 ):
     report_data_second_stage.update(report_data_third_stage)
-    jinja_template = report_generator(report_data_second_stage)
+    jinja_template = generate_jinja_report(report_data_second_stage)
     with open("report_primary_screening.html", "w") as f:
         f.write(jinja_template)
     return html.Div(
