@@ -73,6 +73,7 @@ class ProcessPageBuilder(PageBuilder):
         self.next_stage_btn_id = f"next_stage_{self.page_name}"
         self.previous_stage_btn_id = f"previous_stage_{self.page_name}"
         self.stage_blocker_id = f"stage_blocker_{self.page_name}"
+        self.dummy_id = f"dummy_{self.page_name}"
         self.layout.children.extend(
             [
                 dash.dcc.Store(id=self.stages_store_id, data=0),
@@ -80,6 +81,9 @@ class ProcessPageBuilder(PageBuilder):
                     children=[],
                     id=self.stages_container_id,
                     className="flex-grow-1 w-100 mt-4",
+                ),
+                dash.html.Div(
+                    id=self.dummy_id,
                 ),
             ]
         )
@@ -161,8 +165,9 @@ class ProcessPageBuilder(PageBuilder):
                 onStageIndexChange(n_clicks);
             }
             """,
-            dash.Output("dummy", "children"),
+            dash.Output(self.dummy_id, "children"),
             dash.Input(self.stages_store_id, "data"),
+            allow_duplicate=True,
         )
 
     def build(self) -> dash.html.Div:
