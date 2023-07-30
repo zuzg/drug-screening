@@ -287,7 +287,13 @@ def on_summary_entry(
     echo_bmg_combined = (
         echo_bmg_combined.drop_duplicates()
     )  # TODO: inform the user about it/allow for deciding what to do
-    echo_bmg_combined = echo_bmg_combined.reset_index().to_dict("records")
+    echo_bmg_combined = echo_bmg_combined.reset_index()
+
+    serialized_echo_bmg_combined = echo_bmg_combined.to_parquet()
+    file_storage.save_file(
+        f"{stored_uuid}_echo_bmg_combined_df.pq", serialized_echo_bmg_combined
+    )
+    echo_bmg_combined = echo_bmg_combined.to_dict("records")
 
     fig_z_score = visualize_activation_inhibition_zscore(
         compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
