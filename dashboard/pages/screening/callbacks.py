@@ -145,10 +145,11 @@ def on_outlier_purge_stage_entry(
     compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
     outliers_count = (bmg_vals[:, 1] == 1).sum()
 
-    report_data = {}
-    report_data["plates_count"] = plates_count
-    report_data["compounds_count"] = compounds_count
-    report_data["outliers_count"] = outliers_count
+    report_data = {
+        "plates_count": plates_count,
+        "compounds_count": compounds_count,
+        "outliers_count": outliers_count,
+    }
 
     if show_only_with_outliers:
         has_outliers_mask = np.any(bmg_vals[:, 1] == 1, axis=(-1, -2))
