@@ -116,3 +116,17 @@ class MergedAssaysPreprocessor:
         :return: processed dataframe
         """
         return self.compounds_df
+
+
+def calculate_concentration(
+    df: pd.DataFrame, concetration: int, summary_assay_volume: int
+) -> pd.DataFrame:
+    """
+    Calculate concentrations and append as column to dataframe
+    :param df: dataframe to append concentration to
+    :param concentration: multiplier
+    :param summary_assay_volume: to divide by
+    :return: dataframe
+    """
+    df["Concentration"] = df["Actual Volume"] * concetration / summary_assay_volume
+    return df

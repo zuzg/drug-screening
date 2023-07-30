@@ -449,28 +449,26 @@ def concentration_confirmatory_plot(
     return fig
 
 
-def concentration_plot(
-    ids: np.ndarray, concentrations: np.ndarray, reaction_type: str
-) -> go.Figure:
+def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
     """
     Plot activation/inhibition values for each compound by concentration
 
-    :param ids: array with ids of compounds
-    :param concentrations: array with concentrations, shaped (#compounds, #concentrations)
+    :param df: Dataframe with inhibition/activation, id, and concentration
     :param reaction_type: inhibition or activation
     :return: plot figure
     """
     fig = go.Figure()
-    for id, conc in zip(ids, concentrations):
+    value_by_conc = df.pivot_table("% INHIBITION", "ID", "Concentration")
+    for _, row in value_by_conc.iterrows():
         fig.add_trace(
             go.Scatter(
-                x=["2.5", "10.0", "50.0"],
-                y=conc,
+                x=value_by_conc.columns,
+                y=row.values,
                 hovertemplate="id: %{text}<br>value: %{y}<extra></extra>",
                 marker_symbol="square",
                 marker_size=7,
                 line_width=1,
-                text=[str(id), str(id), str(id)],
+                text=[str(row.name), str(row.name), str(row.name)],
             )
         )
     fig.update_layout(
