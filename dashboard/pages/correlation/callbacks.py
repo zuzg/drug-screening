@@ -119,6 +119,8 @@ def on_visualization_stage_entry(
     returns the figures.
 
     :param current_stage: current stage number
+    :param concentration_value: concentration
+    :param volume_value: summary assay volume
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: figures
