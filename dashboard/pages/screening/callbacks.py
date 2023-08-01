@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, dcc, no_update
+from dash import Input, Output, State, callback, callback_context, dcc, no_update, html
 from datetime import datetime
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -26,6 +26,8 @@ from dashboard.visualization.plots import (
     visualize_activation_inhibition_zscore,
     visualize_multiple_plates,
 )
+from dashboard.pages.components import make_file_list_component
+from dashboard.report.generate_jinja_report import generate_jinja_report
 
 # === STAGE 1 ===
 
@@ -143,6 +145,12 @@ def on_outlier_purge_stage_entry(
     compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
     outliers_count = (bmg_vals[:, 1] == 1).sum()
 
+    report_data = {
+        "plates_count": plates_count,
+        "compounds_count": compounds_count,
+        "outliers_count": outliers_count,
+    }
+
     if show_only_with_outliers:
         has_outliers_mask = np.any(bmg_vals[:, 1] == 1, axis=(-1, -2))
         bmg_df = bmg_df[has_outliers_mask]
@@ -170,6 +178,7 @@ def on_outlier_purge_stage_entry(
     max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
 
     return (
+        report_data,
         fig,
         max_index,
         index_text,
@@ -211,11 +220,18 @@ def on_plates_stats_stage_entry(
     control_values_fig = plot_control_values(filtered_df)
     row_col_fig = plot_row_col_means(filtered_vals)
     z_fig = plot_z_per_plate(filtered_df.barcode, filtered_df.z_factor)
+
+    report_data = {
+        "control_values_fig": control_values_fig.to_html(
+            full_html=False, include_plotlyjs="cdn"
+        )
+    }
     return (
         control_values_fig,
         row_col_fig,
         z_fig,
         f"Number of deleted plates: {num_removed}",
+        report_data,
     )
 
 
@@ -403,6 +419,28 @@ def on_save_results_click(
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
+def on_report_generate_button_click(
+    n_clicks,
+    stored_uuid: str,
+    report_data_second_stage: dict,
+    report_data_third_stage: dict,
+    file_storage: FileStorage,
+):
+    report_data_second_stage.update(report_data_third_stage)
+    jinja_template = generate_jinja_report(report_data_second_stage)
+    with open("report_primary_screening.html", "w") as f:
+        f.write(jinja_template)
+    return html.Div(
+        className="col",
+        children=[
+            html.H5(
+                className="text-center",
+                children=f"Report generated",
+            ),
+        ],
+    )
+
+
 def register_callbacks(elements, file_storage):
     callback(
         [
@@ -426,6 +464,7 @@ def register_callbacks(elements, file_storage):
     )(on_heatmap_controls_clicked)
 
     callback(
+        Output("report-data-second-stage", "data"),
         Output("plates-heatmap-graph", "figure"),
         Output("max-heatmap-index", "data"),
         Output("heatmap-index-display", "children"),
@@ -444,6 +483,7 @@ def register_callbacks(elements, file_storage):
         Output("mean-cols-rows", "figure"),
         Output("z-per-plate", "figure"),
         Output("plates-removed", "children"),
+        Output("report-data-third-stage", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
         State("user-uuid", "data"),
@@ -477,3 +517,10 @@ def register_callbacks(elements, file_storage):
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
+    callback(
+        Output("report_callback_receiver", "children"),
+        Input("generate-report-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("report-data-second-stage", "data"),
+        State("report-data-third-stage", "data"),
+    )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
