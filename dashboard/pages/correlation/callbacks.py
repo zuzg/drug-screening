@@ -9,8 +9,14 @@ import pyarrow as pa
 from plotly import graph_objects as go
 from plotly import express as px
 from dash import Input, Output, State, callback, html, no_update
+
 from dashboard.data import validation
+from dashboard.data.preprocess import calculate_concentration
 from dashboard.storage import FileStorage
+from dashboard.visualization.plots import (
+    concentration_confirmatory_plot,
+    concentration_plot,
+)
 
 # === STAGE 1 ===
 
@@ -102,13 +108,19 @@ def on_both_files_uploaded(
 
 
 def on_visualization_stage_entry(
-    current_stage: int, stored_uuid: str, file_storage: FileStorage
+    current_stage: int,
+    concentration_value: int,
+    volume_value: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
 ) -> tuple[go.Figure, go.Figure]:
     """
     Callback for visualization stage entry. It loads the data from the storage and
     returns the figures.
 
     :param current_stage: current stage number
+    :param concentration_value: concentration
+    :param volume_value: summary assay volume
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: figures
@@ -119,12 +131,19 @@ def on_visualization_stage_entry(
     saved_name_1 = f"{stored_uuid}_{SUFFIX_CORR_FILE1}.pq"
     saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
 
-    corr_df_1 = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_1)))
-    corr_df_2 = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_2)))
+    df_primary = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_1)))
+    df_secondary = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(saved_name_2))
+    )
+    df = calculate_concentration(df_primary, concentration_value, volume_value)
 
-    # TODO: implement visualization
-    inhibition_fig = px.scatter([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
-    concentration_fig = px.scatter([1, 2, 3, 4, 5], [1, 2, 3, 4, 5])
+    inhibition_fig = concentration_confirmatory_plot(
+        df_primary["% INHIBITION"],
+        df_secondary["% INHIBITION"],
+        df["Concentration"],
+        "INHIBITION",
+    )
+    concentration_fig = concentration_plot(df, "INHIBITION")
 
     return inhibition_fig, concentration_fig
 
@@ -161,5 +180,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
         Input(elements["STAGES_STORE"], "data"),
+        Input("concentration-slider", "value"),
+        Input("volume-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
