@@ -85,6 +85,7 @@ SUMMARY_STAGE = html.Div(
                                                         "placement": "bottom",
                                                         "always_visible": True,
                                                     },
+                                                    allowCross=False,
                                                     id="z-score-slider",
                                                 )
                                             ],
@@ -109,18 +110,90 @@ SUMMARY_STAGE = html.Div(
                 dcc.Tab(
                     label="Activation",
                     children=[
-                        dcc.Graph(
-                            id="activation-plot",
-                            figure={},
+                        html.Div(
+                            className="my-4",
+                            children=[
+                                html.H5("Activation range:"),
+                                html.Div(
+                                    className="row",
+                                    children=[
+                                        html.Div(
+                                            className="col mb-4",
+                                            children=[
+                                                dcc.RangeSlider(
+                                                    0,
+                                                    100,
+                                                    value=[0, 100],
+                                                    tooltip={
+                                                        "placement": "bottom",
+                                                        "always_visible": True,
+                                                    },
+                                                    allowCross=False,
+                                                    id="activation-slider",
+                                                )
+                                            ],
+                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dbc.Button(
+                                                    "Apply", id="activation-button"
+                                                )
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                dcc.Graph(
+                                    id="activation-plot",
+                                    figure={},
+                                ),
+                            ],
                         ),
                     ],
                 ),
                 dcc.Tab(
                     label="Inhibition",
                     children=[
-                        dcc.Graph(
-                            id="inhibition-plot",
-                            figure={},
+                        html.Div(
+                            className="my-4",
+                            children=[
+                                html.H5("Inhibition range:"),
+                                html.Div(
+                                    className="row",
+                                    children=[
+                                        html.Div(
+                                            className="col mb-4",
+                                            children=[
+                                                dcc.RangeSlider(
+                                                    0,
+                                                    100,
+                                                    value=[0, 100],
+                                                    tooltip={
+                                                        "placement": "bottom",
+                                                        "always_visible": True,
+                                                    },
+                                                    allowCross=False,
+                                                    id="inhibition-slider",
+                                                )
+                                            ],
+                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dbc.Button(
+                                                    "Apply", id="inhibition-button"
+                                                )
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                dcc.Graph(
+                                    id="inhibition-plot",
+                                    figure={},
+                                ),
+                            ],
                         ),
                     ],
                 ),

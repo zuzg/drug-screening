@@ -335,7 +335,7 @@ def plot_activation_inhibition_zscore(
 
     for i, df in enumerate(stats_dfs):
         df = df.sort_values(by=[f"{key}_x"])
-        print(df.head())
+
         fig.add_trace(
             go.Scatter(
                 x=df[f"{key}_x"],
@@ -353,7 +353,7 @@ def plot_activation_inhibition_zscore(
                     ),
                     axis=-1,
                 ),
-                hovertemplate=f" {key}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
+                hovertemplate=f" {plate_or_well}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
             )
         )
 
@@ -384,12 +384,30 @@ def plot_activation_inhibition_zscore(
                     "visible": True,
                     "showticklabels": True,
                     "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},
+                    "range": [-1, len(stats_dfs[0])],
                 }
             ),
             yaxis_title=key,
             margin=dict(t=50, b=30, l=30, r=30),
             template=PLOTLY_TEMPLATE,
         )
+
+    fig.add_hline(
+        y=range[0],
+        line_width=3,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"MIN: {range[0]:.2f}",
+        annotation_font_color="red",
+    )
+    fig.add_hline(
+        y=range[1],
+        line_width=3,
+        line_dash="dash",
+        line_color="red",
+        annotation_text=f"MAX: {range[1]:.2f}",
+        annotation_font_color="red",
+    )
 
     # mask = (echo_bmg_combined[key] >= range[0]) & (
     #     echo_bmg_combined[key] <= echo_bmg_combined[1]

@@ -321,11 +321,11 @@ def on_summary_entry(
     )
 
     fig_activation = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "% ACTIVATION", (-3, 3)
+        echo_bmg_combined, plate_stats_dfs, "% ACTIVATION", (0, 100)
     )
 
     fig_inhibition = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "% INHIBITION", (-3, 3)
+        echo_bmg_combined, plate_stats_dfs, "% INHIBITION", (0, 100)
     )
 
     # fig_inhibition = visualize_activation_inhibition_zscore(
