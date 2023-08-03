@@ -182,3 +182,54 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
     control_neg_df = df[mask == "23"]
     compounds_df = df[~mask.isin(["23", "24"])]
     return compounds_df, control_pos_df, control_neg_df
+
+
+def aggregate_well_plate_stats(
+    df: pd.DataFrame, assign_x_coords: bool = False
+) -> tuple[pd.DataFrame]:
+    """
+    Aggregates the statistics (mean and std) per well/plate needed for the plots.
+    self
+    :param df: dataframe with echo and bmg data combined
+    :param assign_x_coords: whether to assign x coordinates to the wells/plates
+    :return: tuple of dataframes: echo_bmg_df with additional columns useful for
+    plotting activation/inhibition/z-score and one with statistics per well/plate
+    """
+    PLATE = "Destination Plate Barcode"
+    WELL = "Destination Well"
+    ACTIVATION = "% ACTIVATION"
+    INHIBITION = "% INHIBITION"
+    Z_SCORE = "Z-SCORE"
+
+    well_plate_stats_dfs = []
+
+    for well_or_plate in [WELL, PLATE]:
+        stats_df = (
+            df.groupby(well_or_plate)[[ACTIVATION, INHIBITION, Z_SCORE]]
+            .agg(["mean", "std", "min", "max"])
+            .reset_index()
+        )
+        stats_df.columns = [
+            well_or_plate,
+            f"{ACTIVATION}_mean",
+            f"{ACTIVATION}_std",
+            f"{ACTIVATION}_min",
+            f"{ACTIVATION}_max",
+            f"{INHIBITION}_mean",
+            f"{INHIBITION}_std",
+            f"{INHIBITION}_min",
+            f"{INHIBITION}_max",
+            f"{Z_SCORE}_mean",
+            f"{Z_SCORE}_std",
+            f"{Z_SCORE}_min",
+            f"{Z_SCORE}_max",
+        ]
+
+        if assign_x_coords:
+            for col in [ACTIVATION, INHIBITION, Z_SCORE]:
+                stats_df = stats_df.sort_values(by=f"{col}_mean")  # sort by mean
+                stats_df[f"{col}_x"] = range(len(stats_df))  # get the x coordinates
+
+        well_plate_stats_dfs.append(stats_df)
+
+    return tuple(well_plate_stats_dfs)

@@ -310,6 +310,95 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
     return fig
 
 
+def plot_activation_inhibition_zscore(
+    echo_bmg_combined: pd.DataFrame,
+    stats_dfs: list[pd.DataFrame],
+    key: str,
+    range: tuple[float],
+    plate: bool = True,
+) -> go.Figure:
+    fig = go.Figure()
+    colors = ["rgb(31, 119, 180)", "rgb(0,128,0)", "rgb(255,0,0)"]
+    colors_shade = ["rgba(31, 119, 180,0.4)", "rgba(0,128,0,0.2)", "rgba(255,0,0,0.2)"]
+    names = ["COMPOUNDS", "CONTROL POS", "CONTROL NEG"]
+
+    PLATE = "Destination Plate Barcode"
+    WELL = "Destination Well"
+    plate_or_well = WELL
+
+    if plate:
+        cmpd_stats_df, pos_stats_df, neg_stats_df = stats_dfs
+        pos_stats_df = pos_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
+        neg_stats_df = neg_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
+        stats_dfs = [cmpd_stats_df, pos_stats_df, neg_stats_df]
+        plate_or_well = PLATE
+
+    for i, df in enumerate(stats_dfs):
+        df = df.sort_values(by=[f"{key}_x"])
+        print(df.head())
+        fig.add_trace(
+            go.Scatter(
+                x=df[f"{key}_x"],
+                y=df[f"{key}_mean"],
+                line=dict(color=colors[i]),
+                mode="lines+markers",
+                name=names[i],
+                legendgroup=names[i],
+                customdata=np.stack(
+                    (
+                        df[plate_or_well],
+                        df[f"{key}_std"],
+                        df[f"{key}_min"],
+                        df[f"{key}_max"],
+                    ),
+                    axis=-1,
+                ),
+                hovertemplate=f" {key}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
+            )
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=pd.concat(
+                    [df[f"{key}_x"], df[f"{key}_x"][::-1]], ignore_index=True
+                ),  # x, then x reversed
+                y=pd.concat(
+                    [df[f"{key}_max"], df[f"{key}_min"][::-1]], ignore_index=True
+                ),  # upper, then lower reversed
+                fill="toself",
+                fillcolor=colors_shade[i],
+                line=dict(color="rgba(255,255,255,0)"),
+                hoverinfo="skip",
+                showlegend=False,
+                name="Shaded Area",
+                legendgroup=names[i],
+            )
+        )
+
+        fig.update_layout(
+            legend_itemsizing="constant",
+            title=f"{key} of compounds and control values",
+            xaxis=dict(
+                {
+                    "title": plate_or_well,
+                    "visible": True,
+                    "showticklabels": True,
+                    "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},
+                }
+            ),
+            yaxis_title=key,
+            margin=dict(t=50, b=30, l=30, r=30),
+            template=PLOTLY_TEMPLATE,
+        )
+
+    # mask = (echo_bmg_combined[key] >= range[0]) & (
+    #     echo_bmg_combined[key] <= echo_bmg_combined[1]
+    # )
+    # outside_range_df = echo_bmg_combined[~mask].copy()
+
+    return fig
+
+
 def visualize_activation_inhibition_zscore(
     compounds_df: pd.DataFrame,
     control_pos_df: pd.DataFrame,

@@ -2,24 +2,27 @@ import base64
 import functools
 import io
 import uuid
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, callback_context, dcc, no_update
-from datetime import datetime
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
+    aggregate_well_plate_stats,
     combine_bmg_echo_data,
     reorder_bmg_echo_columns,
     split_compounds_controls,
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.data.utils import serialize_df
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
+    plot_activation_inhibition_zscore,
     plot_control_values,
     plot_row_col_means,
     plot_z_per_plate,
@@ -53,8 +56,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         np.savez_compressed(stream, val)
         stream.seek(0)
         file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
-        serialized_processed_df = bmg_df.reset_index().to_parquet()
-        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialized_processed_df)
+        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialize_df(bmg_df))
 
     return (
         make_file_list_component(names, [], 2),
@@ -240,11 +242,9 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
         echo_parser.parse_files(tuple(echo_files)).retain_key_columns()
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
-        serialized_processed_df = echo_df.reset_index().to_parquet()
-        file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialized_processed_df)
-        serialized_processed_exceptions_df = exceptions_df.reset_index().to_parquet()
+        file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialize_df(echo_df))
         file_storage.save_file(
-            f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
+            f"{stored_uuid}_exceptions_df.pq", serialize_df(exceptions_df)
         )
 
     return make_file_list_component(names, [], 1)
@@ -280,33 +280,64 @@ def on_summary_entry(
     )["arr_0"]
 
     echo_bmg_combined = combine_bmg_echo_data(echo_df, bmg_df, bmg_vals, None)
+    drop_duplicates = (
+        True  # TODO: inform the user about it/allow for deciding what to do
+    )
+
+    if drop_duplicates:
+        echo_bmg_combined = echo_bmg_combined.drop_duplicates()
+
     compounds_df, control_pos_df, control_neg_df = split_compounds_controls(
         echo_bmg_combined
     )
 
-    echo_bmg_combined = (
-        echo_bmg_combined.drop_duplicates()
-    )  # TODO: inform the user about it/allow for deciding what to do
-    echo_bmg_combined = echo_bmg_combined.reset_index()
-
-    serialized_echo_bmg_combined = echo_bmg_combined.to_parquet()
     file_storage.save_file(
-        f"{stored_uuid}_echo_bmg_combined_df.pq", serialized_echo_bmg_combined
+        f"{stored_uuid}_echo_bmg_combined_df.pq", serialize_df(echo_bmg_combined)
     )
 
-    fig_z_score = visualize_activation_inhibition_zscore(
-        compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
+    cmpd_well_stats_df, cmpd_plate_stats_df = aggregate_well_plate_stats(
+        compounds_df, assign_x_coords=True
+    )
+    pos_well_stats_df, pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df)
+    neg_well_stats_df, neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df)
+    well_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
+    plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
+
+    # TODO: save the dataframes for compounds, & controls
+    # file_storage.save_file(
+    #     f"{stored_uuid}_well_stats_df.pq", serialize_df(well_stats_df)
+    # )
+
+    # file_storage.save_file(
+    #     f"{stored_uuid}_plate_stats_df.pq", serialize_df(plate_stats_df)
+    # )
+
+    # fig_z_score = visualize_activation_inhibition_zscore(
+    #     compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
+    # )
+
+    fig_z_score = plot_activation_inhibition_zscore(
+        echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (-3, 3)
     )
 
-    fig_activation = visualize_activation_inhibition_zscore(
-        compounds_df, control_pos_df, control_neg_df, "% ACTIVATION"
+    fig_activation = plot_activation_inhibition_zscore(
+        echo_bmg_combined, plate_stats_dfs, "% ACTIVATION", (-3, 3)
     )
 
-    fig_inhibition = visualize_activation_inhibition_zscore(
-        compounds_df, control_pos_df, control_neg_df, "% INHIBITION"
+    fig_inhibition = plot_activation_inhibition_zscore(
+        echo_bmg_combined, plate_stats_dfs, "% INHIBITION", (-3, 3)
     )
 
-    return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
+    # fig_inhibition = visualize_activation_inhibition_zscore(
+    #     compounds_df, control_pos_df, control_neg_df, "% INHIBITION", (-1, 0)
+    # )
+
+    return (
+        echo_bmg_combined.to_dict("records"),
+        fig_z_score,
+        fig_activation,
+        fig_inhibition,
+    )
 
 
 def on_z_score_range_update(
