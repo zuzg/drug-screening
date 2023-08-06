@@ -15,8 +15,8 @@ EXTRA = html.Div(
         dcc.Store(id="error-msg", data=""),
         html.Div(id="dummy"),
         dcc.Store(id="user-uuid", storage_type="local"),
-        dcc.Store(id="report-data-second-stage", data={}, storage_type="local"),
-        dcc.Store(id="report-data-third-stage", data={}, storage_type="local"),
+        dcc.Store(id="report-data-second-stage", storage_type="local"),
+        dcc.Store(id="report-data-third-stage", storage_type="local"),
     ],
 )
 
