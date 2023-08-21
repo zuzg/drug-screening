@@ -8,6 +8,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
+from dashboard.data.combine import split_compounds_controls
+
 PLOTLY_TEMPLATE = "plotly_white"
 
 
@@ -314,9 +316,19 @@ def plot_activation_inhibition_zscore(
     echo_bmg_combined: pd.DataFrame,
     stats_dfs: list[pd.DataFrame],
     key: str,
-    range: tuple[float],
+    min_max_range: tuple[float],
     plate: bool = True,
 ) -> go.Figure:
+    """
+    Plot activation/inhibition z-score per plate/well.
+
+    :param echo_bmg_combined: dataframe with all data
+    :param stats_dfs: list of dataframes with stats
+    :param key: key for stats df
+    :param min_max_range: min and max range for plot
+    :param plate: if True plot per plate, else plot per well
+    :return: plotly figure
+    """
     fig = go.Figure()
     colors = ["rgb(31, 119, 180)", "rgb(0,128,0)", "rgb(255,0,0)"]
     colors_shade = ["rgba(31, 119, 180,0.4)", "rgba(0,128,0,0.2)", "rgba(255,0,0,0.2)"]
@@ -384,7 +396,6 @@ def plot_activation_inhibition_zscore(
                     "visible": True,
                     "showticklabels": True,
                     "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},
-                    "range": [-1, len(stats_dfs[0])],
                 }
             ),
             yaxis_title=key,
@@ -392,135 +403,62 @@ def plot_activation_inhibition_zscore(
             template=PLOTLY_TEMPLATE,
         )
 
-    fig.add_hline(
-        y=range[0],
-        line_width=3,
-        line_dash="dash",
-        line_color="red",
-        annotation_text=f"MIN: {range[0]:.2f}",
-        annotation_font_color="red",
-    )
-    fig.add_hline(
-        y=range[1],
-        line_width=3,
-        line_dash="dash",
-        line_color="red",
-        annotation_text=f"MAX: {range[1]:.2f}",
-        annotation_font_color="red",
-    )
-
-    # mask = (echo_bmg_combined[key] >= range[0]) & (
-    #     echo_bmg_combined[key] <= echo_bmg_combined[1]
-    # )
-    # outside_range_df = echo_bmg_combined[~mask].copy()
-
-    return fig
-
-
-def visualize_activation_inhibition_zscore(
-    compounds_df: pd.DataFrame,
-    control_pos_df: pd.DataFrame,
-    control_neg_df: pd.DataFrame,
-    column: str,
-    z_score_limits: tuple = None,
-) -> go.Figure:
-    """
-    Visualize activation/inhibition z-score for each compound.
-
-    :param compounds_df: dataframe with compounds
-    :param control_pos_df: dataframe with positive controls
-    :param control_neg_df: dataframe with negative controls
-    :param column: column to visualize
-    :param z_score_limits: tuple with z-score limits
-    :return: plotly figure
-    """
-    dest_wells = pd.concat(
-        [
-            compounds_df["Destination Well"],
-            control_pos_df["Destination Well"],
-            control_neg_df["Destination Well"],
-        ],
-        axis=0,
-        ignore_index=True,
-    )
-    dest_wells = pd.DataFrame(
-        dest_wells, columns=["Destination Well"]
-    ).drop_duplicates()
-
-    sorted_wells = sorted(
-        dest_wells["Destination Well"], key=lambda x: (x[0], int(x[1:]))
-    )
-
-    fig = go.Figure()
+    points = len(stats_dfs[0])
+    min_coords = {
+        "x": list(range(points)),
+        "y": [min_max_range[0] for x in range(points)],
+    }
+    max_coords = {
+        "x": list(range(points)),
+        "y": [min_max_range[1] for x in range(points)],
+    }
 
     fig.add_trace(
         go.Scatter(
-            x=compounds_df["Destination Well"],
-            y=compounds_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=compounds_df["Destination Plate Barcode"],
-            mode="markers",
-            marker=dict(color="rgb(66, 167, 244)", size=8),
-            name="COMPOUNDS",
+            name="MIN/MAX range",
+            x=min_coords["x"],
+            y=min_coords["y"],
+            mode="lines",
+            legendgroup="MIN/MAX",
+            hovertemplate=f"{key} min.: {min_coords['y'][0]}<extra></extra>",
+            line=dict(color="red", dash="dash"),
         )
     )
 
     fig.add_trace(
         go.Scatter(
-            x=control_pos_df["Destination Well"],
-            y=control_pos_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=control_pos_df["Destination Plate Barcode"],
-            mode="markers",
-            marker=dict(color="green", size=10),
-            name="POSITIVE CONTROLS",
+            name="max",
+            x=max_coords["x"],
+            y=max_coords["y"],
+            mode="lines",
+            legendgroup="MIN/MAX",
+            showlegend=False,
+            hovertemplate=f"{key} max.: {max_coords['y'][0]}<extra></extra>",
+            line=dict(color="red", dash="dash"),
         )
+    )
+
+    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined)
+    mask = (compounds_df[key] >= min_max_range[0]) & (
+        compounds_df[key] <= min_max_range[1]
+    )
+    outside_range_df = compounds_df[~mask].copy()
+    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+        cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
     fig.add_trace(
         go.Scatter(
-            x=control_neg_df["Destination Well"],
-            y=control_neg_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=control_neg_df["Destination Plate Barcode"],
+            x=outside_range_df[f"{key}_x"],
+            y=outside_range_df[key],
             mode="markers",
-            marker=dict(color="red", size=10),
-            name="NEGATIVE CONTROLS",
+            marker=dict(color="blue", size=8),
+            name="COMPOUNDS OUTSIDE",
+            customdata=np.stack(
+                (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
+            ),
+            hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>CMPD ID</extra>",
         )
     )
-
-    fig.update_xaxes(type="category", categoryorder="array", categoryarray=sorted_wells)
-
-    fig.update_layout(
-        legend_itemsizing="constant",
-        title=f"{column} values of compounds",
-        xaxis_title="Well",
-        yaxis_title=column,
-        template=PLOTLY_TEMPLATE,
-    )
-
-    if column.upper() == "Z-SCORE" and z_score_limits is not None:
-        fig.add_hline(
-            y=z_score_limits[0],
-            line_width=3,
-            line_dash="dash",
-            line_color="gray",
-            annotation_text=f"MIN: {z_score_limits[0]:.2f}",
-            annotation_font_color="gray",
-        )
-        fig.add_hline(
-            y=z_score_limits[1],
-            line_width=3,
-            line_dash="dash",
-            line_color="gray",
-            annotation_text=f"MAX: {z_score_limits[1]:.2f}",
-            annotation_font_color="gray",
-        )
 
     return fig

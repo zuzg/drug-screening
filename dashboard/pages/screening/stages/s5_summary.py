@@ -72,29 +72,40 @@ SUMMARY_STAGE = html.Div(
                             children=[
                                 html.H5("Z-Score range:"),
                                 html.Div(
-                                    className="row",
+                                    className="row mb-3",
                                     children=[
                                         html.Div(
-                                            className="col mb-4",
+                                            className="col mt-1",
                                             children=[
-                                                dcc.RangeSlider(
-                                                    -10,
-                                                    10,
-                                                    value=[-3, 3],
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": True,
-                                                    },
-                                                    allowCross=False,
-                                                    id="z-score-slider",
-                                                )
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="z-score-min-input",
+                                                    className="stats-input",
+                                                ),
                                             ],
-                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="z-score-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
                                         ),
                                         html.Div(
                                             className="col",
                                             children=[
-                                                dbc.Button("Apply", id="z-score-button")
+                                                dbc.Button(
+                                                    "Apply",
+                                                    id="z-score-button",
+                                                    disabled=True,
+                                                )
                                             ],
                                         ),
                                     ],
@@ -115,30 +126,39 @@ SUMMARY_STAGE = html.Div(
                             children=[
                                 html.H5("Activation range:"),
                                 html.Div(
-                                    className="row",
+                                    className="row mb-3",
                                     children=[
                                         html.Div(
-                                            className="col mb-4",
+                                            className="col mt-1",
                                             children=[
-                                                dcc.RangeSlider(
-                                                    0,
-                                                    100,
-                                                    value=[0, 100],
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": True,
-                                                    },
-                                                    allowCross=False,
-                                                    id="activation-slider",
-                                                )
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="activation-min-input",
+                                                    className="stats-input",
+                                                ),
                                             ],
-                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="activation-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
                                         ),
                                         html.Div(
                                             className="col",
                                             children=[
                                                 dbc.Button(
-                                                    "Apply", id="activation-button"
+                                                    "Apply",
+                                                    id="activation-button",
+                                                    disabled=True,
                                                 )
                                             ],
                                         ),
@@ -160,30 +180,39 @@ SUMMARY_STAGE = html.Div(
                             children=[
                                 html.H5("Inhibition range:"),
                                 html.Div(
-                                    className="row",
+                                    className="row mb-3",
                                     children=[
                                         html.Div(
-                                            className="col mb-4",
+                                            className="col mt-1",
                                             children=[
-                                                dcc.RangeSlider(
-                                                    0,
-                                                    100,
-                                                    value=[0, 100],
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": True,
-                                                    },
-                                                    allowCross=False,
-                                                    id="inhibition-slider",
-                                                )
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="inhibition-min-input",
+                                                    className="stats-input",
+                                                ),
                                             ],
-                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="inhibition-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
                                         ),
                                         html.Div(
                                             className="col",
                                             children=[
                                                 dbc.Button(
-                                                    "Apply", id="inhibition-button"
+                                                    "Apply",
+                                                    id="inhibition-button",
+                                                    disabled=True,
                                                 )
                                             ],
                                         ),

@@ -26,7 +26,6 @@ from dashboard.visualization.plots import (
     plot_control_values,
     plot_row_col_means,
     plot_z_per_plate,
-    visualize_activation_inhibition_zscore,
     visualize_multiple_plates,
 )
 
@@ -291,6 +290,13 @@ def on_summary_entry(
         echo_bmg_combined
     )
 
+    z_score_min = round(compounds_df["Z-SCORE"].min())
+    z_score_max = round(compounds_df["Z-SCORE"].max())
+    activation_min = round(compounds_df["% ACTIVATION"].min())
+    activation_max = round(compounds_df["% ACTIVATION"].max())
+    inhibition_min = round(compounds_df["% INHIBITION"].min())
+    inhibition_max = round(compounds_df["% INHIBITION"].max())
+
     file_storage.save_file(
         f"{stored_uuid}_echo_bmg_combined_df.pq", serialize_df(echo_bmg_combined)
     )
@@ -303,107 +309,120 @@ def on_summary_entry(
     well_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
     plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
 
-    # TODO: save the dataframes for compounds, & controls
-    # file_storage.save_file(
-    #     f"{stored_uuid}_well_stats_df.pq", serialize_df(well_stats_df)
-    # )
+    file_storage.save_file(
+        f"{stored_uuid}_plate_stats_df.pq", serialize_df(cmpd_plate_stats_df)
+    )
 
+    # TODO: add plate/well mode
     # file_storage.save_file(
-    #     f"{stored_uuid}_plate_stats_df.pq", serialize_df(plate_stats_df)
-    # )
-
-    # fig_z_score = visualize_activation_inhibition_zscore(
-    #     compounds_df, control_pos_df, control_neg_df, "Z-SCORE", (-3, 3)
+    #     f"{stored_uuid}_well_stats_df.pq", serialize_df(cmpd_well_stats_df)
     # )
 
     fig_z_score = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (-3, 3)
+        echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (z_score_min, z_score_max)
     )
 
     fig_activation = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "% ACTIVATION", (0, 100)
+        echo_bmg_combined,
+        plate_stats_dfs,
+        "% ACTIVATION",
+        (activation_min, activation_max),
     )
 
     fig_inhibition = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "% INHIBITION", (0, 100)
+        echo_bmg_combined,
+        plate_stats_dfs,
+        "% INHIBITION",
+        (inhibition_min, inhibition_max),
     )
-
-    # fig_inhibition = visualize_activation_inhibition_zscore(
-    #     compounds_df, control_pos_df, control_neg_df, "% INHIBITION", (-1, 0)
-    # )
 
     return (
         echo_bmg_combined.to_dict("records"),
         fig_z_score,
         fig_activation,
         fig_inhibition,
+        z_score_min,
+        z_score_max,
+        activation_min,
+        activation_max,
+        inhibition_min,
+        inhibition_max,
     )
 
 
-def on_z_score_range_update(
-    n_clicks: int, figure: go.Figure, range: tuple[float, float]
+def on_range_update(
+    min_value: float, max_value: float, figure: go.Figure, key: str
 ) -> go.Figure:
     """
     Callback for the z-score range update button
     Adds the range to the plot
 
-    :param n_clicks: number of clicks
+    :param min_value: min value of the range
+    :param max_value: max value of the range
     :param figure: figure to update
-    :param range: range to add
     :return: updated figure
     """
-    min_value, max_value = range
+
+    if max_value is None or max_value is None or max_value < min_value:
+        return figure, True
+
+    new_figure = go.Figure(figure)
+    trace_name = "MIN/MAX range"
+    trace_data = next(filter(lambda trace: trace.name == trace_name, new_figure.data))
+
+    new_figure.update_traces(
+        y=[min_value for y in trace_data.y],
+        hovertemplate=f"{key} min.: {min_value}<extra></extra>",
+        selector=dict(name=trace_name),
+    )
+
+    new_figure.update_traces(
+        y=[max_value for y in trace_data.y],
+        hovertemplate=f"{key} max.: {max_value}<extra></extra>",
+        selector=dict(name="max"),
+    )
+
+    return new_figure, False
+
+
+def on_apply_button_click(
+    n_clicks: int,
+    stored_uuid: str,
+    min_value: float,
+    max_value: float,
+    figure: go.Figure,
+    file_storage: FileStorage,
+    key: str = "Z-SCORE",
+):
     new_figure = go.Figure(figure)
 
-    shapes = []
-    annotations = []
-    if min_value is not None and (max_value is None or min_value <= max_value):
-        shapes.append(
-            {
-                "type": "line",
-                "y0": min_value,
-                "y1": min_value,
-                "line": {
-                    "color": "gray",
-                    "width": 3,
-                    "dash": "dash",
-                },
-            }
-        )
-        annotations.append(
-            {
-                "y": min_value,
-                "text": f"MIN: {min_value:.2f}",
-                "showarrow": False,
-                "font": {"color": "gray"},
-            }
-        )
+    PLATE = "Destination Plate Barcode"
+    WELL = "Destination Well"
 
-    if max_value is not None and (min_value is None or min_value <= max_value):
-        shapes.append(
-            {
-                "type": "line",
-                "y0": max_value,
-                "y1": max_value,
-                "line": {
-                    "color": "gray",
-                    "width": 3,
-                    "dash": "dash",
-                },
-            }
+    echo_bmg_combined_df = pd.read_parquet(
+        pa.BufferReader(
+            file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
         )
-        annotations.append(
-            {
-                "x": 1,
-                "xanchor": "right",
-                "y": max_value,
-                "text": f"MAX: {max_value:.2f}",
-                "showarrow": False,
-                "font": {"color": "gray"},
-            }
-        )
+    )
 
-    new_figure.update_layout(shapes=shapes, annotations=annotations)
+    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined_df)
+    cmpd_stats_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
+    )
+
+    mask = (compounds_df[key] >= min_value) & (compounds_df[key] <= max_value)
+    outside_range_df = compounds_df[~mask].copy()
+    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+        cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
+    )
+
+    new_figure.update_traces(
+        x=outside_range_df[f"{key}_x"],
+        y=outside_range_df[key],
+        customdata=np.stack((outside_range_df[PLATE], outside_range_df[WELL]), axis=-1),
+        selector=dict(name="COMPOUNDS OUTSIDE"),
+    )
+
     return new_figure
 
 
@@ -492,16 +511,78 @@ def register_callbacks(elements, file_storage):
         Output("z-score-plot", "figure"),
         Output("activation-plot", "figure"),
         Output("inhibition-plot", "figure"),
+        Output("z-score-min-input", "value"),
+        Output("z-score-max-input", "value"),
+        Output("activation-min-input", "value"),
+        Output("activation-max-input", "value"),
+        Output("inhibition-min-input", "value"),
+        Output("inhibition-max-input", "value"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_summary_entry, file_storage=file_storage))
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        Input("z-score-button", "n_clicks"),
+        Output("z-score-button", "disabled"),
+        Input("z-score-min-input", "value"),
+        Input("z-score-max-input", "value"),
         State("z-score-plot", "figure"),
-        State("z-score-slider", "value"),
         prevent_initial_call=True,
-    )(functools.partial(on_z_score_range_update))
+    )(functools.partial(on_range_update, key="Z-SCORE"))
+    callback(
+        Output("z-score-plot", "figure", allow_duplicate=True),
+        Input("z-score-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("z-score-min-input", "value"),
+        State("z-score-max-input", "value"),
+        State("z-score-plot", "figure"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_apply_button_click, file_storage=file_storage, key="Z-SCORE"
+        )
+    )
+    callback(
+        Output("activation-plot", "figure", allow_duplicate=True),
+        Output("activation-button", "disabled"),
+        Input("activation-min-input", "value"),
+        Input("activation-max-input", "value"),
+        State("activation-plot", "figure"),
+        prevent_initial_call=True,
+    )(functools.partial(on_range_update, key="% ACTIVATION"))
+    callback(
+        Output("activation-plot", "figure", allow_duplicate=True),
+        Input("activation-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("activation-min-input", "value"),
+        State("activation-max-input", "value"),
+        State("activation-plot", "figure"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_apply_button_click, file_storage=file_storage, key="% ACTIVATION"
+        )
+    )
+    callback(
+        Output("inhibition-plot", "figure", allow_duplicate=True),
+        Output("inhibition-button", "disabled"),
+        Input("inhibition-min-input", "value"),
+        Input("inhibition-max-input", "value"),
+        State("inhibition-plot", "figure"),
+        prevent_initial_call=True,
+    )(functools.partial(on_range_update, key="% INHIBITION"))
+    callback(
+        Output("inhibition-plot", "figure", allow_duplicate=True),
+        Input("inhibition-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("inhibition-min-input", "value"),
+        State("inhibition-max-input", "value"),
+        State("inhibition-plot", "figure"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_apply_button_click, file_storage=file_storage, key="% INHIBITION"
+        )
+    )
     callback(
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
