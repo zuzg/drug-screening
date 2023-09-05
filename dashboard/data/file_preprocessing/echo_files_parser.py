@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import os
 
 import pandas as pd
 
@@ -70,9 +69,10 @@ class EchoFilesParser:
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 
-        if echo_df is not None:
+        if echo_dfs:
             self.echo_df = pd.concat(echo_dfs, ignore_index=True)
-        self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
+        if exception_dfs:
+            self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
 
         return self
 
@@ -82,10 +82,10 @@ class EchoFilesParser:
 
         :param eos_df: dataframe with eos, plate and well
         """
-        # handle differen well naming (A01 or A1)
-        eos_df["Well"] = eos_df["Well"].str.replace(r"0\d", "", regex=True)
-        self.echo_df["Source Well"] = self.echo_df["Well"].str.replace(
-            r"0\d", "", regex=True
+        # handle different well naming (A01 or A1)
+        eos_df["Well"] = eos_df["Well"].str.replace(r"0(?!$)", "", regex=True)
+        self.echo_df["Source Well"] = self.echo_df["Source Well"].str.replace(
+            r"0(?!$)", "", regex=True
         )
 
         left_cols = ["Source Plate Barcode", "Source Well"]

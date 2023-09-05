@@ -103,6 +103,7 @@ def get_activation_inhibition_zscore_df(
 
     df = df.merge(z_score, on="Well")
     df["Barcode"] = barcode
+    df["Well"] = df["Well"].str.replace(r"0(?!$)", "", regex=True)
     return df
 
 

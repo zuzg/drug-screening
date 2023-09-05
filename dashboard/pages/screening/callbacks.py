@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, callback_context, dcc, no_update, html
 from datetime import datetime
+from typing import List
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
@@ -241,7 +242,7 @@ def on_plates_stats_stage_entry(
 def upload_echo_data(
     contents, names, last_modified, eos_contents, stored_uuid, file_storage
 ):
-    if contents is None:
+    if contents is None or eos_contents is None:
         return no_update
 
     eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
