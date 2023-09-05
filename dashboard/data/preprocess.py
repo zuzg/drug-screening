@@ -19,12 +19,12 @@ class MergedAssaysPreprocessor:
         self,
         raw_compounds_df: pd.DataFrame,
         chemical_columns: list[str],
-        key_column: str = "CMPD ID",
+        key_column: str = "EOS",
     ):
         """
         :param raw_compounds_df: compounds dataframe to be processed
         :param chemical_columns: list of names of chemical colums
-        :param key_column: name of the key column, defaults to "CMPD ID"
+        :param key_column: name of the key column, defaults to "EOS"
         """
         self.chemical_columns = chemical_columns
         self.compounds_df = raw_compounds_df.set_index(key_column)

@@ -10,7 +10,7 @@ from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
 def combine_assays(
     dataframes: list[pd.DataFrame],
     names: list[str],
-    id_column: str = "CMPD ID",
+    id_column: str = "EOS",
     control_prefix: str = "CTRL",
 ):
     """
@@ -19,7 +19,7 @@ def combine_assays(
 
     :param dataframes: list of dataframes to merge
     :param names: list of names for the dataframes
-    :param id_column: name of the id column, defaults to "CMPD ID"
+    :param id_column: name of the id column, defaults to "EOS"
     :param control_prefix: prefix of control values index, defaults to "CTRL"
     :raises ValueError: if more than 1/no column(s) having id_column in file
     :return: merged dataframe (potentially with duplicates)
@@ -115,7 +115,7 @@ def reorder_bmg_echo_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
 
     columns = [
-        "CMPD ID",
+        "EOS",
         "Source Plate Barcode",
         "Source Well",
         "Destination Plate Barcode",

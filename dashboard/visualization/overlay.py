@@ -35,7 +35,7 @@ def projection_plot_overlay_controls(
                 symbol="star-diamond",
             ),
             name=str.upper(name).replace("_", " "),
-            text=group["CMPD ID"].str.split(";"),
+            text=group["EOS"].str.split(";"),
             hovertemplate="<b>%{text[0]}</b><br>"
             + "<b>%{text[1]}</b><br>"
             + "X: %{x:.4f}<br>Y: %{y:.4f}<br>"

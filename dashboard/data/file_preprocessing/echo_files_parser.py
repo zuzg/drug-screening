@@ -76,6 +76,25 @@ class EchoFilesParser:
 
         return self
 
+    def merge_eos(self, eos_df: pd.DataFrame) -> None:
+        """
+        Merge echo df with eos df by plate and well
+
+        :param eos_df: dataframe with eos, plate and well
+        """
+        # handle differen well naming (A01 or A1)
+        eos_df["Well"] = eos_df["Well"].str.replace(r"0\d", "", regex=True)
+        self.echo_df["Source Well"] = self.echo_df["Well"].str.replace(
+            r"0\d", "", regex=True
+        )
+
+        left_cols = ["Source Plate Barcode", "Source Well"]
+        right_cols = ["Plate", "Well"]
+        merged_df = pd.merge(
+            self.echo_df, eos_df, how="left", left_on=left_cols, right_on=right_cols
+        )
+        self.echo_df = merged_df
+
     def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """
         Retains only the specified columns.
@@ -83,12 +102,10 @@ class EchoFilesParser:
         :param columns: list of columns to retain
         :return: self
         """
-        # TODO : include CMPD -> we need to get these column from HTS center
-        self.echo_df["CMPD ID"] = "TODO"
 
         if columns is None:
             columns = [
-                "CMPD ID",
+                "EOS",
                 "Source Plate Barcode",
                 "Source Well",
                 "Destination Plate Barcode",

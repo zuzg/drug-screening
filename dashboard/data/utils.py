@@ -6,7 +6,7 @@ def generate_dummy_links_dataframe(compound_ids: list[str]) -> pd.DataFrame:
         f"[EOS{i+1}](https://ecbd.eu/compound/EOS{i+1})"
         for i, _ in enumerate(compound_ids)
     ]
-    return pd.DataFrame({"CMPD ID": compound_ids, "EOS": eos}).set_index("CMPD ID")
+    return pd.DataFrame({"EOS": compound_ids, "EOS": eos}).set_index("EOS")
 
 
 def is_chemical_result(column_name: str) -> bool:

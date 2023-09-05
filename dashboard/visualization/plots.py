@@ -32,19 +32,19 @@ def plot_projection_2d(
         df,
         x=projection_x,
         y=projection_y,
-        text="CMPD ID",
+        text="EOS",
         color=df[feature],
         range_color=[0, df[feature].max()],
         labels={
             projection_x: "X",
             projection_y: "Y",
-            "CMPD ID": "Compound ID",
+            "EOS": "Compound ID",
         },
         title=f"{projection.upper()} projection with respect to {feature}",
         width=width,
         height=height,
         hover_data={
-            "CMPD ID": True,
+            "EOS": True,
             projection_x: ":.3f",
             projection_y: ":.3f",
             feature: ":.3f",
@@ -348,7 +348,7 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=compounds_df["Destination Well"],
             y=compounds_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
             + column
             + ": %{y:.4f}<extra></extra>",
             text=compounds_df["Destination Plate Barcode"],
@@ -362,7 +362,7 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=control_pos_df["Destination Well"],
             y=control_pos_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
             + column
             + ": %{y:.4f}<extra></extra>",
             text=control_pos_df["Destination Plate Barcode"],
@@ -376,7 +376,7 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=control_neg_df["Destination Well"],
             y=control_neg_df[column],
-            hovertemplate="CMPD ID: TODO<br>Plate: %{text}<br>"
+            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
             + column
             + ": %{y:.4f}<extra></extra>",
             text=control_neg_df["Destination Plate Barcode"],
