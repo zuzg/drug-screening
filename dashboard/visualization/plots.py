@@ -458,13 +458,14 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
     :return: plot figure
     """
     fig = go.Figure()
-    value_by_conc = df.pivot_table("% INHIBITION", "ID", "Concentration")
+    # NOTE: to clarify
+    value_by_conc = df.pivot_table(f"% {reaction_type}_x", "EOS", "Concentration")
     for _, row in value_by_conc.iterrows():
         fig.add_trace(
             go.Scatter(
                 x=value_by_conc.columns,
                 y=row.values,
-                hovertemplate="id: %{text}<br>value: %{y}<extra></extra>",
+                hovertemplate="EOS: %{text}<br>value: %{y}<extra></extra>",
                 marker_symbol="square",
                 marker_size=7,
                 line_width=1,

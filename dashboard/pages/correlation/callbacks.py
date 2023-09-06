@@ -135,11 +135,12 @@ def on_visualization_stage_entry(
     df_secondary = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(saved_name_2))
     )
-    df = calculate_concentration(df_primary, concentration_value, volume_value)
+    df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
+    df = calculate_concentration(df_merged, concentration_value, volume_value)
 
     inhibition_fig = concentration_confirmatory_plot(
-        df_primary["% INHIBITION"],
-        df_secondary["% INHIBITION"],
+        df["% INHIBITION_x"],
+        df["% INHIBITION_y"],
         df["Concentration"],
         "INHIBITION",
     )
