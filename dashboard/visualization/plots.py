@@ -348,10 +348,8 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=compounds_df["Destination Well"],
             y=compounds_df[column],
-            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=compounds_df["Destination Plate Barcode"],
+            hovertemplate="%{text}<br>" + column + ": %{y:.4f}<extra></extra>",
+            text=compounds_df["EOS"],
             mode="markers",
             marker=dict(color="rgb(66, 167, 244)", size=8),
             name="COMPOUNDS",
@@ -362,10 +360,8 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=control_pos_df["Destination Well"],
             y=control_pos_df[column],
-            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=control_pos_df["Destination Plate Barcode"],
+            hovertemplate="%{text}<br>" + column + ": %{y:.4f}<extra></extra>",
+            text=compounds_df["EOS"],
             mode="markers",
             marker=dict(color="green", size=10),
             name="POSITIVE CONTROLS",
@@ -376,10 +372,8 @@ def visualize_activation_inhibition_zscore(
         go.Scatter(
             x=control_neg_df["Destination Well"],
             y=control_neg_df[column],
-            hovertemplate="EOS: TODO<br>Plate: %{text}<br>"
-            + column
-            + ": %{y:.4f}<extra></extra>",
-            text=control_neg_df["Destination Plate Barcode"],
+            hovertemplate="%{text}<br>" + column + ": %{y:.4f}<extra></extra>",
+            text=compounds_df["EOS"],
             mode="markers",
             marker=dict(color="red", size=10),
             name="NEGATIVE CONTROLS",
