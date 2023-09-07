@@ -65,6 +65,9 @@ def test_combine_bmg_echo_data(df_stats):
         "Value": [i // 8 + 1 for i in range(96)],
     }
     echo_df = pd.DataFrame.from_dict(echo_data)
+    echo_df["Destination Well"] = echo_df["Destination Well"].str.replace(
+        r"0(?!$)", "", regex=True
+    )
     plate_values = np.random.rand(1, 2, 16, 24)
     modes = {"1234": Mode.ACTIVATION}
     combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, modes)

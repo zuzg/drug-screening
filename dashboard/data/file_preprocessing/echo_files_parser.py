@@ -115,6 +115,12 @@ class EchoFilesParser:
 
         retain_echo = [col for col in columns if col in self.echo_df.columns]
         self.echo_df = self.echo_df[retain_echo]
+        try:
+            self.echo_df["Destination Well"] = self.echo_df[
+                "Destination Well"
+            ].str.replace(r"0(?!$)", "", regex=True)
+        except:
+            "No Destination Well column found."
 
         retain_exceptions = [
             col
