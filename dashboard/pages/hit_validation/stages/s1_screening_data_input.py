@@ -50,6 +50,7 @@ PARAMS_CONTAINER = html.Div(
 
 SCREENING_DESC = """
 Upload the screening data file from the screening process for hit determination.
+Uploading the file will start the hit determination process.
 """
 
 FILE_INPUT_CONTAINER = html.Div(

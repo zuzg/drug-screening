@@ -19,13 +19,21 @@ EXPECTED_COLUMNS = {
 }
 
 
-def on_file_upload(content: str | None, stored_uuid: str, file_storage: FileStorage):
+def on_file_upload(
+    content: str | None,
+    stored_uuid: str,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    file_storage: FileStorage,
+) -> html.Div:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
 
     :param content: base64 encoded file content
     :param stored_uuid: session uuid
+    :param concentration_lower_bound: concentration lower bound
+    :param concentration_upper_bound: concentration upper bound
     :param file_storage: file storage
     :return: icon indicating the status of the upload
     """
@@ -33,6 +41,7 @@ def on_file_upload(content: str | None, stored_uuid: str, file_storage: FileStor
         return no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
+    print(concentration_lower_bound, concentration_upper_bound)
     decoded = base64.b64decode(content.split(",")[1]).decode("utf-8")
     screen_df = pd.read_csv(io.StringIO(decoded))
     column_set = set(screen_df.columns)
@@ -56,7 +65,9 @@ def on_file_upload(content: str | None, stored_uuid: str, file_storage: FileStor
     saved_name = f"{stored_uuid}_screening.pq"
 
     # Placeholder for hit determination
-    hit_determination_df = perform_hit_determination(screen_df)
+    hit_determination_df = perform_hit_determination(
+        screen_df, concentration_lower_bound, concentration_upper_bound
+    )
 
     file_storage.save_file(saved_name, hit_determination_df.to_parquet())
 
@@ -88,7 +99,9 @@ FAIL_BOUNDS_ELEMENT = html.Div(
 )
 
 
-def on_concentration_bounds_change(lower_bound: float, upper_bound: float):
+def on_concentration_bounds_change(
+    lower_bound: float, upper_bound: float
+) -> tuple[float, float, html.Div]:
     """
     Callback for concentration bounds change. It checks if the lower bound is greater
     than the upper bound.
@@ -107,11 +120,13 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("screening-file-message", "children"),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
+        State("concentration-lower-bound-store", "data"),
+        State("concentration-upper-bound-store", "data"),
     )(functools.partial(on_file_upload, file_storage=file_storage))
 
     callback(
-        Output("concentration-lower-bound-input", "value"),
-        Output("concentration-upper-bound-input", "value"),
+        Output("concentration-lower-bound-store", "data"),
+        Output("concentration-upper-bound-store", "data"),
         Output("parameters-message", "children"),
         Input("concentration-lower-bound-input", "value"),
         Input("concentration-upper-bound-input", "value"),
