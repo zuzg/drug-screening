@@ -1,4 +1,4 @@
-from dash import register_page
+from dash import register_page, html, dcc
 
 from dashboard.pages.builders import ProcessPageBuilder
 from dashboard.pages.hit_validation.stages import STAGES
@@ -17,6 +17,16 @@ STAGE_NAMES = [
 ]
 
 pb.add_stages(STAGES, STAGE_NAMES)
+
+
+pb.extend_layout(
+    html.Div(
+        children=[
+            dcc.Store(id="concentration-lower-bound-store", data=0),
+            dcc.Store(id="concentration-upper-bound-store", data=10),
+        ]
+    )
+)
 layout = pb.build()
 
 file_storage = LocalFileStorage()

@@ -8,20 +8,14 @@ import pandas as pd
 from dash import Input, Output, State, callback, html, no_update
 
 from dashboard.storage import FileStorage
+from dashboard.data.determination import perform_hit_determination
 
 
 # === STAGE 1 ===
 
 EXPECTED_COLUMNS = {
     "CMPD ID",
-    "Source Plate Barcode",
-    "Source Well",
-    "Destination Plate Barcode",
-    "Destination Well",
-    "Actual Volume",
-    "% ACTIVATION",
-    "% INHIBITION",
-    "Z-SCORE",
+    # TODO: specify the expected columns
 }
 
 
@@ -60,7 +54,11 @@ def on_file_upload(content: str | None, stored_uuid: str, file_storage: FileStor
 
     compounds_count = len(screen_df["CMPD ID"].unique())
     saved_name = f"{stored_uuid}_screening.pq"
-    file_storage.save_file(saved_name, screen_df.to_parquet())
+
+    # Placeholder for hit determination
+    hit_determination_df = perform_hit_determination(screen_df)
+
+    file_storage.save_file(saved_name, hit_determination_df.to_parquet())
 
     return html.Div(
         children=[
@@ -77,9 +75,44 @@ def on_file_upload(content: str | None, stored_uuid: str, file_storage: FileStor
     )
 
 
+FAIL_BOUNDS_ELEMENT = html.Div(
+    children=[
+        html.I(className="fas fa-times-circle text-danger me-2"),
+        html.Span(
+            children=[
+                "Lower bound cannot be greater than upper bound.",
+            ]
+        ),
+    ],
+    className="text-danger",
+)
+
+
+def on_concentration_bounds_change(lower_bound: float, upper_bound: float):
+    """
+    Callback for concentration bounds change. It checks if the lower bound is greater
+    than the upper bound.
+
+    :param lower_bound: lower bound
+    :param upper_bound: upper bound
+    :return: icon indicating the status of the bounds
+    """
+    if lower_bound > upper_bound:
+        return no_update, no_update, FAIL_BOUNDS_ELEMENT
+    return lower_bound, upper_bound, ""
+
+
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
     )(functools.partial(on_file_upload, file_storage=file_storage))
+
+    callback(
+        Output("concentration-lower-bound-input", "value"),
+        Output("concentration-upper-bound-input", "value"),
+        Output("parameters-message", "children"),
+        Input("concentration-lower-bound-input", "value"),
+        Input("concentration-upper-bound-input", "value"),
+    )(on_concentration_bounds_change)
