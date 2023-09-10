@@ -80,7 +80,6 @@
     width: 150px;
 }
 
-
 .controls {
     padding: 1rem;
     display: flex;
@@ -150,7 +149,6 @@
     transform: rotate(-20deg);
 }
 
-
 .btn--round {
     border-radius: 50%;
     width: 30px;
@@ -163,4 +161,9 @@
 
 .btn-report {
     width: 350px;
+}
+
+.panel-restricted {
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
 }

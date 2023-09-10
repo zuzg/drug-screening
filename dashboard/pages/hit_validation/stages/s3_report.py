@@ -6,8 +6,13 @@ REPORT_STAGE = html.Div(
     children=[
         html.Button(
             id="download-report",
+            className="btn btn-primary me-3",
+            children="Download Report",
+        ),
+        html.Button(
+            id="download-csv-summary",
             className="btn btn-primary",
-            children="Download report",
+            children="Download Summary CSV",
         ),
     ],
 )
