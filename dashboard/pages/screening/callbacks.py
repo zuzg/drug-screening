@@ -120,7 +120,7 @@ def on_outlier_purge_stage_entry(
     outliers_only_checklist: list[str] | None,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[go.Figure, int, str, int, int, int]:
+) -> tuple[dict, go.Figure, int, str, int, int, int]:
     """
     Callback for the stage 2 entry.
     Loads the data from the storage and prepares the visualization.
@@ -426,10 +426,9 @@ def on_report_generate_button_click(
     report_data_third_stage: dict,
     file_storage: FileStorage,
 ):
+    filename = f"screening_report_{datetime.now().strftime('%Y-%m-%d')}.html"
     report_data_second_stage.update(report_data_third_stage)
     jinja_template = generate_jinja_report(report_data_second_stage)
-    with open("report_primary_screening.html", "w") as f:
-        f.write(jinja_template)
     return html.Div(
         className="col",
         children=[
@@ -438,7 +437,7 @@ def on_report_generate_button_click(
                 children=f"Report generated",
             ),
         ],
-    )
+    ), dict(content=jinja_template, filename=filename)
 
 
 def register_callbacks(elements, file_storage):
@@ -519,8 +518,10 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_save_results_click, file_storage=file_storage))
     callback(
         Output("report_callback_receiver", "children"),
+        Output("download-html-raport", "data"),
         Input("generate-report-button", "n_clicks"),
         State("user-uuid", "data"),
         State("report-data-second-stage", "data"),
         State("report-data-third-stage", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
