@@ -345,6 +345,20 @@ def plot_activation_inhibition_zscore(
         stats_dfs = [cmpd_stats_df, pos_stats_df, neg_stats_df]
         plate_or_well = PLATE
 
+    else:
+        cmpd_stats_df, pos_stats_df, neg_stats_df = stats_dfs
+
+        pos_stats_df = pos_stats_df.sort_values(by=f"{key}_mean")
+        pos_stats_df[f"{key}_x"] = range(
+            len(cmpd_stats_df), len(cmpd_stats_df) + len(pos_stats_df), 1
+        )
+        neg_stats_df = neg_stats_df.sort_values(by=f"{key}_mean")
+        neg_stats_df[f"{key}_x"] = range(
+            len(cmpd_stats_df) + len(pos_stats_df),
+            len(cmpd_stats_df) + len(pos_stats_df) + len(neg_stats_df),
+            1,
+        )
+
     for i, df in enumerate(stats_dfs):
         df = df.sort_values(by=[f"{key}_x"])
 

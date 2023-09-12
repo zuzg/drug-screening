@@ -301,12 +301,12 @@ def on_summary_entry(
         f"{stored_uuid}_echo_bmg_combined_df.pq", serialize_df(echo_bmg_combined)
     )
 
-    cmpd_well_stats_df, cmpd_plate_stats_df = aggregate_well_plate_stats(
-        compounds_df, assign_x_coords=True
+    cmpd_plate_stats_df = aggregate_well_plate_stats(
+        compounds_df, "plate", assign_x_coords=True
     )
-    pos_well_stats_df, pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df)
-    neg_well_stats_df, neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df)
-    well_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
+    pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df, "plate")
+    neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df, "plate")
+
     plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
 
     file_storage.save_file(
@@ -314,13 +314,29 @@ def on_summary_entry(
     )
 
     # TODO: add plate/well mode
+    # cmpd_well_stats_df = aggregate_well_plate_stats(
+    #     compounds_df, "well", assign_x_coords=True
+    # )
+    # pos_well_stats_df = aggregate_well_plate_stats(control_pos_df, "well")
+    # neg_well_stats_df = aggregate_well_plate_stats(control_neg_df, "well")
+
+    # well_stats_dfs = [cmpd_well_stats_df, pos_well_stats_df, neg_well_stats_df]
+
     # file_storage.save_file(
     #     f"{stored_uuid}_well_stats_df.pq", serialize_df(cmpd_well_stats_df)
     # )
 
     fig_z_score = plot_activation_inhibition_zscore(
-        echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (z_score_min, z_score_max)
+        echo_bmg_combined,
+        plate_stats_dfs,
+        "Z-SCORE",
+        (z_score_min, z_score_max),
+        # plate=False,
     )
+
+    # fig_z_score = plot_activation_inhibition_zscore(
+    #     echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (z_score_min, z_score_max)
+    # )
 
     fig_activation = plot_activation_inhibition_zscore(
         echo_bmg_combined,
@@ -409,6 +425,7 @@ def on_apply_button_click(
     cmpd_stats_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
     )
+    # TODO add well mode
 
     mask = (compounds_df[key] >= min_value) & (compounds_df[key] <= max_value)
     outside_range_df = compounds_df[~mask].copy()
@@ -432,13 +449,13 @@ def on_apply_button_click(
 def on_save_results_click(
     n_clicks: int,
     stored_uuid: str,
-    filter_radio: str,
-    z_score_min: float,
-    z_score_max: float,
-    activation_min: float,
-    activation_max: float,
-    inhibition_min: float,
-    inhibition_max: float,
+    # filter_radio: str,
+    # z_score_min: float,
+    # z_score_max: float,
+    # activation_min: float,
+    # activation_max: float,
+    # inhibition_min: float,
+    # inhibition_max: float,
     file_storage: FileStorage,
 ) -> None:
     """
@@ -457,15 +474,15 @@ def on_save_results_click(
     :return: None
     """
 
-    print(
-        filter_radio,
-        z_score_min,
-        z_score_max,
-        activation_min,
-        activation_max,
-        inhibition_min,
-        inhibition_max,
-    )
+    # print(
+    #     filter_radio,
+    #     z_score_min,
+    #     z_score_max,
+    #     activation_min,
+    #     activation_max,
+    #     inhibition_min,
+    #     inhibition_max,
+    # )
 
     filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
 
@@ -475,6 +492,7 @@ def on_save_results_click(
         ),
     )
 
+    filter_radio = "dummy"
     if filter_radio == "z_score":
         mask = (echo_bmg_combined_df["Z-SCORE"] <= z_score_min) | (
             echo_bmg_combined_df["Z-SCORE"] >= z_score_max
@@ -628,12 +646,12 @@ def register_callbacks(elements, file_storage):
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("filter-radio", "value"),
-        State("z-score-min-input", "value"),
-        State("z-score-max-input", "value"),
-        State("activation-min-input", "value"),
-        State("activation-max-input", "value"),
-        State("inhibition-min-input", "value"),
-        State("inhibition-max-input", "value"),
+        # State("filter-radio", "value"),
+        # State("z-score-min-input", "value"),
+        # State("z-score-max-input", "value"),
+        # State("activation-min-input", "value"),
+        # State("activation-max-input", "value"),
+        # State("inhibition-min-input", "value"),
+        # State("inhibition-max-input", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
