@@ -258,7 +258,7 @@ def upload_echo_data(
     if echo_files:
         echo_parser = EchoFilesParser()
         echo_parser.parse_files(tuple(echo_files))
-        echo_parser.merge_eos(eos_df)
+        no_eos_num = echo_parser.merge_eos(eos_df)
         echo_parser.retain_key_columns()
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
@@ -269,7 +269,9 @@ def upload_echo_data(
             f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
         )
 
-    return make_file_list_component(names, [], 1)
+    return make_file_list_component(
+        names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+    )
 
 
 # === STAGE 5 ===

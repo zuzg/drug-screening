@@ -76,11 +76,12 @@ class EchoFilesParser:
 
         return self
 
-    def merge_eos(self, eos_df: pd.DataFrame) -> None:
+    def merge_eos(self, eos_df: pd.DataFrame) -> int:
         """
         Merge echo df with eos df by plate and well
 
         :param eos_df: dataframe with eos, plate and well
+        :return: number of skipped rows (without EOS)
         """
         # handle different well naming (A01 or A1)
         eos_df["Well"] = eos_df["Well"].str.replace(r"0(?!$)", "", regex=True)
@@ -93,7 +94,10 @@ class EchoFilesParser:
         merged_df = pd.merge(
             self.echo_df, eos_df, how="left", left_on=left_cols, right_on=right_cols
         )
+        no_eos = merged_df["EOS"].isna()
+        merged_df = merged_df[~no_eos]
         self.echo_df = merged_df
+        return len(no_eos)
 
     def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """

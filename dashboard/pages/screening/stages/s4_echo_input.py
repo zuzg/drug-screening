@@ -7,7 +7,7 @@ Each row containing information about a compound should contain, among other thi
 the barcode and position on the plate so that it is possible to link ECHO files with BMG files.
 """
 
-EOS_DESC = "Upload file mapping plate and well to EOS."
+EOS_DESC = "Upload file (csv) mapping plate and well to EOS."
 
 ECHO_INPUT_STAGE = html.Div(
     id="echo_input_stage",
