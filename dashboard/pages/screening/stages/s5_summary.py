@@ -57,10 +57,44 @@ _ACT_INH_DATATABLE = dash_table.DataTable(
     page_size=15,
 )
 
+radio_values = ["No filter (retain all)", "Z-Score", "Activation", "Inhibition"]
+radio_codes = ["no_filter", "z_score", "activation", "inhibition"]
+radio_options = []
+
+for i, j in zip(radio_values, radio_codes):
+    radio_options.append(
+        {
+            "label": html.Div(
+                i,
+                style={
+                    "display": "inline",
+                    "padding-left": "0.5rem",
+                    "padding-right": "2rem",
+                },
+            ),
+            "value": j,
+        }
+    )
+
 SUMMARY_STAGE = html.Div(
     id="summary_stage",
     className="container",
     children=[
+        html.Div(
+            className="mb-5 mt-4",
+            children=[
+                html.H5("Filter results:"),
+                html.H6(
+                    "The compounds in the csv report will be ones outside the range of the selected filter."
+                ),
+                dcc.RadioItems(
+                    radio_options,
+                    "no_filter",
+                    style={"display": "flex"},
+                    id="filter-radio",
+                ),
+            ],
+        ),
         dcc.Tabs(
             id="summary-tabs",
             children=[

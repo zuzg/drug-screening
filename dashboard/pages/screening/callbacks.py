@@ -430,16 +430,42 @@ def on_apply_button_click(
 
 
 def on_save_results_click(
-    n_clicks: int, stored_uuid: str, file_storage: FileStorage
+    n_clicks: int,
+    stored_uuid: str,
+    filter_radio: str,
+    z_score_min: float,
+    z_score_max: float,
+    activation_min: float,
+    activation_max: float,
+    inhibition_min: float,
+    inhibition_max: float,
+    file_storage: FileStorage,
 ) -> None:
     """
     Callback for the save results button
 
     :param n_clicks: number of clicks
     :param stored_uuid: uuid of the stored data
+    :param filter_radio: radio button value
+    :param z_score_min: min z-score value
+    :param z_score_max: max z-score value
+    :param activation_min: min activation value
+    :param activation_max: max activation value
+    :param inhibition_min: min inhibition value
+    :param inhibition_max: max inhibition value
     :param file_storage: storage object
     :return: None
     """
+
+    print(
+        filter_radio,
+        z_score_min,
+        z_score_max,
+        activation_min,
+        activation_max,
+        inhibition_min,
+        inhibition_max,
+    )
 
     filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
 
@@ -449,7 +475,22 @@ def on_save_results_click(
         ),
     )
 
-    echo_bmg_combined_df = reorder_bmg_echo_columns(echo_bmg_combined_df)
+    if filter_radio == "z_score":
+        mask = (echo_bmg_combined_df["Z-SCORE"] <= z_score_min) | (
+            echo_bmg_combined_df["Z-SCORE"] >= z_score_max
+        )
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
+    elif filter_radio == "activation":
+        mask = (echo_bmg_combined_df["% ACTIVATION"] <= activation_min) | (
+            echo_bmg_combined_df["% ACTIVATION"] >= activation_max
+        )
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
+    elif filter_radio == "inhibition":
+        mask = (echo_bmg_combined_df["% INHIBITION"] <= inhibition_min) | (
+            echo_bmg_combined_df["% INHIBITION"] >= inhibition_max
+        )
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
+
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
@@ -587,5 +628,12 @@ def register_callbacks(elements, file_storage):
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
+        State("filter-radio", "value"),
+        State("z-score-min-input", "value"),
+        State("z-score-max-input", "value"),
+        State("activation-min-input", "value"),
+        State("activation-max-input", "value"),
+        State("inhibition-min-input", "value"),
+        State("inhibition-max-input", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
