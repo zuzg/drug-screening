@@ -6,7 +6,7 @@ PRECISION = 5
 _ACT_INH_DATATABLE = dash_table.DataTable(
     id="echo-bmg-combined",
     columns=[
-        dict(id="CMPD ID", name="ID"),
+        dict(id="EOS", name="ID"),
         dict(id="Destination Plate Barcode", name="Plate Barcode"),
         dict(id="Destination Well", name="Well"),
         dict(

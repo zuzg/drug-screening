@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, callback_context, dcc, no_update, html
 from datetime import datetime
+from typing import List
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
@@ -238,22 +239,27 @@ def on_plates_stats_stage_entry(
 # === STAGE 4 ===
 
 
-def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
-    if contents is None:
+def upload_echo_data(
+    contents, names, last_modified, eos_contents, stored_uuid, file_storage
+):
+    if contents is None or eos_contents is None:
         return no_update
 
-    echo_files = []
+    eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
+    eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
 
+    echo_files = []
     for content, filename in zip(contents, names):
         name, extension = filename.split(".")
         if extension == "csv":
-            _, content_string = content.split(",")
-            decoded = base64.b64decode(content_string)
-            echo_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
+            decoded = base64.b64decode(content.split(",")[1]).decode("utf-8")
+            echo_files.append((filename, io.StringIO(decoded)))
 
     if echo_files:
         echo_parser = EchoFilesParser()
-        echo_parser.parse_files(tuple(echo_files)).retain_key_columns()
+        echo_parser.parse_files(tuple(echo_files))
+        no_eos_num = echo_parser.merge_eos(eos_df)
+        echo_parser.retain_key_columns()
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
         serialized_processed_df = echo_df.reset_index().to_parquet()
@@ -263,7 +269,9 @@ def upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
             f"{stored_uuid}_exceptions_df.pq", serialized_processed_exceptions_df
         )
 
-    return make_file_list_component(names, [], 1)
+    return make_file_list_component(
+        names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+    )
 
 
 # === STAGE 5 ===
@@ -286,8 +294,6 @@ def on_summary_entry(
     echo_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_echo_df.pq"))
     )
-    echo_df["CMPD ID"] = "TODO"
-
     bmg_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_bmg_df.pq"))
     )
@@ -322,7 +328,12 @@ def on_summary_entry(
         compounds_df, control_pos_df, control_neg_df, "% INHIBITION"
     )
 
-    return echo_bmg_combined, fig_z_score, fig_activation, fig_inhibition
+    return (
+        echo_bmg_combined.to_dict("records"),
+        fig_z_score,
+        fig_activation,
+        fig_inhibition,
+    )
 
 
 def on_z_score_range_update(
@@ -487,14 +498,16 @@ def register_callbacks(elements, file_storage):
         Input("z-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
+
     callback(
         Output("echo-filenames", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
+        Input("upload-eos-mapping", "contents"),
         State("user-uuid", "data"),
     )(functools.partial(upload_echo_data, file_storage=file_storage))
-    (functools.partial(upload_bmg_data, file_storage=file_storage))
+
     callback(
         Output("echo-bmg-combined", "data"),
         Output("z-score-plot", "figure"),
@@ -503,6 +516,7 @@ def register_callbacks(elements, file_storage):
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_summary_entry, file_storage=file_storage))
+
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
         Input("z-score-button", "n_clicks"),
@@ -510,12 +524,14 @@ def register_callbacks(elements, file_storage):
         State("z-score-slider", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_z_score_range_update))
+
     callback(
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
+
     callback(
         Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
