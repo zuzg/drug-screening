@@ -23,7 +23,7 @@ def test_get_activation_inhibition_zscore_df(values_dict):
     result = get_activation_inhibition_zscore_df("1234", values_dict)
     expected_result = pd.DataFrame(
         {
-            "Well": ["A01", "A02", "B02"],
+            "Well": ["A1", "A2", "B2"],
             "% ACTIVATION": [1.0, 2.0, 4.0],
             "% INHIBITION": [0.5, 0.2, 0.3],
             "Z-SCORE": [-1.0, 0.5, -0.5],
@@ -65,6 +65,9 @@ def test_combine_bmg_echo_data(df_stats):
         "Value": [i // 8 + 1 for i in range(96)],
     }
     echo_df = pd.DataFrame.from_dict(echo_data)
+    echo_df["Destination Well"] = echo_df["Destination Well"].str.replace(
+        r"0(?!$)", "", regex=True
+    )
     plate_values = np.random.rand(1, 2, 16, 24)
     modes = {"1234": Mode.ACTIVATION}
     combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, modes)

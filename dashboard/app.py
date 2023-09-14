@@ -20,6 +20,7 @@ app = Dash(
     __name__, external_stylesheets=[BOOTSTRAP_CDN, FONT_AWESOME_CDN], use_pages=True
 )
 
+app.config["suppress_callback_exceptions"] = True
 
 app.layout = html.Div(
     id="app-container",

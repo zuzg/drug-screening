@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import os
 
 import pandas as pd
 
@@ -70,11 +69,35 @@ class EchoFilesParser:
             exception_dfs.append(exceptions_df)
             echo_dfs.append(echo_df)
 
-        if echo_df is not None:
+        if echo_dfs:
             self.echo_df = pd.concat(echo_dfs, ignore_index=True)
-        self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
+        if exception_dfs:
+            self.exceptions_df = pd.concat(exception_dfs, ignore_index=True)
 
         return self
+
+    def merge_eos(self, eos_df: pd.DataFrame) -> int:
+        """
+        Merge echo df with eos df by plate and well
+
+        :param eos_df: dataframe with eos, plate and well
+        :return: number of skipped rows (without EOS)
+        """
+        # handle different well naming (A01 or A1)
+        eos_df["Well"] = eos_df["Well"].str.replace(r"0(?!$)", "", regex=True)
+        self.echo_df["Source Well"] = self.echo_df["Source Well"].str.replace(
+            r"0(?!$)", "", regex=True
+        )
+
+        left_cols = ["Source Plate Barcode", "Source Well"]
+        right_cols = ["Plate", "Well"]
+        merged_df = pd.merge(
+            self.echo_df, eos_df, how="left", left_on=left_cols, right_on=right_cols
+        )
+        no_eos = merged_df["EOS"].isna()
+        merged_df = merged_df[~no_eos]
+        self.echo_df = merged_df
+        return len(no_eos)
 
     def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
         """
@@ -83,12 +106,10 @@ class EchoFilesParser:
         :param columns: list of columns to retain
         :return: self
         """
-        # TODO : include CMPD -> we need to get these column from HTS center
-        self.echo_df["CMPD ID"] = "TODO"
 
         if columns is None:
             columns = [
-                "CMPD ID",
+                "EOS",
                 "Source Plate Barcode",
                 "Source Well",
                 "Destination Plate Barcode",
@@ -98,7 +119,10 @@ class EchoFilesParser:
 
         retain_echo = [col for col in columns if col in self.echo_df.columns]
         self.echo_df = self.echo_df[retain_echo]
-
+        if "Destination Well" in self.echo_df.columns:
+            self.echo_df["Destination Well"] = self.echo_df[
+                "Destination Well"
+            ].str.replace(r"0(?!$)", "", regex=True)
         retain_exceptions = [
             col
             for col in columns + ["Transfer Status"]

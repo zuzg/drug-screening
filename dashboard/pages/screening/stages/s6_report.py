@@ -40,15 +40,19 @@ REPORT_STAGE = html.Div(
                                     className="d-flex justify-content-between",
                                     children=[
                                         html.Button(
-                                            "Generate PDF report",
+                                            "Generate HTML report",
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="generate-report-button",
                                         ),
+                                        dcc.Download(id="download-html-raport"),
                                     ],
                                 ),
                             ],
                         ),
                     ],
+                ),
+                html.Div(
+                    id="report_callback_receiver",
                 ),
             ],
         ),

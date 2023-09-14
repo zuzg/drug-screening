@@ -16,6 +16,8 @@ EXTRA = html.Div(
         html.Div(id="dummy"),
         dcc.Store(id="user-uuid", storage_type="local"),
         dcc.Store(id="report-data-csv", storage_type="local"),
+        dcc.Store(id="report-data-second-stage", storage_type="local"),
+        dcc.Store(id="report-data-third-stage", storage_type="local"),
     ],
 )
 

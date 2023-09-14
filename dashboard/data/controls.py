@@ -50,12 +50,12 @@ def create_control_id(values: np.ndarray, columns: list[str]) -> str:
     return f"{positive}; {negative}"
 
 
-def generate_controls(columns: list[str], key_column: str = "CMPD ID") -> pd.DataFrame:
+def generate_controls(columns: list[str], key_column: str = "EOS") -> pd.DataFrame:
     """
     Generate control data for a given set of columns with all possible positive/negative activations.
     For inhibition values are inverted.
     :param columns: list of chemical assay columns
-    :param key_column: name of the ID column, defaults to "CMPD ID"
+    :param key_column: name of the ID column, defaults to "EOS"
     :return: dataframe with control data
     """
     sequences = list(itertools.product([0, 1], repeat=len(columns)))

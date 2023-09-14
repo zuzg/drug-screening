@@ -1,7 +1,5 @@
-import string
 from itertools import product
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -36,19 +34,19 @@ def plot_projection_2d(
         df,
         x=projection_x,
         y=projection_y,
-        text="CMPD ID",
+        text="EOS",
         color=df[feature],
         range_color=[0, df[feature].max()],
         labels={
             projection_x: "X",
             projection_y: "Y",
-            "CMPD ID": "Compound ID",
+            "EOS": "Compound ID",
         },
         title=f"{projection.upper()} projection with respect to {feature}",
         width=width,
         height=height,
         hover_data={
-            "CMPD ID": True,
+            "EOS": True,
             projection_x: ":.3f",
             projection_y: ":.3f",
             feature: ":.3f",
@@ -453,8 +451,80 @@ def plot_activation_inhibition_zscore(
             customdata=np.stack(
                 (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
             ),
-            hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>CMPD ID</extra>",
+            text=compounds_df["EOS"],
+            hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>%{text}</extra>",
         )
     )
 
+    return fig
+
+
+def concentration_confirmatory_plot(
+    act_inh_primary: np.ndarray,
+    act_inh_secondary: np.ndarray,
+    concentrations: np.ndarray,
+    reaction_type: str,
+) -> go.Figure:
+    """
+    Plot correlations of two screenings
+
+    :param act_inh_primary: 1D array with act/inh values from primary screening
+    :param act_inh_secondary: 1D array with act/inh values from secondary screening
+    :param concentrations: 1D array with type of concentration
+    :param reaction_type: inhibition or activation
+    :return: plot figure
+    """
+    fig = px.scatter(
+        x=act_inh_primary,
+        y=act_inh_secondary,
+        color=concentrations.astype(str),
+        labels={
+            "x": f"%{reaction_type} primary",
+            "y": f"%{reaction_type} confirmatory",
+            "color": "concentration",
+        },
+    )
+    fig.update_layout(
+        template=PLOTLY_TEMPLATE,
+        title=f"{reaction_type} in primary and confirmatory screenings",
+    )
+    return fig
+
+
+def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
+    """
+    Plot activation/inhibition values for each compound by concentration
+
+    :param df: Dataframe with inhibition/activation, id, and concentration
+    :param reaction_type: inhibition or activation
+    :return: plot figure
+    """
+    fig = go.Figure()
+    # NOTE: to clarify
+    value_by_conc = df.pivot_table(f"% {reaction_type}_x", "EOS", "Concentration")
+    for _, row in value_by_conc.iterrows():
+        fig.add_trace(
+            go.Scatter(
+                x=value_by_conc.columns,
+                y=row.values,
+                hovertemplate="EOS: %{text}<br>value: %{y}<extra></extra>",
+                marker_symbol="square",
+                marker_size=7,
+                line_width=1,
+                text=[str(row.name), str(row.name), str(row.name)],
+            )
+        )
+    fig.update_layout(
+        title_text="Concentrations",
+        xaxis_title="Concentration [uM]",
+        yaxis_title=reaction_type,
+        showlegend=False,
+        margin=dict(
+            l=10,
+            r=10,
+            t=50,
+            b=10,
+        ),
+        template=PLOTLY_TEMPLATE,
+    )
     return fig

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Report</title>
+</head>
+
+<body>
+    <h1>
+        Report {{current_day}}
+    </h1>
+    <h2>
+        {{current_time}}
+    </h2>
+    <p>
+
+        1. Basic info
+    <ul>
+        <li>Number of plates: {{plates_count}}
+        <li>Number of compounds: {{compounds_count}}
+        <li>Number of outliers: {{outliers_count}}
+    </ul>
+    </p>
+    <p>
+        {{control_values_fig|safe}}
+    </p>
+</body>
+
+</html>
