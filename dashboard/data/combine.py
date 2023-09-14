@@ -185,30 +185,30 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
 
 
 def aggregate_well_plate_stats(
-    df: pd.DataFrame, key: str, assign_x_coords: bool = False
+    df: pd.DataFrame, assign_x_coords: bool = False
 ) -> tuple[pd.DataFrame]:
     """
-    Aggregates the statistics (mean and std) per well/plate needed for the plots.
+    Aggregates the statistics (mean and std) per plate needed for the plots.
     self
     :param df: dataframe with echo and bmg data combined
     :param key: key to group by
-    :param assign_x_coords: whether to assign x coordinates to the wells/plates
+    :param assign_x_coords: whether to assign x coordinates to the plates
     :return: dataframe: echo_bmg_df with additional columns useful for
-    plotting activation/inhibition/z-score and one with statistics per well/plate
+    plotting activation/inhibition/z-score and one with statistics per plate
     """
 
-    col_names = {"plate": "Destination Plate Barcode", "well": "Destination Well"}
+    PLATE = "Destination Plate Barcode"
     ACTIVATION = "% ACTIVATION"
     INHIBITION = "% INHIBITION"
     Z_SCORE = "Z-SCORE"
 
     stats_df = (
-        df.groupby(col_names[key])[[ACTIVATION, INHIBITION, Z_SCORE]]
+        df.groupby(PLATE)[[ACTIVATION, INHIBITION, Z_SCORE]]
         .agg(["mean", "std", "min", "max"])
         .reset_index()
     )
     stats_df.columns = [
-        col_names[key],
+        PLATE,
         f"{ACTIVATION}_mean",
         f"{ACTIVATION}_std",
         f"{ACTIVATION}_min",

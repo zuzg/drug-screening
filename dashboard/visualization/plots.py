@@ -317,18 +317,17 @@ def plot_activation_inhibition_zscore(
     stats_dfs: list[pd.DataFrame],
     key: str,
     min_max_range: tuple[float],
-    plate: bool = True,
 ) -> go.Figure:
     """
-    Plot activation/inhibition z-score per plate/well.
+    Plot activation/inhibition z-score per plate.
 
     :param echo_bmg_combined: dataframe with all data
     :param stats_dfs: list of dataframes with stats
     :param key: key for stats df
     :param min_max_range: min and max range for plot
-    :param plate: if True plot per plate, else plot per well
     :return: plotly figure
     """
+
     fig = go.Figure()
     colors = ["rgb(31, 119, 180)", "rgb(0,128,0)", "rgb(255,0,0)"]
     colors_shade = ["rgba(31, 119, 180,0.4)", "rgba(0,128,0,0.2)", "rgba(255,0,0,0.2)"]
@@ -336,28 +335,11 @@ def plot_activation_inhibition_zscore(
 
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
-    plate_or_well = WELL
 
-    if plate:
-        cmpd_stats_df, pos_stats_df, neg_stats_df = stats_dfs
-        pos_stats_df = pos_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
-        neg_stats_df = neg_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
-        stats_dfs = [cmpd_stats_df, pos_stats_df, neg_stats_df]
-        plate_or_well = PLATE
-
-    else:
-        cmpd_stats_df, pos_stats_df, neg_stats_df = stats_dfs
-
-        pos_stats_df = pos_stats_df.sort_values(by=f"{key}_mean")
-        pos_stats_df[f"{key}_x"] = range(
-            len(cmpd_stats_df), len(cmpd_stats_df) + len(pos_stats_df), 1
-        )
-        neg_stats_df = neg_stats_df.sort_values(by=f"{key}_mean")
-        neg_stats_df[f"{key}_x"] = range(
-            len(cmpd_stats_df) + len(pos_stats_df),
-            len(cmpd_stats_df) + len(pos_stats_df) + len(neg_stats_df),
-            1,
-        )
+    cmpd_stats_df, pos_stats_df, neg_stats_df = stats_dfs
+    pos_stats_df = pos_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
+    neg_stats_df = neg_stats_df.merge(cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE)
+    stats_dfs = [cmpd_stats_df, pos_stats_df, neg_stats_df]
 
     for i, df in enumerate(stats_dfs):
         df = df.sort_values(by=[f"{key}_x"])
@@ -372,14 +354,14 @@ def plot_activation_inhibition_zscore(
                 legendgroup=names[i],
                 customdata=np.stack(
                     (
-                        df[plate_or_well],
+                        df[PLATE],
                         df[f"{key}_std"],
                         df[f"{key}_min"],
                         df[f"{key}_max"],
                     ),
                     axis=-1,
                 ),
-                hovertemplate=f" {plate_or_well}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
+                hovertemplate=f" {PLATE}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
             )
         )
 
@@ -406,7 +388,7 @@ def plot_activation_inhibition_zscore(
             title=f"{key} of compounds and control values",
             xaxis=dict(
                 {
-                    "title": plate_or_well,
+                    "title": PLATE,
                     "visible": True,
                     "showticklabels": True,
                     "tickfont": {"size": 1, "color": "rgba(0,0,0,0)"},

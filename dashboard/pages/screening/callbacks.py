@@ -301,42 +301,21 @@ def on_summary_entry(
         f"{stored_uuid}_echo_bmg_combined_df.pq", serialize_df(echo_bmg_combined)
     )
 
-    cmpd_plate_stats_df = aggregate_well_plate_stats(
-        compounds_df, "plate", assign_x_coords=True
-    )
-    pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df, "plate")
-    neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df, "plate")
-
+    cmpd_plate_stats_df = aggregate_well_plate_stats(compounds_df, assign_x_coords=True)
+    pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df)
+    neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df)
     plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
 
     file_storage.save_file(
         f"{stored_uuid}_plate_stats_df.pq", serialize_df(cmpd_plate_stats_df)
     )
 
-    # TODO: add plate/well mode
-    # cmpd_well_stats_df = aggregate_well_plate_stats(
-    #     compounds_df, "well", assign_x_coords=True
-    # )
-    # pos_well_stats_df = aggregate_well_plate_stats(control_pos_df, "well")
-    # neg_well_stats_df = aggregate_well_plate_stats(control_neg_df, "well")
-
-    # well_stats_dfs = [cmpd_well_stats_df, pos_well_stats_df, neg_well_stats_df]
-
-    # file_storage.save_file(
-    #     f"{stored_uuid}_well_stats_df.pq", serialize_df(cmpd_well_stats_df)
-    # )
-
     fig_z_score = plot_activation_inhibition_zscore(
         echo_bmg_combined,
         plate_stats_dfs,
         "Z-SCORE",
         (z_score_min, z_score_max),
-        # plate=False,
     )
-
-    # fig_z_score = plot_activation_inhibition_zscore(
-    #     echo_bmg_combined, plate_stats_dfs, "Z-SCORE", (z_score_min, z_score_max)
-    # )
 
     fig_activation = plot_activation_inhibition_zscore(
         echo_bmg_combined,
@@ -364,6 +343,43 @@ def on_summary_entry(
         inhibition_min,
         inhibition_max,
     )
+
+
+def on_filter_radio_or_range_update(
+    key: str,
+    z_score_min: float,
+    z_score_max: float,
+    activation_min: float,
+    activation_max: float,
+    inhibition_min: float,
+    inhibition_max: float,
+) -> dict:
+    """
+    Callback for the filter radio button update
+
+    :param key: key to filter by
+    :param z_score_min: min z-score value
+    :param z_score_max: max z-score value
+    :param activation_min: min activation value
+    :param activation_max: max activation value
+    :param inhibition_min: min inhibition value
+    :param inhibition_max: max inhibition value
+    :return: dictionary storing the ranges of interest
+    """
+
+    report_data_csv = {"key": key}
+
+    if key == "z_score":
+        report_data_csv["key_min"] = z_score_min
+        report_data_csv["key_max"] = z_score_max
+    elif key == "activation":
+        report_data_csv["key_min"] = activation_min
+        report_data_csv["key_max"] = activation_max
+    elif key == "inhibition":
+        report_data_csv["key_min"] = inhibition_min
+        report_data_csv["key_max"] = inhibition_max
+
+    return report_data_csv
 
 
 def on_range_update(
@@ -409,7 +425,7 @@ def on_apply_button_click(
     figure: go.Figure,
     file_storage: FileStorage,
     key: str = "Z-SCORE",
-):
+) -> tuple[go.Figure, dict]:
     new_figure = go.Figure(figure)
 
     PLATE = "Destination Plate Barcode"
@@ -425,7 +441,6 @@ def on_apply_button_click(
     cmpd_stats_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
     )
-    # TODO add well mode
 
     mask = (compounds_df[key] >= min_value) & (compounds_df[key] <= max_value)
     outside_range_df = compounds_df[~mask].copy()
@@ -449,13 +464,7 @@ def on_apply_button_click(
 def on_save_results_click(
     n_clicks: int,
     stored_uuid: str,
-    # filter_radio: str,
-    # z_score_min: float,
-    # z_score_max: float,
-    # activation_min: float,
-    # activation_max: float,
-    # inhibition_min: float,
-    # inhibition_max: float,
+    report_data_csv: dict,
     file_storage: FileStorage,
 ) -> None:
     """
@@ -463,26 +472,10 @@ def on_save_results_click(
 
     :param n_clicks: number of clicks
     :param stored_uuid: uuid of the stored data
-    :param filter_radio: radio button value
-    :param z_score_min: min z-score value
-    :param z_score_max: max z-score value
-    :param activation_min: min activation value
-    :param activation_max: max activation value
-    :param inhibition_min: min inhibition value
-    :param inhibition_max: max inhibition value
+    :param report_data_csv: dictionary storing the filter and ranges of interest
     :param file_storage: storage object
     :return: None
     """
-
-    # print(
-    #     filter_radio,
-    #     z_score_min,
-    #     z_score_max,
-    #     activation_min,
-    #     activation_max,
-    #     inhibition_min,
-    #     inhibition_max,
-    # )
 
     filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
 
@@ -492,20 +485,19 @@ def on_save_results_click(
         ),
     )
 
-    filter_radio = "dummy"
-    if filter_radio == "z_score":
-        mask = (echo_bmg_combined_df["Z-SCORE"] <= z_score_min) | (
-            echo_bmg_combined_df["Z-SCORE"] >= z_score_max
+    if report_data_csv["key"] == "z_score":
+        mask = (echo_bmg_combined_df["Z-SCORE"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["Z-SCORE"] >= report_data_csv["key_max"]
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
-    elif filter_radio == "activation":
-        mask = (echo_bmg_combined_df["% ACTIVATION"] <= activation_min) | (
-            echo_bmg_combined_df["% ACTIVATION"] >= activation_max
+    elif report_data_csv["key"] == "activation":
+        mask = (echo_bmg_combined_df["% ACTIVATION"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["% ACTIVATION"] >= report_data_csv["key_max"]
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
-    elif filter_radio == "inhibition":
-        mask = (echo_bmg_combined_df["% INHIBITION"] <= inhibition_min) | (
-            echo_bmg_combined_df["% INHIBITION"] >= inhibition_max
+    elif report_data_csv["key"] == "inhibition":
+        mask = (echo_bmg_combined_df["% INHIBITION"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["% INHIBITION"] >= report_data_csv["key_max"]
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
 
@@ -643,15 +635,19 @@ def register_callbacks(elements, file_storage):
         )
     )
     callback(
+        Output("report-data-csv", "data"),
+        Input("filter-radio", "value"),
+        Input("z-score-min-input", "value"),
+        Input("z-score-max-input", "value"),
+        Input("activation-min-input", "value"),
+        Input("activation-max-input", "value"),
+        Input("inhibition-min-input", "value"),
+        Input("inhibition-max-input", "value"),
+    )(functools.partial(on_filter_radio_or_range_update))
+    callback(
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
         State("user-uuid", "data"),
-        # State("filter-radio", "value"),
-        # State("z-score-min-input", "value"),
-        # State("z-score-max-input", "value"),
-        # State("activation-min-input", "value"),
-        # State("activation-max-input", "value"),
-        # State("inhibition-min-input", "value"),
-        # State("inhibition-max-input", "value"),
+        State("report-data-csv", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
