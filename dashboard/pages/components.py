@@ -22,17 +22,24 @@ EXTRA = html.Div(
 
 
 def make_main_header(page_registry: dict):
+    order = [
+        "home",
+        "about",
+        "screening",
+        "correlation",
+        "hit_validation",
+    ]
     nav_bar = html.Ul(
         children=[
             html.Li(
                 dcc.Link(
-                    page["name"],
-                    href=page["path"],
+                    page_registry[f"pages.{name}.page"]["name"],
+                    href=page_registry[f"pages.{name}.page"]["path"],
                     className="nav-link mx-2",
                 ),
                 className="nav-item",
             )
-            for page in page_registry.values()
+            for name in order
         ],
         className="nav nav-pills",
     )
