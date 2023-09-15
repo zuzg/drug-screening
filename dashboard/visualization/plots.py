@@ -480,3 +480,29 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
         template=PLOTLY_TEMPLATE,
     )
     return fig
+
+
+def plot_ic50(entry: dict) -> go.Figure:
+    return go.Figure(
+        layout_title_text="IC50",
+        layout={
+            "xaxis": {
+                "title": "Concentration [uM]",
+                "visible": True,
+                "showticklabels": True,
+            },
+            "yaxis": {
+                "title": "% INHIBITION",
+                "visible": True,
+                "showticklabels": True,
+            },
+        },
+        data=[
+            go.Scatter(
+                x=(0, 5, 7, 8, 10),
+                y=(23, 34, 36, 67, 50),
+                mode="lines+markers",
+                marker=dict(color="blue", size=10),
+            )
+        ],
+    )
