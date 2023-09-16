@@ -20,7 +20,6 @@ from dashboard.data.combine import (
     split_compounds_controls,
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
-from dashboard.data.utils import serialize_df
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
@@ -59,7 +58,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         np.savez_compressed(stream, val)
         stream.seek(0)
         file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
-        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", serialize_df(bmg_df))
+        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", bmg_df.to_parquet())
 
     return (
         make_file_list_component(names, [], 2),
@@ -172,10 +171,7 @@ def on_outlier_purge_stage_entry(
     index_text = f"{heatmap_start_index + 1} - {heatmap_start_index + DISPLAYED_PLATES} / {bmg_vals.shape[0]}"
 
     final_vis_df = (
-        vis_bmg_df.set_index("barcode")
-        .drop(columns=["index"])
-        .applymap(lambda x: f"{x:.3f}")
-        .reset_index()
+        vis_bmg_df.set_index("barcode").applymap(lambda x: f"{x:.3f}").reset_index()
     )
 
     max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
@@ -264,9 +260,9 @@ def upload_echo_data(
         echo_parser.retain_key_columns()
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
-        file_storage.save_file(f"{stored_uuid}_echo_df.pq", serialize_df(echo_df))
+        file_storage.save_file(f"{stored_uuid}_echo_df.pq", echo_df.to_parquet())
         file_storage.save_file(
-            f"{stored_uuid}_exceptions_df.pq", serialize_df(exceptions_df)
+            f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
     return make_file_list_component(
@@ -321,7 +317,7 @@ def on_summary_entry(
     inhibition_max = round(compounds_df["% INHIBITION"].max())
 
     file_storage.save_file(
-        f"{stored_uuid}_echo_bmg_combined_df.pq", serialize_df(echo_bmg_combined)
+        f"{stored_uuid}_echo_bmg_combined_df.pq", echo_bmg_combined.to_parquet()
     )
 
     cmpd_plate_stats_df = aggregate_well_plate_stats(compounds_df, assign_x_coords=True)
@@ -330,7 +326,7 @@ def on_summary_entry(
     plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
 
     file_storage.save_file(
-        f"{stored_uuid}_plate_stats_df.pq", serialize_df(cmpd_plate_stats_df)
+        f"{stored_uuid}_plate_stats_df.pq", cmpd_plate_stats_df.to_parquet()
     )
 
     fig_z_score = plot_activation_inhibition_zscore(

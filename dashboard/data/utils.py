@@ -1,17 +1,6 @@
 import pandas as pd
 
 
-def serialize_df(df: pd.DataFrame) -> bytes:
-    """
-    Serialize a dataframe to bytes
-
-    :param df: dataframe to serialize
-    :return: serialized dataframe
-    """
-    serialized_df = df.reset_index().to_parquet()
-    return serialized_df
-
-
 # TODO: TO BE REMOVED???
 def generate_dummy_links_dataframe(compound_ids: list[str]) -> pd.DataFrame:
     eos = [
