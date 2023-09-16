@@ -55,6 +55,12 @@
     column-gap: 2rem;
 }
 
+.grid-1-1 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 2rem;
+}
+
 
 .upload-box {
     width: 100%;
@@ -73,7 +79,6 @@
 .fixed-width-150 {
     width: 150px;
 }
-
 
 .controls {
     padding: 1rem;
@@ -144,7 +149,6 @@
     transform: rotate(-20deg);
 }
 
-
 .btn--round {
     border-radius: 50%;
     width: 30px;
@@ -162,4 +166,9 @@
 
 .btn-report {
     width: 350px;
+}
+
+.panel-restricted {
+    max-height: calc(100vh - 400px);
+    overflow-y: auto;
 }
