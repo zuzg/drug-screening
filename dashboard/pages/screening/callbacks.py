@@ -3,14 +3,13 @@ import functools
 import io
 import uuid
 from datetime import datetime
+from typing import List
 
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, dcc, no_update, html
-from datetime import datetime
-from typing import List
+from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
@@ -21,6 +20,7 @@ from dashboard.data.combine import (
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.pages.components import make_file_list_component
+from dashboard.report.generate_jinja_report import generate_jinja_report
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_activation_inhibition_zscore,
@@ -29,8 +29,6 @@ from dashboard.visualization.plots import (
     plot_z_per_plate,
     visualize_multiple_plates,
 )
-from dashboard.pages.components import make_file_list_component
-from dashboard.report.generate_jinja_report import generate_jinja_report
 
 # === STAGE 1 ===
 
@@ -308,6 +306,7 @@ def on_summary_entry(
     compounds_df, control_pos_df, control_neg_df = split_compounds_controls(
         echo_bmg_combined
     )
+    compounds_df = compounds_df.dropna()
 
     z_score_min = round(compounds_df["Z-SCORE"].min())
     z_score_max = round(compounds_df["Z-SCORE"].max())
@@ -317,7 +316,7 @@ def on_summary_entry(
     inhibition_max = round(compounds_df["% INHIBITION"].max())
 
     file_storage.save_file(
-        f"{stored_uuid}_echo_bmg_combined_df.pq", echo_bmg_combined.to_parquet()
+        f"{stored_uuid}_echo_bmg_combined_df.pq", compounds_df.to_parquet()
     )
 
     cmpd_plate_stats_df = aggregate_well_plate_stats(compounds_df, assign_x_coords=True)

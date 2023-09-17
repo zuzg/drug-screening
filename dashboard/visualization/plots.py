@@ -359,7 +359,7 @@ def plot_activation_inhibition_zscore(
                     ),
                     axis=-1,
                 ),
-                hovertemplate=f" {PLATE}<br>%{{customdata[0]}}<br>avg: %{{y:.2f}} &plusmn;%{{customdata[1]:.2f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
+                hovertemplate=f" {PLATE}<br>%{{customdata[0]}}<br>avg: %{{y:.4f}} &plusmn;%{{customdata[1]:.4f}}<br>min: %{{customdata[2]:.2f}}, max: %{{customdata[3]:.2f}}<extra></extra>",
             )
         )
 
