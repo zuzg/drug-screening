@@ -1,6 +1,7 @@
 import pandas as pd
 
 
+# TODO: TO BE REMOVED???
 def generate_dummy_links_dataframe(compound_ids: list[str]) -> pd.DataFrame:
     eos = [
         f"[EOS{i+1}](https://ecbd.eu/compound/EOS{i+1})"

@@ -159,6 +159,11 @@
     align-items: center;
 }
 
+.stats-input{
+    margin-left: 10px ;
+    width: 150px
+}
+
 .btn-report {
     width: 350px;
 }

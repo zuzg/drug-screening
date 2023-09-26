@@ -57,10 +57,44 @@ _ACT_INH_DATATABLE = dash_table.DataTable(
     page_size=15,
 )
 
+radio_values = ["No filter (retain all)", "Z-Score", "Activation", "Inhibition"]
+radio_codes = ["no_filter", "z_score", "activation", "inhibition"]
+radio_options = []
+
+for i, j in zip(radio_values, radio_codes):
+    radio_options.append(
+        {
+            "label": html.Div(
+                i,
+                style={
+                    "display": "inline",
+                    "padding-left": "0.5rem",
+                    "padding-right": "2rem",
+                },
+            ),
+            "value": j,
+        }
+    )
+
 SUMMARY_STAGE = html.Div(
     id="summary_stage",
     className="container",
     children=[
+        html.Div(
+            className="mb-5 mt-4",
+            children=[
+                html.H5("Filter results:"),
+                html.H6(
+                    "The compounds in the csv report will be ones outside the range of the selected filter."
+                ),
+                dcc.RadioItems(
+                    radio_options,
+                    "no_filter",
+                    style={"display": "flex"},
+                    id="filter-radio",
+                ),
+            ],
+        ),
         dcc.Tabs(
             id="summary-tabs",
             children=[
@@ -72,28 +106,40 @@ SUMMARY_STAGE = html.Div(
                             children=[
                                 html.H5("Z-Score range:"),
                                 html.Div(
-                                    className="row",
+                                    className="row mb-3",
                                     children=[
                                         html.Div(
-                                            className="col mb-4",
+                                            className="col mt-1",
                                             children=[
-                                                dcc.RangeSlider(
-                                                    -10,
-                                                    10,
-                                                    value=[-3, 3],
-                                                    tooltip={
-                                                        "placement": "bottom",
-                                                        "always_visible": True,
-                                                    },
-                                                    id="z-score-slider",
-                                                )
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="z-score-min-input",
+                                                    className="stats-input",
+                                                ),
                                             ],
-                                            style={"width": "750px"},
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="z-score-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
                                         ),
                                         html.Div(
                                             className="col",
                                             children=[
-                                                dbc.Button("Apply", id="z-score-button")
+                                                dbc.Button(
+                                                    "Apply",
+                                                    id="z-score-button",
+                                                    disabled=True,
+                                                )
                                             ],
                                         ),
                                     ],
@@ -109,18 +155,108 @@ SUMMARY_STAGE = html.Div(
                 dcc.Tab(
                     label="Activation",
                     children=[
-                        dcc.Graph(
-                            id="activation-plot",
-                            figure={},
+                        html.Div(
+                            className="my-4",
+                            children=[
+                                html.H5("Activation range:"),
+                                html.Div(
+                                    className="row mb-3",
+                                    children=[
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="activation-min-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="activation-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dbc.Button(
+                                                    "Apply",
+                                                    id="activation-button",
+                                                    disabled=True,
+                                                )
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                dcc.Graph(
+                                    id="activation-plot",
+                                    figure={},
+                                ),
+                            ],
                         ),
                     ],
                 ),
                 dcc.Tab(
                     label="Inhibition",
                     children=[
-                        dcc.Graph(
-                            id="inhibition-plot",
-                            figure={},
+                        html.Div(
+                            className="my-4",
+                            children=[
+                                html.H5("Inhibition range:"),
+                                html.Div(
+                                    className="row mb-3",
+                                    children=[
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("minimum value:"),
+                                                dcc.Input(
+                                                    placeholder="min value",
+                                                    type="number",
+                                                    id="inhibition-min-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="col mt-1",
+                                            children=[
+                                                html.Label("maximum value:"),
+                                                dcc.Input(
+                                                    placeholder="max value",
+                                                    type="number",
+                                                    id="inhibition-max-input",
+                                                    className="stats-input",
+                                                ),
+                                            ],
+                                        ),
+                                        html.Div(
+                                            className="col",
+                                            children=[
+                                                dbc.Button(
+                                                    "Apply",
+                                                    id="inhibition-button",
+                                                    disabled=True,
+                                                )
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                                dcc.Graph(
+                                    id="inhibition-plot",
+                                    figure={},
+                                ),
+                            ],
                         ),
                     ],
                 ),

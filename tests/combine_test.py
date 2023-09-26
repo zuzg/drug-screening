@@ -72,7 +72,7 @@ def test_combine_bmg_echo_data(df_stats):
     modes = {"1234": Mode.ACTIVATION}
     combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, modes)
 
-    assert len(combined_df) == 96
+    assert len(combined_df) == 384
     assert set(combined_df.columns) == set(echo_data.keys()) | {
         "% ACTIVATION",
         "Z-SCORE",
