@@ -60,10 +60,8 @@ def plate_summary():
 def df_stats():
     data = {
         "barcode": ["1234"],
-        "std_cmpd": [1],
         "std_pos": [1.5],
         "std_neg": [1.0],
-        "mean_cmpd": [2],
         "mean_pos": [3],
         "mean_neg": [2],
         "z_factor": [-2],
