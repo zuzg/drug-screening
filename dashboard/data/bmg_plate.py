@@ -192,21 +192,17 @@ def parse_bmg_files(files: tuple[str, io.StringIO]) -> tuple[pd.DataFrame, np.nd
 
 
 def calculate_activation_inhibition_zscore(
-    df_stats: pd.Series,
     values: np.ndarray,
-    mean_cmpd: float,
-    std_cmpd: float,
+    stats: dict,
     mode: Mode = Mode.ALL,
     without_pos: bool = False,
 ) -> tuple[np.ndarray]:
     """
     Calculates the activation and inhibition values for each well.
 
-    :param df_stats: dataframe with pre-calculated statistics
     :param values: values to calculate activation/inhibition and an outlier mask
+    :param stats: dictionary with statistics for all data
     :param mode: mode of calculation, either "all", "activation" or "inhibition"
-    :param mean_cmpd: mean of all compounds
-    :param std_cmpd: std of all compounds
     :param without_pos: whether to calculate without positive controls (in case of "activation" mode)
     :return: activation, inhibition and z-score values
     """
@@ -214,22 +210,20 @@ def calculate_activation_inhibition_zscore(
     if mode == Mode.ACTIVATION or mode == Mode.ALL:
         # NOTE: for now `without_pos` is not used
         if without_pos:
-            activation = (values - df_stats["mean_neg"]) / (df_stats["mean_neg"]) * 100
+            activation = (values - stats["mean_neg"]) / (stats["mean_neg"]) * 100
         else:
             activation = (
-                (values - df_stats["mean_neg"])
-                / (df_stats["mean_pos"] - df_stats["mean_neg"])
+                (values - stats["mean_neg"])
+                / (stats["mean_pos"] - stats["mean_neg"])
                 * 100
             )
 
     if mode == Mode.INHIBITION or mode == Mode.ALL:
         inhibition = (
-            1
-            - ((values - df_stats["mean_pos"]))
-            / (df_stats["mean_neg"] - df_stats["mean_pos"])
+            1 - ((values - stats["mean_pos"])) / (stats["mean_neg"] - stats["mean_pos"])
         ) * 100
 
-    z_score = (values - mean_cmpd) / std_cmpd
+    z_score = (values - stats["mean_cmpd"]) / stats["std_cmpd"]
 
     return activation, inhibition, z_score
 
@@ -245,9 +239,15 @@ def get_activation_inhibition_zscore_dict(
     :param mode: list of modes to calculate activation and inhibition
     :return: dictionary with activation and inhibition values for each compound in the plate
     """
+    stats = {}
     all_compound_values = plate_values[:, 0, :, :22]
-    mean_cmpd = np.nanmean(all_compound_values)
-    std_cmpd = np.nanstd(all_compound_values)
+    all_control_pos_values = plate_values[:, 0, :, -1]
+    all_control_neg_values = plate_values[:, 0, :, -2]
+
+    stats["mean_cmpd"] = np.nanmean(all_compound_values)
+    stats["std_cmpd"] = np.nanstd(all_compound_values)
+    stats["mean_pos"] = np.nanmean(all_control_pos_values)
+    stats["mean_neg"] = np.nanmean(all_control_neg_values)
 
     act_inh_dict = {}
     for (_, row_stats), v in zip(df_stats.iterrows(), plate_values):
@@ -255,7 +255,7 @@ def get_activation_inhibition_zscore_dict(
             modes[row_stats["barcode"]] if row_stats["barcode"] in modes else Mode.ALL
         )
         activation, inhibition, z_score = calculate_activation_inhibition_zscore(
-            row_stats, v[0], mean_cmpd, std_cmpd, mode=mode
+            v[0], stats, mode=mode
         )
         act_inh_dict[row_stats["barcode"]] = {
             "activation": activation,
