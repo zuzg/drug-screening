@@ -15,8 +15,10 @@ PlateSummary = namedtuple(
     "PlateSummary",
     [
         "barcode",
+        "std_cmpd",
         "std_pos",
         "std_neg",
+        "mean_cmpd",
         "mean_pos",
         "mean_neg",
         "z_factor",
@@ -117,10 +119,15 @@ def get_summary_tuple(plate: Plate, z_factor_wo: float) -> PlateSummary:
         plate.pos, plate.neg
     )
 
+    std_cmpd = np.nanstd(plate.plate_array[:, :22])
+    mean_cmpd = np.nanmean(plate.plate_array[:, :22])
+
     plate_summary = PlateSummary(
         plate.barcode,
+        std_cmpd,
         std_pos,
         std_neg,
+        mean_cmpd,
         mean_pos,
         mean_neg,
         z_factor,

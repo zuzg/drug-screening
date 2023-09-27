@@ -329,28 +329,28 @@ def on_summary_entry(
     )
 
     fig_z_score = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "Z-SCORE",
         (z_score_min, z_score_max),
     )
 
     fig_activation = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "% ACTIVATION",
         (activation_min, activation_max),
     )
 
     fig_inhibition = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "% INHIBITION",
         (inhibition_min, inhibition_max),
     )
 
     return (
-        echo_bmg_combined.to_dict("records"),
+        compounds_df.to_dict("records"),
         fig_z_score,
         fig_activation,
         fig_inhibition,

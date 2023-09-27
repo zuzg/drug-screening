@@ -54,8 +54,8 @@ class EchoFilesParser:
                 exceptions_df = pd.DataFrame()
                 echo_df = pd.read_csv(filecontent, skiprows=markers[0] + 1)
             else:
-                exceptions_df = pd.read_csv(filecontent)
-                echo_df = None
+                echo_df = pd.read_csv(filecontent)
+                exceptions_df = pd.DataFrame()
 
             if echo_df is not None:
                 mask = (

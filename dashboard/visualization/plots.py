@@ -311,7 +311,7 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
 
 
 def plot_activation_inhibition_zscore(
-    echo_bmg_combined: pd.DataFrame,
+    compounds_df: pd.DataFrame,
     stats_dfs: list[pd.DataFrame],
     key: str,
     min_max_range: tuple[float],
@@ -319,7 +319,7 @@ def plot_activation_inhibition_zscore(
     """
     Plot activation/inhibition z-score per plate.
 
-    :param echo_bmg_combined: dataframe with all data
+    :compounds_df: dataframe with all compounds data
     :param stats_dfs: list of dataframes with stats
     :param key: key for stats df
     :param min_max_range: min and max range for plot
@@ -432,7 +432,6 @@ def plot_activation_inhibition_zscore(
         )
     )
 
-    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined)
     mask = (compounds_df[key] >= min_max_range[0]) & (
         compounds_df[key] <= min_max_range[1]
     )
