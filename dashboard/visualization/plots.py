@@ -104,6 +104,7 @@ def visualize_multiple_plates(
                     "fixedrange": True,
                     "showgrid": False,
                     "scaleanchor": f"x{i}",
+                    "autorange": "reversed",
                 },
                 "autosize": True,
             }
