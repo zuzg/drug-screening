@@ -1,14 +1,15 @@
+from unittest.mock import mock_open, patch
+
 import numpy as np
 import pandas as pd
-from unittest.mock import mock_open, patch
-from dashboard.data.bmg_plate import Mode
 
 from dashboard.data.bmg_plate import (
-    well_to_ids,
-    parse_bmg_file,
+    Mode,
     calculate_activation_inhibition_zscore,
-    get_activation_inhibition_zscore_dict,
     filter_low_quality_plates,
+    get_activation_inhibition_zscore_dict,
+    parse_bmg_file,
+    well_to_ids,
 )
 
 
@@ -45,25 +46,24 @@ def test_outliers(plate_summary):
     assert plate_summary.z_factor == plate_summary.z_factor_no_outliers
 
 
-def test_calculate_activation_inhibition_zscore(df_stats):
+def test_calculate_activation_inhibition_zscore(stats_for_all):
     values = np.array([5, 3, 3])
+
     activation, inhibition, z_score = calculate_activation_inhibition_zscore(
-        df_stats.iloc[0], values, mode=Mode.ALL
+        values, stats_for_all
     )
-    assert activation[2] == 100.0 and inhibition[1] == 100.0 and z_score[0] == 3.0
+    assert (
+        round(activation[2], 2) == -199.25
+        and round(inhibition[1], 2) == -199.25
+        and round(z_score[0], 2) == -82.92
+    )
 
 
 def test_get_activation_inhibition_zscore_dict(df_stats):
-    values = np.array([[5, 3, 3], [0, 1, 0]])
+    values = np.full((2, 2, 16, 24), 2)
+    values[1] = 1.5
     z_dict = get_activation_inhibition_zscore_dict(df_stats, values, modes=dict())
-    assert z_dict == {
-        "1234": {
-            "activation": 300.0,
-            "inhibition": 300.0,
-            "outliers": 3,
-            "z_score": 3.0,
-        }
-    }
+    assert np.array_equal(z_dict["1234"]["z_score"], np.full((16, 24), 1.0))
 
 
 def test_filter_low_quality_plates(df_stats):

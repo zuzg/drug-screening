@@ -522,6 +522,29 @@ def on_save_results_click(
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
+def on_save_exceptions_click(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save exceptions button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+
+    filename = f"screening_exceptions_{datetime.now().strftime('%Y-%m-%d')}.csv"
+
+    exceptions_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_exceptions_df.pq")),
+    )
+
+    return dcc.send_data_frame(exceptions_df.to_csv, filename)
+
+
 def on_report_generate_button_click(
     n_clicks,
     stored_uuid: str,
@@ -695,7 +718,12 @@ def register_callbacks(elements, file_storage):
         State("report-data-csv", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
-
+    callback(
+        Output("download-exceptions-csv", "data"),
+        Input("save-exceptions-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_exceptions_click, file_storage=file_storage))
     callback(
         Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
