@@ -451,7 +451,7 @@ def plot_activation_inhibition_zscore(
                 (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
             ),
             text=compounds_df["EOS"],
-            hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>z-score: %{y:.2f}<extra>%{text}</extra>",
+            hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>value: %{y:.4f}<extra>%{text}</extra>",
         )
     )
 
