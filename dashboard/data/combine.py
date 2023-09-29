@@ -137,7 +137,7 @@ def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
     plate_values: np.ndarray,
-    modes: dict[Mode],
+    modes: dict[Mode] = None,
 ) -> pd.DataFrame:
     """
     Combine Echo data with activation and inhibition values.

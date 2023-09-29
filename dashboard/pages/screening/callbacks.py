@@ -223,12 +223,16 @@ def on_plates_stats_stage_entry(
             full_html=False, include_plotlyjs="cdn"
         )
     }
+
+    z_slider_data = {"z_slider_value": value}
+
     return (
         control_values_fig,
         row_col_fig,
         z_fig,
-        f"Number of deleted plates: {num_removed}",
+        f"Number of deleted plates: {num_removed}/{bmg_df.shape[0]}",
         report_data,
+        z_slider_data,
     )
 
 
@@ -272,7 +276,7 @@ def upload_echo_data(
 
 
 def on_summary_entry(
-    current_stage: int, stored_uuid: str, file_storage: FileStorage
+    current_stage: int, stored_uuid: str, z_slider: float, file_storage: FileStorage
 ) -> tuple[pd.DataFrame, go.Figure, go.Figure, go.Figure]:
     """
     Callback for the stage 5 entry
@@ -280,6 +284,7 @@ def on_summary_entry(
 
     :param current_stage: current stage index of the process
     :param stored_uuid: uuid of the stored data
+    :param z_slider: z threshold, slider value
     :param file_storage: storage object
     :return: combined echo dataframe, control values plot, mean row col plot, z values plot
     """
@@ -295,7 +300,11 @@ def on_summary_entry(
         io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
     )["arr_0"]
 
-    echo_bmg_combined = combine_bmg_echo_data(echo_df, bmg_df, bmg_vals, None)
+    filtered_df, filtered_vals = filter_low_quality_plates(
+        bmg_df, bmg_vals, z_slider["z_slider_value"]
+    )
+
+    echo_bmg_combined = combine_bmg_echo_data(echo_df, filtered_df, filtered_vals)
     drop_duplicates = (
         True  # TODO: inform the user about it/allow for deciding what to do
     )
@@ -308,8 +317,6 @@ def on_summary_entry(
     )
     compounds_df = compounds_df.dropna()
 
-    z_score_min = round(compounds_df["Z-SCORE"].min())
-    z_score_max = round(compounds_df["Z-SCORE"].max())
     activation_min = round(compounds_df["% ACTIVATION"].min())
     activation_max = round(compounds_df["% ACTIVATION"].max())
     inhibition_min = round(compounds_df["% INHIBITION"].min())
@@ -329,37 +336,38 @@ def on_summary_entry(
     )
 
     fig_z_score = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "Z-SCORE",
-        (z_score_min, z_score_max),
+        (-3, 3),  # z-score min and max
     )
 
     fig_activation = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "% ACTIVATION",
         (activation_min, activation_max),
     )
 
     fig_inhibition = plot_activation_inhibition_zscore(
-        echo_bmg_combined,
+        compounds_df,
         plate_stats_dfs,
         "% INHIBITION",
         (inhibition_min, inhibition_max),
     )
 
     return (
-        echo_bmg_combined.to_dict("records"),
+        compounds_df.to_dict("records"),
         fig_z_score,
         fig_activation,
         fig_inhibition,
-        z_score_min,
-        z_score_max,
+        -3,  # z_score_min,
+        3,  # z_score_max,
         activation_min,
         activation_max,
         inhibition_min,
         inhibition_max,
+        f"number of compounds: {len(compounds_df)}",
     )
 
 
@@ -522,6 +530,29 @@ def on_save_results_click(
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
+def on_save_exceptions_click(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save exceptions button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+
+    filename = f"screening_exceptions_{datetime.now().strftime('%Y-%m-%d')}.csv"
+
+    exceptions_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_exceptions_df.pq")),
+    )
+
+    return dcc.send_data_frame(exceptions_df.to_csv, filename)
+
+
 def on_report_generate_button_click(
     n_clicks,
     stored_uuid: str,
@@ -586,6 +617,7 @@ def register_callbacks(elements, file_storage):
         Output("z-per-plate", "figure"),
         Output("plates-removed", "children"),
         Output("report-data-third-stage", "data"),
+        Output("z-slider-value", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
         State("user-uuid", "data"),
@@ -611,8 +643,10 @@ def register_callbacks(elements, file_storage):
         Output("activation-max-input", "value"),
         Output("inhibition-min-input", "value"),
         Output("inhibition-max-input", "value"),
+        Output("compounds-data-subtitle", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
+        State("z-slider-value", "data"),
     )(functools.partial(on_summary_entry, file_storage=file_storage))
 
     callback(
@@ -695,7 +729,12 @@ def register_callbacks(elements, file_storage):
         State("report-data-csv", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
-
+    callback(
+        Output("download-exceptions-csv", "data"),
+        Input("save-exceptions-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_exceptions_click, file_storage=file_storage))
     callback(
         Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),

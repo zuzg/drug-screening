@@ -73,6 +73,17 @@ def df_stats():
 
 
 @pytest.fixture
+def stats_for_all():
+    data = {
+        "mean_cmpd": 1000,
+        "std_cmpd": 12,
+        "mean_pos": 1200,
+        "mean_neg": 800,
+    }
+    return data
+
+
+@pytest.fixture
 def values_dict():
     return {
         "activation": np.array([[1.0, 2.0], [3.0, 4.0]]),

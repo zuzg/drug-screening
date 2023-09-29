@@ -275,6 +275,16 @@ SUMMARY_STAGE = html.Div(
                     ],
                 ),
                 html.Div(
+                    className="mb-2",
+                    children=[
+                        html.H6(
+                            children=[""],
+                            className="text-center",
+                            id="compounds-data-subtitle",
+                        )
+                    ],
+                ),
+                html.Div(
                     className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
                     children=[_ACT_INH_DATATABLE],
                 ),
