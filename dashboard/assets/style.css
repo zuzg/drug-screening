@@ -172,3 +172,9 @@
     max-height: calc(100vh - 400px);
     overflow-y: auto;
 }
+
+ #echo-bmg-combined td.column-0 p {
+    margin-bottom: 0;
+    text-align : right;
+    justify-content: right;
+}

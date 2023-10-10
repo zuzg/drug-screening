@@ -19,6 +19,7 @@ from dashboard.data.combine import (
     split_compounds_controls,
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
+from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.report.generate_jinja_report import generate_jinja_report
 from dashboard.storage import FileStorage
@@ -356,8 +357,10 @@ def on_summary_entry(
         (inhibition_min, inhibition_max),
     )
 
+    compounds_url_df = eos_to_ecbd_link(compounds_df)
+
     return (
-        compounds_df.to_dict("records"),
+        compounds_url_df.to_dict("records"),
         fig_z_score,
         fig_activation,
         fig_inhibition,

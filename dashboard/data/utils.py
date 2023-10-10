@@ -1,13 +1,18 @@
 import pandas as pd
 
 
-# TODO: TO BE REMOVED???
-def generate_dummy_links_dataframe(compound_ids: list[str]) -> pd.DataFrame:
-    eos = [
-        f"[EOS{i+1}](https://ecbd.eu/compound/EOS{i+1})"
-        for i, _ in enumerate(compound_ids)
-    ]
-    return pd.DataFrame({"CMPD ID": compound_ids, "EOS": eos}).set_index("CMPD ID")
+def eos_to_ecbd_link(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Change eos to url to that eos in provided dataframe
+
+    :param df: dataframe with EOS column
+    :return: dataframe with eoses as urls
+    """
+    df_links = df.copy()
+    df_links["EOS"] = df_links["EOS"].apply(
+        lambda eos: f"[{eos}](https://ecbd.eu/compound/{eos})"
+    )
+    return df_links
 
 
 def is_chemical_result(column_name: str) -> bool:
