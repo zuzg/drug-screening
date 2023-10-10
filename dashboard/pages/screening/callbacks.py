@@ -559,7 +559,6 @@ def on_save_exceptions_click(
 
 def on_report_generate_button_click(
     n_clicks,
-    stored_uuid: str,
     report_data_second_stage: dict,
     report_data_third_stage: dict,
     file_storage: FileStorage,
@@ -579,7 +578,6 @@ def on_report_generate_button_click(
 
 def on_json_generate_button_click(
     n_clicks,
-    stored_uuid: str,
     report_data_second_stage: dict,
     report_data_third_stage: dict,
     report_data_csv: dict,
@@ -756,7 +754,6 @@ def register_callbacks(elements, file_storage):
         Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
         Input("generate-report-button", "n_clicks"),
-        State("user-uuid", "data"),
         State("report-data-second-stage", "data"),
         State("report-data-third-stage", "data"),
         prevent_initial_call=True,
@@ -764,7 +761,6 @@ def register_callbacks(elements, file_storage):
     callback(
         Output("download-json-settings", "data"),
         Input("generate-json-button", "n_clicks"),
-        State("user-uuid", "data"),
         State("report-data-second-stage", "data"),
         State("report-data-third-stage", "data"),
         State("report-data-csv", "data"),
