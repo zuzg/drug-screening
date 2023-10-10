@@ -4,6 +4,7 @@ import io
 import uuid
 from datetime import datetime
 from typing import List
+import json 
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from dashboard.data.combine import (
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.pages.components import make_file_list_component
 from dashboard.report.generate_jinja_report import generate_jinja_report
+from dashboard.report.generate_json_data import generate_json_data
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_activation_inhibition_zscore,
@@ -149,6 +151,7 @@ def on_outlier_purge_stage_entry(
         "plates_count": plates_count,
         "compounds_count": compounds_count,
         "outliers_count": outliers_count,
+        "outliers_only_checklist": outliers_only_checklist
     }
 
     if show_only_with_outliers:
@@ -221,7 +224,8 @@ def on_plates_stats_stage_entry(
     report_data = {
         "control_values_fig": control_values_fig.to_html(
             full_html=False, include_plotlyjs="cdn"
-        )
+        ),
+        "z_slider_value": value
     }
 
     z_slider_data = {"z_slider_value": value}
@@ -573,6 +577,19 @@ def on_report_generate_button_click(
         ],
     ), dict(content=jinja_template, filename=filename)
 
+def on_json_generate_button_click(
+    n_clicks,
+    stored_uuid: str,
+    report_data_second_stage: dict,
+    report_data_third_stage: dict,
+    report_data_csv: dict,
+    file_storage: FileStorage,
+):
+    filename = f"program_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
+    dict_to_json = generate_json_data(report_data_second_stage, report_data_third_stage, report_data_csv)
+    json_object = json.dumps(dict_to_json, indent = 4)  
+    return dict(content=json_object, filename=filename)
+
 
 def register_callbacks(elements, file_storage):
     callback(
@@ -744,3 +761,12 @@ def register_callbacks(elements, file_storage):
         State("report-data-third-stage", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
+    callback(
+        Output("download-json-settings", "data"),
+        Input("generate-json-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("report-data-second-stage", "data"),
+        State("report-data-third-stage", "data"),
+        State("report-data-csv", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
