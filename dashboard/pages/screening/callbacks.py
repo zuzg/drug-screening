@@ -4,7 +4,7 @@ import io
 import uuid
 from datetime import datetime
 from typing import List
-import json 
+import json
 
 import numpy as np
 import pandas as pd
@@ -151,7 +151,7 @@ def on_outlier_purge_stage_entry(
         "plates_count": plates_count,
         "compounds_count": compounds_count,
         "outliers_count": outliers_count,
-        "outliers_only_checklist": outliers_only_checklist
+        "outliers_only_checklist": outliers_only_checklist,
     }
 
     if show_only_with_outliers:
@@ -225,7 +225,7 @@ def on_plates_stats_stage_entry(
         "control_values_fig": control_values_fig.to_html(
             full_html=False, include_plotlyjs="cdn"
         ),
-        "z_slider_value": value
+        "z_slider_value": value,
     }
 
     z_slider_data = {"z_slider_value": value}
@@ -576,6 +576,7 @@ def on_report_generate_button_click(
         ],
     ), dict(content=jinja_template, filename=filename)
 
+
 def on_json_generate_button_click(
     n_clicks,
     report_data_second_stage: dict,
@@ -584,8 +585,10 @@ def on_json_generate_button_click(
     file_storage: FileStorage,
 ):
     filename = f"program_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
-    dict_to_json = generate_json_data(report_data_second_stage, report_data_third_stage, report_data_csv)
-    json_object = json.dumps(dict_to_json, indent = 4)  
+    dict_to_json = generate_json_data(
+        report_data_second_stage, report_data_third_stage, report_data_csv
+    )
+    json_object = json.dumps(dict_to_json, indent=4)
     return dict(content=json_object, filename=filename)
 
 
