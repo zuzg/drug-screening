@@ -21,8 +21,8 @@ from dashboard.data.combine import (
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
 from dashboard.pages.components import make_file_list_component
-from dashboard.report.generate_jinja_report import generate_jinja_report
-from dashboard.report.generate_json_data import read_stages_stats
+from dashboard.pages.screening.report.generate_jinja_report import generate_jinja_report
+from dashboard.pages.screening.report.generate_json_data import read_stages_stats
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     plot_activation_inhibition_zscore,
@@ -762,7 +762,7 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
     callback(
-        Output("download-json-settings", "data"),
+        Output("download-json-settings-screening", "data"),
         Input("generate-json-button", "n_clicks"),
         State("report-data-second-stage", "data"),
         State("report-data-third-stage", "data"),

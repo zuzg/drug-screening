@@ -86,7 +86,9 @@ REPORT_STAGE = html.Div(
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="generate-json-button",
                                         ),
-                                        dcc.Download(id="download-json-settings"),
+                                        dcc.Download(
+                                            id="download-json-settings-screening"
+                                        ),
                                     ],
                                 ),
                             ],
