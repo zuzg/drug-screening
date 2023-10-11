@@ -1,12 +1,10 @@
-def generate_json_data(
-    second_stage: dict, third_stage: dict, fifth_stage: dict
+def read_stages_stats(
+    outliers_preview_stage: dict, statistics_stage: dict, summary_stage: dict
 ) -> dict:
-    second_stage.pop("plates_count")
-    second_stage.pop("compounds_count")
-    second_stage.pop("outliers_count")
-    third_stage.pop("control_values_fig")
     return {
-        "second_stage": second_stage,
-        "third_stage": third_stage,
-        "fifth_stage": fifth_stage,
+        "outliers_preview_stage": {
+            "outliers_only_checklist": outliers_preview_stage["outliers_only_checklist"]
+        },
+        "statistics_stage": {"z_slider_value": statistics_stage["z_slider_value"]},
+        "summary_stage": summary_stage,
     }
