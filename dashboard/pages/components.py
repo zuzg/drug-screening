@@ -19,6 +19,8 @@ EXTRA = html.Div(
         dcc.Store(id="report-data-second-stage", storage_type="local"),
         dcc.Store(id="report-data-third-stage", storage_type="local"),
         dcc.Store(id="z-slider-value", storage_type="local"),
+        dcc.Store(id="report-data-correlation-plots", storage_type="local"),
+        dcc.Store(id="report-data-hit-validation-input", storage_type="local"),
     ],
 )
 

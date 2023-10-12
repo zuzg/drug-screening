@@ -2,6 +2,8 @@ import uuid
 import functools
 import base64
 import io
+from datetime import datetime
+import json
 
 import pandas as pd
 import pyarrow as pa
@@ -128,6 +130,11 @@ def on_visualization_stage_entry(
     if current_stage != 1 or stored_uuid is None:
         return no_update, no_update
 
+    report_data_correlation_plots = {
+        "concentration_value": concentration_value,
+        "volume_value": volume_value,
+    }
+
     saved_name_1 = f"{stored_uuid}_{SUFFIX_CORR_FILE1}.pq"
     saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
 
@@ -146,7 +153,22 @@ def on_visualization_stage_entry(
     )
     concentration_fig = concentration_plot(df, "INHIBITION")
 
-    return inhibition_fig, concentration_fig
+    return inhibition_fig, concentration_fig, report_data_correlation_plots
+
+
+# === STAGE 3 ===
+
+
+def on_json_generate_button_click(
+    n_clicks,
+    correlation_plots_report,
+    file_storage: FileStorage,
+):
+    filename = (
+        f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
+    )
+    json_object = json.dumps(correlation_plots_report, indent=4)
+    return dict(content=json_object, filename=filename)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -180,8 +202,15 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
+        Output("report-data-correlation-plots", "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("concentration-slider", "value"),
         Input("volume-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+    callback(
+        Output("download-json-settings-correlation", "data"),
+        Input("generate-json-button", "n_clicks"),
+        State("report-data-correlation-plots", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))

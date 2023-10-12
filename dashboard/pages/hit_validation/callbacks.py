@@ -2,6 +2,8 @@ import base64
 import io
 import uuid
 import functools
+from datetime import datetime
+import json
 
 import pandas as pd
 import pyarrow as pa
@@ -113,8 +115,9 @@ def on_concentration_bounds_change(
     :return: icon indicating the status of the bounds
     """
     if lower_bound > upper_bound:
-        return no_update, no_update, FAIL_BOUNDS_ELEMENT
-    return lower_bound, upper_bound, ""
+        return no_update, no_update, FAIL_BOUNDS_ELEMENT, {}
+    report_data = {"lower_bound": lower_bound, "upper_bound": upper_bound}
+    return lower_bound, upper_bound, "", report_data
 
 
 # === STAGE 2 ===
@@ -192,6 +195,16 @@ def on_selected_compound_changed(
     return tuple(result.values())
 
 
+def on_json_generate_button_click(
+    n_clicks,
+    correlation_plots_report,
+    file_storage: FileStorage,
+):
+    filename = f"hit_validation_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
+    json_object = json.dumps(correlation_plots_report, indent=4)
+    return dict(content=json_object, filename=filename)
+
+
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
@@ -205,6 +218,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("concentration-lower-bound-store", "data"),
         Output("concentration-upper-bound-store", "data"),
         Output("parameters-message", "children"),
+        Output("report-data-hit-validation-input", "data"),
         Input("concentration-lower-bound-input", "value"),
         Input("concentration-upper-bound-input", "value"),
     )(on_concentration_bounds_change)
@@ -235,3 +249,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("selected-compound-store", "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_selected_compound_changed, file_storage=file_storage))
+
+    callback(
+        Output("download-json-settings-hit-validation", "data"),
+        Input("generate-json-button", "n_clicks"),
+        State("report-data-hit-validation-input", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
