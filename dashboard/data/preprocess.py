@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import pandas as pd
-import numpy as np
-
+import io
+from functools import reduce
 from typing import Protocol
+
+import numpy as np
+import pandas as pd
 
 
 class Projector(Protocol):
@@ -17,19 +19,70 @@ class Projector(Protocol):
 class MergedAssaysPreprocessor:
     def __init__(
         self,
-        raw_compounds_df: pd.DataFrame,
-        columns_for_projection: list[str],
     ):
         """
-        :param raw_compounds_df: compounds dataframe to be processed
-        :param chemical_columns: list of names of chemical colums
-        :param key_column: name of the key column, defaults to "EOS"
+        Parser for csv projection files.
         """
-        self.compounds_df = raw_compounds_df
-        self.columns_for_projection = columns_for_projection
+        self.compounds_df = None
+        self.projection_df = None
+        self.columns_for_projection = None
         self.chemical_columns = None  # TODO: incorporate chemical data
 
+    def combine_assays_for_projections(
+        self, projection_files: tuple[str, io.StringIO], id_column: str = "EOS"
+    ) -> MergedAssaysPreprocessor:
+        processed_dfs = []
+        GROUP_BY_COLUMNS = [
+            "EOS",
+            "Source Plate Barcode",
+            "Source Well",
+            "Destination Plate Barcode",
+            "Destination Well",
+            "Actual Volume",
+        ]
+
+        for filename, filecontent in projection_files:
+            df = pd.read_csv(filecontent, index_col=[0])
+            processed_df = df.groupby(GROUP_BY_COLUMNS).mean()
+            processed_df = processed_df.rename(
+                columns={
+                    "% ACTIVATION": f"% ACTIVATION {filename}",
+                    "% INHIBITION": f"%INHIBITION {filename}",
+                    "Z-SCORE": f"Z-SCORE {filename}",
+                }
+            )
+            processed_dfs.append(processed_df)
+
+        self.compounds_df = reduce(
+            lambda left, right: pd.merge(left, right, on=id_column, how="inner"),
+            processed_dfs,
+        )
+        return self
+
+    def set_compounds_df(self, compounds_df: pd.DataFrame) -> MergedAssaysPreprocessor:
+        """
+        Set the compounds dataframe
+
+        :param compounds_df: compounds dataframe
+        :return: preprocessor itself
+        """
+        self.compounds_df = compounds_df
+        return self
+
+    def set_columns_for_projection(
+        self, columns_for_projection: list[str]
+    ) -> MergedAssaysPreprocessor:
+        """
+        Set the columns for projection based on a key
+
+        :param key: key to search for in the column names
+        :return: preprocessor itself
+        """
+        self.columns_for_projection = columns_for_projection
+        return self
+
     def restrict_to_chemicals(self) -> MergedAssaysPreprocessor:
+        # TODO: incorporate chemical data
         """
         Restrict the dataframe to the chemical columns (drops all other columns)
 
