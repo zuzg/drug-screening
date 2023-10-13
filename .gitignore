@@ -13,3 +13,4 @@ data/raw/*
 *.py[cod]
 __pycache__/
 *$py.class
+.venv/
