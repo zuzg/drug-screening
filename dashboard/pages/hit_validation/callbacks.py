@@ -18,8 +18,9 @@ from dashboard.visualization.plots import plot_ic50
 # === STAGE 1 ===
 
 EXPECTED_COLUMNS = {
-    "CMPD ID",
-    # TODO: specify the expected columns
+    "EOS",
+    "CONCENTRATION",
+    "VALUE",
 }
 
 
@@ -48,6 +49,18 @@ def on_file_upload(
 
     decoded = base64.b64decode(content.split(",")[1]).decode("utf-8")
     screen_df = pd.read_csv(io.StringIO(decoded))
+    screen_df = screen_df.rename(str.upper, axis="columns")
+
+    rename_dict = {}
+    for column in screen_df.columns:
+        if column.startswith("CONCENTRATION"):
+            rename_dict[column] = "CONCENTRATION"
+        elif column.startswith("INHIBITION"):
+            rename_dict[column] = "VALUE"
+        elif column.startswith("ACTIVATION"):
+            rename_dict[column] = "VALUE"
+
+    screen_df = screen_df.rename(rename_dict, axis=1)
     column_set = set(screen_df.columns)
 
     if missing_columns := (EXPECTED_COLUMNS - column_set):
@@ -65,7 +78,7 @@ def on_file_upload(
             className="text-danger",
         )
 
-    compounds_count = len(screen_df["CMPD ID"].unique())
+    compounds_count = len(screen_df["EOS"].unique())
     saved_name = f"{stored_uuid}_screening.pq"
 
     # Placeholder for hit determination
