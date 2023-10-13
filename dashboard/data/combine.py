@@ -6,48 +6,48 @@ import pandas as pd
 from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
 
 
-# NOTE: to be removed
-def combine_assays(
-    dataframes: list[pd.DataFrame],
+def combine_assays_for_projections(
+    dfs: list[pd.DataFrame],
     names: list[str],
     id_column: str = "EOS",
-    control_prefix: str = "CTRL",
-):
+    # control_prefix: str = "CTRL",
+    # TODO: ADD CONTROLS
+) -> list[pd.DataFrame]:
     """
     Combine assays into a single dataframe.
-    Performs initial preprocessing needed for valid merge, e.g. dropping controls and setting uniform ID column.
 
-    :param dataframes: list of dataframes to merge
+    :param dfs: list of dataframes to merge
     :param names: list of names for the dataframes
-    :param id_column: name of the id column, defaults to "EOS"
-    :param control_prefix: prefix of control values index, defaults to "CTRL"
-    :raises ValueError: if more than 1/no column(s) having id_column in file
-    :return: merged dataframe (potentially with duplicates)
+    :param id_column: name of the id column, default to "EOS"
+    :return: merged dataframe
     """
-    processed_dataframes = list()
-    for df, name in zip(dataframes, names):
-        if sum(df.columns.map(lambda x: id_column.upper() in x.upper())) != 1:
-            raise ValueError(
-                f"More than 1/no column(s) having '{id_column}' in file: {name}"
-            )
-        df = df.rename(str.upper, axis="columns")
-        df = df.rename({df.filter(like=id_column).columns[0]: id_column}, axis=1)
-        df = (
-            df.drop(
-                df[
-                    df[id_column].apply(lambda x: str(x).startswith(control_prefix))
-                ].index
-            )
-            .set_index(id_column)
-            .add_prefix(name + " - ")
-            .reset_index()
+    processed_dfs = []
+    GROUP_BY_COLUMNS = [
+        "EOS",
+        "Source Plate Barcode",
+        "Source Well",
+        "Destination Plate Barcode",
+        "Destination Well",
+        "Actual Volume",
+    ]
+
+    for df, name in zip(dfs, names):
+        processed_df = df.groupby(GROUP_BY_COLUMNS).mean()
+        processed_df = processed_df.rename(
+            columns={
+                "% ACTIVATION": f"% ACTIVATION_{name}",
+                "% INHIBITION": f"%INHIBITION_{name}",
+                "Z-SCORE": f"Z-SCORE_{name}",
+            }
         )
-        processed_dataframes.append(df)
+        processed_dfs.append(processed_df)
+
     merged = reduce(
-        lambda left, right: pd.merge(left, right, on=[id_column], how="outer"),
-        processed_dataframes,
+        lambda left, right: pd.merge(left, right, on=id_column, how="inner"),
+        processed_dfs,
     )
-    return merged
+
+    return merged.reset_index()
 
 
 def values_array_to_column(

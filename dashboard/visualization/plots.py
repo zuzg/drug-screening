@@ -30,19 +30,20 @@ def plot_projection_2d(
     """
     projection_x = f"{projection.upper()}_X"
     projection_y = f"{projection.upper()}_Y"
+    feature_processed = feature.replace("_", " ").upper()
     fig = px.scatter(
         df,
         x=projection_x,
         y=projection_y,
-        text="EOS",
         color=df[feature],
         range_color=[0, df[feature].max()],
         labels={
             projection_x: "X",
             projection_y: "Y",
-            "EOS": "Compound ID",
+            "EOS": "ID",
+            feature: feature_processed,
         },
-        title=f"{projection.upper()} projection with respect to {feature}",
+        title=f"{projection.upper()} projection with respect to {feature_processed}",
         width=width,
         height=height,
         hover_data={
@@ -53,6 +54,7 @@ def plot_projection_2d(
         },
     )
 
+    fig.update_traces(marker={"size": 8})
     fig.update_yaxes(title_standoff=15, automargin=True)
     fig.update_xaxes(title_standoff=30, automargin=True)
     fig.update_layout(

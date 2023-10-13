@@ -534,6 +534,8 @@ def on_save_results_click(
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
 
+    echo_bmg_combined_df = echo_bmg_combined_df.reset_index(drop=True)
+
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
