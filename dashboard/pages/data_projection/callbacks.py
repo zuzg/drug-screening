@@ -6,7 +6,7 @@ import uuid
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, dash_table, html, no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
 from umap import UMAP
 
@@ -99,7 +99,7 @@ def on_projections_visualization_entry(
     assays_preprocessor = MergedAssaysPreprocessor()
     assays_preprocessor.set_compounds_df(merged_df)
 
-    # TODO: allow for ACT/INH selection
+    # TODO: include both ACT/INH
     projection_columns = [
         col for col in merged_df.columns if "ACTIVATION" in col.upper()
     ]
@@ -111,16 +111,65 @@ def on_projections_visualization_entry(
     saved_name = f"{stored_uuid}_assays_projection.pq"
     projections_df = assays_preprocessor.get_processed_df()
     file_storage.save_file(saved_name, projections_df.reset_index().to_parquet())
-    # table_columns = [col for col in projections_df.columns if col == "EOS" or col.endswith("X") or col.endswith("Y")]
 
-    # TEST
-    fig = plot_projection_2d(projections_df, "% ACTIVATION experiment2", "PCA")
+    #  TODO: include both ACT/INH
+    activation_columns = [col for col in projections_df.columns if "ACTIVATION" in col]
+    dropdown_options = []
+    for value in activation_columns:
+        option = {"label": value, "value": value}
+        dropdown_options.append(option)
+
+    fig = plot_projection_2d(projections_df, activation_columns[0], "UMAP")
     table = table_from_df(projections_df, "projection-table")
 
-    return fig, table
+    attribute_options = html.Div(
+        children=[
+            dcc.Dropdown(
+                id="projection-attribute-selection-box",
+                options=dropdown_options,
+                value=activation_columns[0],
+                searchable=False,
+                clearable=False,
+                disabled=False,
+            ),
+        ]
+    )
+
+    method_options = html.Div(
+        children=[
+            dcc.Dropdown(
+                id="projection-method-selection-box",
+                options=[
+                    {"label": "UMAP", "value": "UMAP"},
+                    {"label": "PCA", "value": "PCA"},
+                ],
+                value="UMAP",
+                searchable=False,
+                clearable=False,
+                disabled=False,
+            ),
+        ]
+    )
+
+    return (fig, table, attribute_options, method_options)
 
 
-# projections_df.to_dict("records"), [i for i in projections_df.columns]
+def on_dropdown_change(
+    method: str, attribute: str, stored_uuid: str, file_storage: FileStorage
+) -> go.Figure:
+    """
+    Callback for dropdown change. It loads the data from the storage and visualizes the projections.
+
+    :param method: projection method
+    :param attribute: projection attribute
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figure with projections"""
+
+    load_name = f"{stored_uuid}_assays_projection.pq"
+    projections_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(load_name)))
+    fig = plot_projection_2d(projections_df, attribute, method)
+    return fig
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -132,8 +181,18 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
     )(functools.partial(on_projection_files_upload, file_storage=file_storage))
     callback(
-        Output("projection-plot", "figure"),  # , allow_duplicate=True),
+        Output("projection-plot", "figure", allow_duplicate=True),
         Output("projection-table", "children"),
+        Output("projection-attribute-selection-box", "children"),
+        Output("projection-method-selection-box", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_projections_visualization_entry, file_storage=file_storage))
+    callback(
+        Output("projection-plot", "figure", allow_duplicate=True),
+        Input("projection-method-selection-box", "value"),
+        Input("projection-attribute-selection-box", "value"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_dropdown_change, file_storage=file_storage))
