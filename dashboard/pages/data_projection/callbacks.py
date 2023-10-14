@@ -2,6 +2,7 @@ import base64
 import functools
 import io
 import uuid
+from datetime import datetime
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -11,6 +12,8 @@ from sklearn.decomposition import PCA
 from umap import UMAP
 
 from dashboard.data.preprocess import MergedAssaysPreprocessor
+from dashboard.data.utils import eos_to_ecbd_link
+from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import plot_projection_2d, table_from_df
 
@@ -67,8 +70,7 @@ def on_projection_files_upload(
 
     return html.Div(
         children=[
-            html.I(className="fas fa-check-circle text-success me-2"),
-            html.P("Files uploaded successfully."),
+            make_file_list_component(filenames, [], 1),
         ],
     )
 
@@ -110,7 +112,9 @@ def on_projections_visualization_entry(
 
     saved_name = f"{stored_uuid}_assays_projection.pq"
     projections_df = assays_preprocessor.get_processed_df()
-    file_storage.save_file(saved_name, projections_df.reset_index().to_parquet())
+    file_storage.save_file(
+        saved_name, projections_df.reset_index(drop=True).to_parquet()
+    )
 
     #  TODO: include both ACT/INH
     activation_columns = [col for col in projections_df.columns if "ACTIVATION" in col]
@@ -120,6 +124,7 @@ def on_projections_visualization_entry(
         dropdown_options.append(option)
 
     fig = plot_projection_2d(projections_df, activation_columns[0], "UMAP")
+    projections_df = eos_to_ecbd_link(projections_df)
     table = table_from_df(projections_df, "projection-table")
 
     attribute_options = html.Div(
@@ -172,6 +177,29 @@ def on_dropdown_change(
     return fig
 
 
+def on_save_projections_click(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save projections button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+
+    filename = f"projection_data_{datetime.now().strftime('%Y-%m-%d')}.csv"
+
+    projections_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq")),
+    )
+
+    return dcc.send_data_frame(projections_df.to_csv, filename)
+
+
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
@@ -196,3 +224,9 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_dropdown_change, file_storage=file_storage))
+    callback(
+        Output("download-projections-csv", "data"),
+        Input("save-projections-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_projections_click, file_storage=file_storage))

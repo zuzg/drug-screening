@@ -1,13 +1,19 @@
-from dash import html
+from dash import dcc, html
 
 REPORT_STAGE = html.Div(
     id="report_stage",
     className="container",
     children=[
-        html.Button(
-            id="download-report-projections",
-            className="btn btn-primary me-3",
-            children="Download Results",
+        html.Div(
+            className="d-flex justify-content-between",
+            children=[
+                html.Button(
+                    "Save projection data as CSV",
+                    className="btn btn-primary btn-lg btn-block btn-report",
+                    id="save-projections-button",
+                ),
+                dcc.Download(id="download-projections-csv"),
+            ],
         ),
     ],
 )

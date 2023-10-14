@@ -178,3 +178,9 @@
     text-align : right;
     justify-content: right;
 }
+
+#projection-table td.column-0 p {
+    margin-bottom: 0;
+    text-align : right;
+    justify-content: right;
+}

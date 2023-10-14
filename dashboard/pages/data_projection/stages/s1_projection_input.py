@@ -46,10 +46,6 @@ PROJECTION_INPUT_STAGE = html.Div(
         FILE_INPUT_CONTAINER,
         html.Div(
             id="projections-file-message",
-            className="d-flex flex-row align-items-center justify-content-center",
-        ),
-        html.Div(
-            id="projection-filenames",
         ),
     ],
 )
