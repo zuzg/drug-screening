@@ -16,11 +16,9 @@ REPORT_STAGE = html.Div(
                                 html.Button(
                                     "Download Report",
                                     className="btn btn-primary btn-lg btn-block btn-report",
-                                    id="download-report-hit-validation",
+                                    id="download-report-hit-validation-button",
                                 ),
-                                dcc.Download(
-                                    id="download-json-settings-hit-validation"
-                                ),
+                                dcc.Download(id="download-report-hit-validation"),
                             ],
                         ),
                     ],
@@ -39,11 +37,9 @@ REPORT_STAGE = html.Div(
                                 html.Button(
                                     "Download Summary CSV",
                                     className="btn btn-primary btn-lg btn-block btn-report",
-                                    id="download-csv-summary-hit-validation",
+                                    id="download-csv-summary-hit-validation-button",
                                 ),
-                                dcc.Download(
-                                    id="download-json-settings-hit-validation"
-                                ),
+                                dcc.Download(id="download-csv-summary-hit-validation"),
                             ],
                         ),
                     ],

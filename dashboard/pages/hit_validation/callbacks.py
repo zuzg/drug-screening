@@ -8,7 +8,17 @@ import pyarrow as pa
 
 from datetime import datetime
 
-from dash import Input, Output, State, callback, html, no_update, ALL, callback_context
+from dash import (
+    Input,
+    Output,
+    State,
+    callback,
+    html,
+    no_update,
+    ALL,
+    callback_context,
+    dcc,
+)
 
 from dashboard.storage import FileStorage
 from dashboard.data.determination import perform_hit_determination
@@ -264,6 +274,9 @@ def on_selected_compound_changed(
     return tuple(result.values())
 
 
+# === STAGE 3 ===
+
+
 def on_json_generate_button_click(
     n_clicks,
     correlation_plots_report,
@@ -272,6 +285,28 @@ def on_json_generate_button_click(
     filename = f"hit_validation_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     json_object = json.dumps(correlation_plots_report, indent=4)
     return dict(content=json_object, filename=filename)
+
+
+def on_download_summary_csv_button_click(
+    n_clicks,
+    stored_uuid: str,
+    file_storage: FileStorage,
+):
+    """
+    Callback for download summary csv button click. It loads the data from the storage
+    and returns the data for the compound.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: hit determination data in csv format
+    """
+    filename = f"hit_validation_summary_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    hit_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(HIT_FILENAME.format(stored_uuid)))
+    )
+
+    return dcc.send_data_frame(hit_df.to_csv, filename)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -325,3 +360,14 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("report-data-hit-validation-input", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
+
+    callback(
+        Output("download-csv-summary-hit-validation", "data"),
+        Input("download-csv-summary-hit-validation-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_download_summary_csv_button_click, file_storage=file_storage
+        )
+    )
