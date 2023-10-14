@@ -12,7 +12,7 @@ register_page(path="/data-projection", name=NAME, module=__name__)
 pb = ProcessPageBuilder(name=NAME)
 STAGE_NAMES = [
     "Files Input",
-    "Projections Visualization",
+    "Visualization",
     "Save Results",
 ]
 

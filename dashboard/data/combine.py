@@ -6,50 +6,6 @@ import pandas as pd
 from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
 
 
-def combine_assays_for_projections(
-    dfs: list[pd.DataFrame],
-    names: list[str],
-    id_column: str = "EOS",
-    # control_prefix: str = "CTRL",
-    # TODO: ADD CONTROLS
-) -> list[pd.DataFrame]:
-    """
-    Combine assays into a single dataframe.
-
-    :param dfs: list of dataframes to merge
-    :param names: list of names for the dataframes
-    :param id_column: name of the id column, default to "EOS"
-    :return: merged dataframe
-    """
-    processed_dfs = []
-    GROUP_BY_COLUMNS = [
-        "EOS",
-        "Source Plate Barcode",
-        "Source Well",
-        "Destination Plate Barcode",
-        "Destination Well",
-        "Actual Volume",
-    ]
-
-    for df, name in zip(dfs, names):
-        processed_df = df.groupby(GROUP_BY_COLUMNS).mean()
-        processed_df = processed_df.rename(
-            columns={
-                "% ACTIVATION": f"% ACTIVATION_{name}",
-                "% INHIBITION": f"%INHIBITION_{name}",
-                "Z-SCORE": f"Z-SCORE_{name}",
-            }
-        )
-        processed_dfs.append(processed_df)
-
-    merged = reduce(
-        lambda left, right: pd.merge(left, right, on=id_column, how="inner"),
-        processed_dfs,
-    )
-
-    return merged.reset_index()
-
-
 def values_array_to_column(
     values: np.ndarray, outliers: np.ndarray, column: str
 ) -> pd.DataFrame:

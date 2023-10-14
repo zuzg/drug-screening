@@ -32,8 +32,7 @@ class MergedAssaysPreprocessor:
         self, projection_files: tuple[str, io.StringIO], id_column: str = "EOS"
     ) -> MergedAssaysPreprocessor:
         processed_dfs = []
-        GROUP_BY_COLUMNS = [
-            "EOS",
+        COLUMNS_TO_DROP = [
             "Source Plate Barcode",
             "Source Well",
             "Destination Plate Barcode",
@@ -42,8 +41,8 @@ class MergedAssaysPreprocessor:
         ]
 
         for filename, filecontent in projection_files:
-            df = pd.read_csv(filecontent, index_col=[0])
-            processed_df = df.groupby(GROUP_BY_COLUMNS).mean()
+            df = pd.read_csv(filecontent, index_col=[0]).drop(columns=COLUMNS_TO_DROP)
+            processed_df = df.groupby(id_column).mean()
             processed_df = processed_df.rename(
                 columns={
                     "% ACTIVATION": f"% ACTIVATION {filename}",
