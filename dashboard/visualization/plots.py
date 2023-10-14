@@ -6,7 +6,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from dashboard.data.combine import split_compounds_controls
+from dashboard.data.determination import four_param_logistic
 
 PLOTLY_TEMPLATE = "plotly_white"
 
@@ -530,7 +530,53 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
     return fig
 
 
-def plot_ic50(entry: dict) -> go.Figure:
+def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
+    data = [
+        go.Scatter(
+            x=x,
+            y=y,
+            mode="markers",
+            marker=dict(color="blue", size=6),
+            name="Data points",
+        )
+    ]
+    if not pd.isnull(entry["slope"]):
+        # use logspace to get more points for fitting
+        fit_x = np.logspace(np.log10(x.min()), np.log10(x.max()), 100)
+        fit_y = four_param_logistic(
+            fit_x,
+            entry["lower_limit"],
+            entry["upper_limit"],
+            entry["ic50"],
+            entry["slope"],
+        )
+        data.append(
+            go.Scatter(
+                x=fit_x,
+                y=fit_y,
+                mode="lines",
+                marker=dict(color="red", size=10),
+                name="Fitted curve",
+            )
+        )
+        data.append(
+            go.Scatter(
+                x=[entry["ic50"]],
+                y=[
+                    four_param_logistic(
+                        entry["ic50"],
+                        entry["lower_limit"],
+                        entry["upper_limit"],
+                        entry["ic50"],
+                        entry["slope"],
+                    )
+                ],
+                mode="markers",
+                marker=dict(color="red", size=10, symbol="diamond"),
+                name="IC50",
+            )
+        )
+
     return go.Figure(
         layout_title_text="IC50",
         layout={
@@ -538,19 +584,13 @@ def plot_ic50(entry: dict) -> go.Figure:
                 "title": "Concentration [uM]",
                 "visible": True,
                 "showticklabels": True,
+                "type": "log",
             },
             "yaxis": {
-                "title": "% INHIBITION",
+                "title": "% Modulation",
                 "visible": True,
                 "showticklabels": True,
             },
         },
-        data=[
-            go.Scatter(
-                x=(0, 5, 7, 8, 10),
-                y=(23, 34, 36, 67, 50),
-                mode="lines+markers",
-                marker=dict(color="blue", size=10),
-            )
-        ],
+        data=data,
     )
