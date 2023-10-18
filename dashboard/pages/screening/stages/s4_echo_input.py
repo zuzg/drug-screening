@@ -2,7 +2,7 @@ from dash import html, dcc
 
 ECHO_DESC = """
 ECHO files in ".csv" format should have [DETAILS] and (if there are exceptions in the file) [EXCEPTIONS] tags
-in the file. A file without any tags will be treated as containing only exceptions.
+in the file. A file without any tags will be treated as containing only successfully processed compounds.
 Each row containing information about a compound should contain, among other things,
 the barcode and position on the plate so that it is possible to link ECHO files with BMG files.
 """

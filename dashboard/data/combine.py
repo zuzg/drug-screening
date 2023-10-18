@@ -137,14 +137,11 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
     :param df: dataframe with compounds and controls
     :return: tuple of dataframes with compounds, positive controls and negative controls
     """
-    columns_to_drop = ["EOS", "Source Plate Barcode", "Source Well", "Actual Volume"]
     mask = df["Destination Well"].str[-2:]
-    control_pos_df = df[mask == "24"]
-    control_pos_df = control_pos_df.drop(
-        columns=columns_to_drop, errors="ignore"
-    )  # no error raised if the specified column does not exist
-    control_neg_df = df[mask == "23"]
-    control_neg_df = control_neg_df.drop(columns=columns_to_drop, errors="ignore")
+    control_pos_df = df[mask == "24"].copy()
+    control_pos_df["EOS"] = "CONTROL_POS"
+    control_neg_df = df[mask == "23"].copy()
+    control_neg_df["EOS"] = "CONTROL_NEG"
     compounds_df = df[~mask.isin(["23", "24"])]
     return compounds_df, control_pos_df, control_neg_df
 
