@@ -177,6 +177,31 @@ def on_dropdown_change(
     return fig
 
 
+def on_plot_selected_data(
+    relayout_data: dict,
+    stored_uuid: str,
+    projection_type: str,
+    file_storage: FileStorage,
+) -> None:
+    if not relayout_data:
+        return no_update
+
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq")),
+    )
+
+    if "xaxis.range[0]" in relayout_data:
+        x_min = relayout_data["xaxis.range[0]"]
+        x_max = relayout_data["xaxis.range[1]"]
+        df = df[df[f"{projection_type}_X"].between(x_min, x_max)]
+    if "yaxis.range[0]" in relayout_data:
+        y_min = relayout_data["yaxis.range[0]"]
+        y_max = relayout_data["yaxis.range[1]"]
+        df = df[df[f"{projection_type}_Y"].between(y_min, y_max)]
+
+    return eos_to_ecbd_link(df).to_dict("records")
+
+
 def on_save_projections_click(
     n_clicks: int,
     stored_uuid: str,
@@ -230,3 +255,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_projections_click, file_storage=file_storage))
+    callback(
+        Output("projection-table", "data"),
+        Input("projection-plot", "relayoutData"),
+        State("user-uuid", "data"),
+        State("projection-method-selection-box", "value"),
+        prevent_initial_call=True,
+    )(functools.partial(on_plot_selected_data, file_storage=file_storage))

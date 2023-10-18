@@ -1,6 +1,5 @@
 import pandas as pd
-from dash import dash_table, dcc, html
-from dash.dash_table.Format import Format, Scheme
+from dash import dcc, html
 
 PROJECTION_DISPLAY_STAGE = html.Div(
     [
@@ -58,15 +57,23 @@ PROJECTION_DISPLAY_STAGE = html.Div(
             children=[
                 html.Div(
                     children=[
-                        html.Div(
-                            id="projection-table",
+                        dcc.Loading(
+                            id="loading-projection-table",
+                            children=[html.Div(id="projection-table", children=[])],
+                            type="circle",
                         ),
                     ],
                     className="col-md-6",
                 ),
                 html.Div(
-                    [
-                        dcc.Graph(id="projection-plot", figure={}),
+                    children=[
+                        dcc.Loading(
+                            id="loading-projection-table",
+                            children=[
+                                dcc.Graph(id="projection-plot", figure={}),
+                            ],
+                            type="circle",
+                        ),
                     ],
                     className="col-md-6",
                 ),
