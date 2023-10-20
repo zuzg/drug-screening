@@ -35,7 +35,7 @@ def on_file_upload(
     concentration_lower_bound: float,
     concentration_upper_bound: float,
     file_storage: FileStorage,
-) -> html.Div:
+) -> tuple[html.Div, str]:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
@@ -48,7 +48,7 @@ def on_file_upload(
     :return: icon indicating the status of the upload
     """
     if content is None:
-        return no_update
+        return no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -80,17 +80,20 @@ def on_file_upload(
 
     if missing:
         missing_message = ", ".join(sorted(missing))
-        return html.Div(
-            children=[
-                html.I(className="fas fa-times-circle text-danger me-2"),
-                html.Span(
-                    children=[
-                        f"File does not contain the following: ",
-                        html.Span(missing_message, className="fw-bold"),
-                    ]
-                ),
-            ],
-            className="text-danger",
+        return (
+            html.Div(
+                children=[
+                    html.I(className="fas fa-times-circle text-danger me-2"),
+                    html.Span(
+                        children=[
+                            f"File does not contain the following: ",
+                            html.Span(missing_message, className="fw-bold"),
+                        ]
+                    ),
+                ],
+                className="text-danger",
+            ),
+            stored_uuid,
         )
 
     # screening df needs to be safed for plots
@@ -108,7 +111,7 @@ def on_file_upload(
 
     file_storage.save_file(saved_name, hit_determination_df.to_parquet())
 
-    return html.Div(
+    result_msg = html.Div(
         children=[
             html.Div(
                 children=[
@@ -139,6 +142,7 @@ def on_file_upload(
             ),
         ],
     )
+    return result_msg, stored_uuid
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -225,6 +229,10 @@ activity_icons = {
 
 def on_selected_compound_changed(
     selected_compound: str,
+    unstack_n_clicks: int,
+    apply_n_clicks: int,
+    top_override: float | None,
+    bottom_override: float | None,
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> html.Div:
@@ -233,10 +241,15 @@ def on_selected_compound_changed(
     returns the data for the compound.
 
     :param selected_compound: selected compound
+    :param unstack_n_clicks: number of clicks on the unstack button
+    :param apply_n_clicks: number of clicks on the apply button
+    :param top_override: top override
+    :param bottom_override: bottom override
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: data for the compound
     """
+    # if unstack clicked, reset overrides
     hit_load_name = HIT_FILENAME.format(stored_uuid)
     hit_determination_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(hit_load_name))
@@ -253,7 +266,24 @@ def on_selected_compound_changed(
         .iloc[0]
         .to_dict()
     )
-    # TODO: replace with real data
+    index = hit_determination_df.index[
+        hit_determination_df["EOS"] == selected_compound
+    ][0]
+    trigger = callback_context.triggered[0]["prop_id"]
+    unstack_clicked = trigger == "hit-browser-unstack-button.n_clicks"
+    apply_clicked = trigger == "hit-browser-apply-button.n_clicks"
+    if unstack_clicked:
+        top_override = entry["upper_limit"]
+        bottom_override = entry["lower_limit"]
+    if unstack_clicked or apply_clicked:
+        hit_determination_df.loc[index, "TOP"] = top_override
+        hit_determination_df.loc[index, "BOTTOM"] = bottom_override
+        entry["TOP"] = top_override
+        entry["BOTTOM"] = bottom_override
+
+    if unstack_clicked or apply_clicked:
+        file_storage.save_file(hit_load_name, hit_determination_df.to_parquet())
+
     graph = plot_ic50(entry, concentrations, values)
 
     result = {
@@ -270,6 +300,8 @@ def on_selected_compound_changed(
             ]
         ),
         "graph": graph,
+        "top": round(entry["TOP"], 5),
+        "bottom": round(entry["BOTTOM"], 5),
     }
     return tuple(result.values())
 
@@ -312,10 +344,12 @@ def on_download_summary_csv_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
+        Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
         State("concentration-upper-bound-store", "data"),
+        prevent_initial_call="initial_duplicate",
     )(functools.partial(on_file_upload, file_storage=file_storage))
 
     callback(
@@ -350,7 +384,13 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("r2-value", "children"),
         Output("is-active-value", "children"),
         Output("hit-browser-plot", "figure"),
+        Output("hit-browser-top", "value"),
+        Output("hit-browser-bottom", "value"),
         Input("selected-compound-store", "data"),
+        Input("hit-browser-unstack-button", "n_clicks"),
+        Input("hit-browser-apply-button", "n_clicks"),
+        State("hit-browser-top", "value"),
+        State("hit-browser-bottom", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_selected_compound_changed, file_storage=file_storage))
 
