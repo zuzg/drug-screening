@@ -300,8 +300,8 @@ def on_selected_compound_changed(
             ]
         ),
         "graph": graph,
-        "top": entry["TOP"],
-        "bottom": entry["BOTTOM"],
+        "top": round(entry["TOP"], 5),
+        "bottom": round(entry["BOTTOM"], 5),
     }
     return tuple(result.values())
 
