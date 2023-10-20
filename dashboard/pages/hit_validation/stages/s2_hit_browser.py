@@ -71,25 +71,78 @@ RIGHT_PANEL = html.Div(
                 html.Div(
                     className="d-flex flex-column h-100 flex-grow-1",
                     children=[
-                        html.Div(
+                        html.Section(
+                            children=[
+                                html.Div(
+                                    children=[
+                                        html.Span(
+                                            param["label"] + ":",
+                                            className="fw-bold fixed-width-150",
+                                        ),
+                                        html.Span(
+                                            children=[
+                                                html.Span("-", id=param["id"]),
+                                                html.Span(
+                                                    param["units"],
+                                                    style={"width": "2rem"},
+                                                ),
+                                            ],
+                                            className="d-flex flex-row gap-2",
+                                        ),
+                                    ],
+                                    className="d-flex flex-row w-100 gap-4 justify-content-between border-bottom border-1",
+                                )
+                                for param in PARAMS_DISPLAY_SPEC
+                            ]
+                        ),
+                        html.Section(
+                            className="mt-5 d-flex flex-column gap-3",
                             children=[
                                 html.Span(
-                                    param["label"] + ":",
-                                    className="fw-bold fixed-width-150",
+                                    children=[
+                                        html.Label(
+                                            "TOP Override:",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="hit-browser-top",
+                                            type="number",
+                                            placeholder="Top",
+                                            className="form-control",
+                                        ),
+                                    ],
                                 ),
                                 html.Span(
                                     children=[
-                                        html.Span("-", id=param["id"]),
-                                        html.Span(
-                                            param["units"], style={"width": "2rem"}
+                                        html.Label(
+                                            "BOTTOM Override:",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="hit-browser-bottom",
+                                            type="number",
+                                            placeholder="Bottom",
+                                            className="form-control",
                                         ),
                                     ],
-                                    className="d-flex flex-row gap-2",
+                                ),
+                                html.Span(
+                                    className="d-flex flex-row gap-3 w-100",
+                                    children=[
+                                        html.Button(
+                                            id="hit-browser-apply-button",
+                                            className="btn btn-primary flex-grow-1",
+                                            children="Apply Stacking",
+                                        ),
+                                        html.Button(
+                                            id="hit-browser-unstack-button",
+                                            className="btn btn-primary flex-grow-1",
+                                            children="Unstack",
+                                        ),
+                                    ],
                                 ),
                             ],
-                            className="d-flex flex-row w-100 gap-4 justify-content-between border-bottom border-1",
-                        )
-                        for param in PARAMS_DISPLAY_SPEC
+                        ),
                     ],
                 ),
             ],
