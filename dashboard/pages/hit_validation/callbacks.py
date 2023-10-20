@@ -286,11 +286,22 @@ def on_selected_compound_changed(
 
 def on_json_generate_button_click(
     n_clicks,
-    correlation_plots_report,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
     file_storage: FileStorage,
 ):
     filename = f"hit_validation_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
-    json_object = json.dumps(correlation_plots_report, indent=4)
+    json_object = json.dumps(
+        {
+            "concentration_lower_bound": concentration_lower_bound,
+            "concentration_upper_bound": concentration_upper_bound,
+            "top_lower_bound": top_lower_bound,
+            "top_upper_bound": top_upper_bound,
+        },
+        indent=4,
+    )
     return dict(content=json_object, filename=filename)
 
 
@@ -372,7 +383,10 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("download-json-settings-hit-validation", "data"),
         Input("generate-json-button", "n_clicks"),
-        State("report-data-hit-validation-input", "data"),
+        State("concentration-lower-bound-store", "data"),
+        State("concentration-upper-bound-store", "data"),
+        State("top-lower-bound-store", "data"),
+        State("top-upper-bound-store", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
 
