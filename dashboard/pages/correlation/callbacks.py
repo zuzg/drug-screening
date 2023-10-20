@@ -9,6 +9,7 @@ import pandas as pd
 import pyarrow as pa
 
 from plotly import graph_objects as go
+from plotly import express as px
 from dash import Input, Output, State, callback, html, no_update
 
 from dashboard.data import validation
@@ -138,13 +139,9 @@ def on_visualization_stage_entry(
     saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
 
     df_primary = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name_1)))
-    df_primary = df_primary[~df_primary["EOS"].str.startswith("CONTROL")]
-
     df_secondary = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(saved_name_2))
     )
-    df_secondary = df_secondary[~df_secondary["EOS"].str.startswith("CONTROL")]
-
     df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
     df = calculate_concentration(df_merged, concentration_value, volume_value)
 

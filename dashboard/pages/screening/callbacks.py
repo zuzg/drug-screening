@@ -331,9 +331,6 @@ def on_summary_entry(
         f"{stored_uuid}_echo_bmg_combined_df.pq", compounds_df.to_parquet()
     )
 
-    controls_df = pd.concat([control_pos_df, control_neg_df])
-    file_storage.save_file(f"{stored_uuid}_controls_df.pq", controls_df.to_parquet())
-
     cmpd_plate_stats_df = aggregate_well_plate_stats(compounds_df, assign_x_coords=True)
     pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df)
     neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df)
@@ -467,12 +464,13 @@ def on_apply_button_click(
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
 
-    compounds_df = pd.read_parquet(
+    echo_bmg_combined_df = pd.read_parquet(
         pa.BufferReader(
             file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
         )
     )
 
+    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined_df)
     cmpd_stats_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
     )
@@ -514,40 +512,31 @@ def on_save_results_click(
 
     filename = f"screening_results_{datetime.now().strftime('%Y-%m-%d')}.csv"
 
-    compounds_df = pd.read_parquet(
+    echo_bmg_combined_df = pd.read_parquet(
         pa.BufferReader(
             file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
         ),
     )
 
     if report_data_csv["key"] == "z_score":
-        mask = (compounds_df["Z-SCORE"] <= report_data_csv["key_min"]) | (
-            compounds_df["Z-SCORE"] >= report_data_csv["key_max"]
+        mask = (echo_bmg_combined_df["Z-SCORE"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["Z-SCORE"] >= report_data_csv["key_max"]
         )
-        compounds_df = compounds_df[mask]
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
     elif report_data_csv["key"] == "activation":
-        mask = (compounds_df["% ACTIVATION"] <= report_data_csv["key_min"]) | (
-            compounds_df["% ACTIVATION"] >= report_data_csv["key_max"]
+        mask = (echo_bmg_combined_df["% ACTIVATION"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["% ACTIVATION"] >= report_data_csv["key_max"]
         )
-        compounds_df = compounds_df[mask]
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
     elif report_data_csv["key"] == "inhibition":
-        mask = (compounds_df["% INHIBITION"] <= report_data_csv["key_min"]) | (
-            compounds_df["% INHIBITION"] >= report_data_csv["key_max"]
+        mask = (echo_bmg_combined_df["% INHIBITION"] <= report_data_csv["key_min"]) | (
+            echo_bmg_combined_df["% INHIBITION"] >= report_data_csv["key_max"]
         )
-        compounds_df = compounds_df[mask]
+        echo_bmg_combined_df = echo_bmg_combined_df[mask]
 
-    save_controls = False  # TODO: clarify with the user
+    echo_bmg_combined_df = echo_bmg_combined_df.reset_index(drop=True)
 
-    if save_controls:
-        controls_df = pd.read_parquet(
-            pa.BufferReader(file_storage.read_file(f"{stored_uuid}_controls_df.pq"))
-        )
-        compounds_controls_df = pd.concat([compounds_df, controls_df])
-        compounds_controls_df = compounds_controls_df.reset_index(drop=True)
-        return dcc.send_data_frame(compounds_controls_df.to_csv, filename)
-    else:
-        compounds_df = compounds_df.reset_index(drop=True)
-        return dcc.send_data_frame(compounds_df.to_csv, filename)
+    return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
 def on_save_exceptions_click(
