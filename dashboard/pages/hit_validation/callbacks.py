@@ -154,21 +154,20 @@ FAIL_BOUNDS_ELEMENT = html.Div(
 )
 
 
-def on_concentration_bounds_change(
+def on_bounds_change(
     lower_bound: float, upper_bound: float
 ) -> tuple[float, float, html.Div]:
     """
-    Callback for concentration bounds change. It checks if the lower bound is greater
+    Callback for bounds change. It checks if the lower bound is greater
     than the upper bound.
 
     :param lower_bound: lower bound
     :param upper_bound: upper bound
     :return: icon indicating the status of the bounds
     """
-    if lower_bound > upper_bound:
-        return no_update, no_update, FAIL_BOUNDS_ELEMENT, {}
-    report_data = {"lower_bound": lower_bound, "upper_bound": upper_bound}
-    return lower_bound, upper_bound, "", report_data
+    if lower_bound is None or upper_bound is None or lower_bound > upper_bound:
+        return no_update, no_update, FAIL_BOUNDS_ELEMENT
+    return lower_bound, upper_bound, ""
 
 
 # === STAGE 2 ===
@@ -321,11 +320,17 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("concentration-lower-bound-store", "data"),
         Output("concentration-upper-bound-store", "data"),
-        Output("parameters-message", "children"),
-        Output("report-data-hit-validation-input", "data"),
+        Output("concentration-parameters-message", "children"),
         Input("concentration-lower-bound-input", "value"),
         Input("concentration-upper-bound-input", "value"),
-    )(on_concentration_bounds_change)
+    )(on_bounds_change)
+    callback(
+        Output("top-lower-bound-store", "data"),
+        Output("top-upper-bound-store", "data"),
+        Output("top-parameters-message", "children"),
+        Input("top-lower-bound-input", "value"),
+        Input("top-upper-bound-input", "value"),
+    )(on_bounds_change)
 
     callback(
         Output("compounds-list-container", "children"),
