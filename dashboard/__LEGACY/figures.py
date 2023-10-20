@@ -1,10 +1,9 @@
 import pandas as pd
 import plotly.express as px
-
 from dash import dcc
 
-from dashboard.visualization.plots import plot_projection_2d
 from dashboard.visualization.overlay import projection_plot_overlay_controls
+from dashboard.visualization.plots import plot_projection_2d
 
 
 def make_scatterplot(
@@ -70,4 +69,7 @@ def make_projection_plot(
             default_style,
             projection=projection_type,
         )
-    return figure
+    return dcc.Graph(
+        figure=figure,
+        id="projection-plot",
+    )
