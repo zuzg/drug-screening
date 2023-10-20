@@ -38,7 +38,7 @@ SUFFIX_CORR_FILE2 = "corr_file2"
 
 def on_file_upload(
     content: str | None, stored_uuid: str, file_storage: FileStorage, store_suffix: str
-):
+) -> tuple[html.I, str]:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
@@ -50,7 +50,8 @@ def on_file_upload(
     :return: icon indicating the status of the upload
     """
     if content is None:
-        return no_update
+        return no_update, no_update
+
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -59,13 +60,13 @@ def on_file_upload(
         corr_df = pd.read_csv(io.StringIO(decoded))
         validation.validate_correlation_dataframe(corr_df)
     except Exception as e:
-        return ICON_ERROR
+        return ICON_ERROR, stored_uuid
 
     saved_name = f"{stored_uuid}_{store_suffix}.pq"
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK
+    return ICON_OK, stored_uuid
 
 
 def on_both_files_uploaded(
@@ -174,8 +175,10 @@ def on_json_generate_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
         State("user-uuid", "data"),
+        prevent_initial_call=True,
     )(
         functools.partial(
             on_file_upload, file_storage=file_storage, store_suffix=SUFFIX_CORR_FILE1
@@ -184,8 +187,10 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),
+        prevent_initial_call=True,
     )(
         functools.partial(
             on_file_upload, file_storage=file_storage, store_suffix=SUFFIX_CORR_FILE2

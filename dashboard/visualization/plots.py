@@ -545,8 +545,8 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         fit_x = np.logspace(np.log10(x.min()), np.log10(x.max()), 100)
         fit_y = four_param_logistic(
             fit_x,
-            entry["lower_limit"],
-            entry["upper_limit"],
+            entry["BOTTOM"],
+            entry["TOP"],
             entry["ic50"],
             entry["slope"],
         )
@@ -565,8 +565,8 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
                 y=[
                     four_param_logistic(
                         entry["ic50"],
-                        entry["lower_limit"],
-                        entry["upper_limit"],
+                        entry["BOTTOM"],
+                        entry["TOP"],
                         entry["ic50"],
                         entry["slope"],
                     )
