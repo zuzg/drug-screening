@@ -34,6 +34,8 @@ def on_file_upload(
     stored_uuid: str,
     concentration_lower_bound: float,
     concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
     file_storage: FileStorage,
 ) -> html.Div:
     """
@@ -44,6 +46,8 @@ def on_file_upload(
     :param stored_uuid: session uuid
     :param concentration_lower_bound: concentration lower bound
     :param concentration_upper_bound: concentration upper bound
+    :param top_lower_bound: top lower bound
+    :param top_upper_bound: top upper bound
     :param file_storage: file storage
     :return: icon indicating the status of the upload
     """
@@ -102,7 +106,11 @@ def on_file_upload(
 
     # Placeholder for hit determination
     hit_determination_df = perform_hit_determination(
-        screen_df, concentration_lower_bound, concentration_upper_bound
+        screen_df,
+        concentration_lower_bound,
+        concentration_upper_bound,
+        top_lower_bound,
+        top_upper_bound,
     )
     unfit = hit_determination_df.EOS[hit_determination_df.ic50.isna()].tolist()
 
@@ -315,6 +323,8 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
         State("concentration-upper-bound-store", "data"),
+        State("top-lower-bound-store", "data"),
+        State("top-upper-bound-store", "data"),
     )(functools.partial(on_file_upload, file_storage=file_storage))
 
     callback(

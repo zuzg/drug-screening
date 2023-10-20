@@ -101,6 +101,12 @@ FILE_INPUT_CONTAINER = html.Div(
                 html.Div(
                     children=[
                         html.P(SCREENING_DESC, className="text-justify"),
+                        html.P(
+                            children=[
+                                html.Span("Note: ", className="fw-bold"),
+                                "after changing the parameters, the file needs to be re-uploaded.",
+                            ]
+                        ),
                     ],
                 ),
                 html.Div(
