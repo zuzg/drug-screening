@@ -35,7 +35,7 @@ def on_file_upload(
     concentration_lower_bound: float,
     concentration_upper_bound: float,
     file_storage: FileStorage,
-) -> html.Div:
+) -> tuple[html.Div, str]:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
@@ -48,7 +48,7 @@ def on_file_upload(
     :return: icon indicating the status of the upload
     """
     if content is None:
-        return no_update
+        return no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -80,17 +80,20 @@ def on_file_upload(
 
     if missing:
         missing_message = ", ".join(sorted(missing))
-        return html.Div(
-            children=[
-                html.I(className="fas fa-times-circle text-danger me-2"),
-                html.Span(
-                    children=[
-                        f"File does not contain the following: ",
-                        html.Span(missing_message, className="fw-bold"),
-                    ]
-                ),
-            ],
-            className="text-danger",
+        return (
+            html.Div(
+                children=[
+                    html.I(className="fas fa-times-circle text-danger me-2"),
+                    html.Span(
+                        children=[
+                            f"File does not contain the following: ",
+                            html.Span(missing_message, className="fw-bold"),
+                        ]
+                    ),
+                ],
+                className="text-danger",
+            ),
+            stored_uuid,
         )
 
     # screening df needs to be safed for plots
@@ -108,7 +111,7 @@ def on_file_upload(
 
     file_storage.save_file(saved_name, hit_determination_df.to_parquet())
 
-    return html.Div(
+    result_msg = html.Div(
         children=[
             html.Div(
                 children=[
@@ -139,6 +142,7 @@ def on_file_upload(
             ),
         ],
     )
+    return result_msg, stored_uuid
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -312,10 +316,12 @@ def on_download_summary_csv_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
+        Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
         State("concentration-upper-bound-store", "data"),
+        prevent_initial_call="initial_duplicate",
     )(functools.partial(on_file_upload, file_storage=file_storage))
 
     callback(
