@@ -147,5 +147,6 @@ def perform_hit_determination(
     activation_df = aggregated_df.merge(
         curve_fit_df, how="inner", left_on="EOS", right_on="EOS"
     ).rename(columns=rename_dict)
-
+    activation_df["TOP"] = activation_df["upper_limit"]
+    activation_df["BOTTOM"] = activation_df["lower_limit"]
     return process_activation_df(activation_df)

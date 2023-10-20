@@ -229,6 +229,10 @@ activity_icons = {
 
 def on_selected_compound_changed(
     selected_compound: str,
+    unstack_n_clicks: int,
+    apply_n_clicks: int,
+    top_override: float | None,
+    bottom_override: float | None,
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> html.Div:
@@ -237,10 +241,15 @@ def on_selected_compound_changed(
     returns the data for the compound.
 
     :param selected_compound: selected compound
+    :param unstack_n_clicks: number of clicks on the unstack button
+    :param apply_n_clicks: number of clicks on the apply button
+    :param top_override: top override
+    :param bottom_override: bottom override
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: data for the compound
     """
+    # if unstack clicked, reset overrides
     hit_load_name = HIT_FILENAME.format(stored_uuid)
     hit_determination_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(hit_load_name))
@@ -257,7 +266,24 @@ def on_selected_compound_changed(
         .iloc[0]
         .to_dict()
     )
-    # TODO: replace with real data
+    index = hit_determination_df.index[
+        hit_determination_df["EOS"] == selected_compound
+    ][0]
+    trigger = callback_context.triggered[0]["prop_id"]
+    unstack_clicked = trigger == "hit-browser-unstack-button.n_clicks"
+    apply_clicked = trigger == "hit-browser-apply-button.n_clicks"
+    if unstack_clicked:
+        top_override = entry["upper_limit"]
+        bottom_override = entry["lower_limit"]
+    if unstack_clicked or apply_clicked:
+        hit_determination_df.loc[index, "TOP"] = top_override
+        hit_determination_df.loc[index, "BOTTOM"] = bottom_override
+        entry["TOP"] = top_override
+        entry["BOTTOM"] = bottom_override
+
+    if unstack_clicked or apply_clicked:
+        file_storage.save_file(hit_load_name, hit_determination_df.to_parquet())
+
     graph = plot_ic50(entry, concentrations, values)
 
     result = {
@@ -274,6 +300,8 @@ def on_selected_compound_changed(
             ]
         ),
         "graph": graph,
+        "top": entry["TOP"],
+        "bottom": entry["BOTTOM"],
     }
     return tuple(result.values())
 
@@ -356,7 +384,13 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("r2-value", "children"),
         Output("is-active-value", "children"),
         Output("hit-browser-plot", "figure"),
+        Output("hit-browser-top", "value"),
+        Output("hit-browser-bottom", "value"),
         Input("selected-compound-store", "data"),
+        Input("hit-browser-unstack-button", "n_clicks"),
+        Input("hit-browser-apply-button", "n_clicks"),
+        State("hit-browser-top", "value"),
+        State("hit-browser-bottom", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_selected_compound_changed, file_storage=file_storage))
 
