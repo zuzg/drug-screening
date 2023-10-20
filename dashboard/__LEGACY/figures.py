@@ -70,7 +70,4 @@ def make_projection_plot(
             default_style,
             projection=projection_type,
         )
-    return dcc.Graph(
-        figure=figure,
-        id="projection-plot",
-    )
+    return figure

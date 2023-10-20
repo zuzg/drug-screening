@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 from functools import reduce
-from typing import Protocol
+from typing import Protocol, Callable, Any
 
 import numpy as np
 import pandas as pd
@@ -24,9 +24,8 @@ class MergedAssaysPreprocessor:
         Parser for csv projection files.
         """
         self.compounds_df = None
-        self.projection_df = None
+        self.controls_df = None
         self.columns_for_projection = None
-        self.chemical_columns = None  # TODO: incorporate chemical data
 
     def combine_assays_for_projections(
         self, projection_files: tuple[str, io.StringIO], id_column: str = "EOS"
@@ -68,6 +67,16 @@ class MergedAssaysPreprocessor:
         self.compounds_df = compounds_df
         return self
 
+    def set_controls_df(self, controls_df: pd.DataFrame) -> MergedAssaysPreprocessor:
+        """
+        Set the controls dataframe
+
+        :param controls_df: controls dataframe
+        :return: preprocessor itself
+        """
+        self.controls_df = controls_df
+        return self
+
     def set_columns_for_projection(
         self, columns_for_projection: list[str]
     ) -> MergedAssaysPreprocessor:
@@ -80,34 +89,40 @@ class MergedAssaysPreprocessor:
         self.columns_for_projection = columns_for_projection
         return self
 
-    def restrict_to_chemicals(self) -> MergedAssaysPreprocessor:
-        # TODO: incorporate chemical data
+    def annotate_controls(
+        self, annotator: Callable[[Any], str]
+    ) -> MergedAssaysPreprocessor:
         """
-        Restrict the dataframe to the chemical columns (drops all other columns)
+        Annotates the dataframe by a given annotator function
 
+        :param annotator: function to annotate the dataframe
         :return: preprocessor itself
         """
-        self.compounds_df = self.compounds_df[self.chemical_columns]
+        self.controls_df.set_index("EOS", inplace=True)
+        self.controls_df["annotation"] = self.controls_df.index.map(annotator)
+        self.controls_df.reset_index(inplace=True)
         return self
 
     def apply_projection(
         self,
         projector: Projector,
         projection_name: str,
-        just_transform: bool = False,
+        transform_controls: bool = False,
     ) -> MergedAssaysPreprocessor:
         """
         Apply a projection to the dataframe using a given projector
 
         :param projector: Projector instance
         :param projection_name: name of the projection, to be inserted in the projection columns names
-        :param just_transform: whether to use just transform or fit and transform, defaults to False
+        :param transform_controls: whether to transform controls or compounds
         :return: preprocessor itself
         """
-        X = self.compounds_df[self.columns_for_projection].to_numpy()
-        if just_transform:
+
+        if transform_controls:
+            X = self.controls_df[self.columns_for_projection].to_numpy()
             X_projected = projector.transform(X)
         else:
+            X = self.compounds_df[self.columns_for_projection].to_numpy()
             X_projected = projector.fit_transform(X)
         suffixes = ["X", "Y"]
 
@@ -115,16 +130,27 @@ class MergedAssaysPreprocessor:
             # if more than 2 projected dimensions, use numbers as suffixes
             suffixes = range(X_projected.shape[0])
         for suffix, col in zip(suffixes, X_projected.T):
-            self.compounds_df[f"{projection_name}_{suffix}"] = col
+            if transform_controls:
+                self.controls_df[f"{projection_name}_{suffix}"] = col
+            else:
+                self.compounds_df[f"{projection_name}_{suffix}"] = col
         return self
 
-    def get_processed_df(self) -> pd.DataFrame:
+    def get_processed_compounds_df(self) -> pd.DataFrame:
         """
         Get the processed dataframe
 
         :return: processed dataframe
         """
         return self.compounds_df
+
+    def get_processed_controls_df(self) -> pd.DataFrame:
+        """
+        Get the processed controls dataframe
+
+        :return: processed controls dataframe
+        """
+        return self.controls_df
 
 
 # NOTE: to clarify

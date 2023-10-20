@@ -1,4 +1,3 @@
-import pandas as pd
 from dash import dcc, html
 
 PROJECTION_DISPLAY_STAGE = html.Div(
@@ -68,13 +67,28 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                 html.Div(
                     children=[
                         dcc.Loading(
-                            id="loading-projection-table",
+                            id="loading-projection-plot",
                             children=[
                                 dcc.Graph(id="projection-plot", figure={}),
                             ],
                             type="circle",
                         ),
                     ],
+                    className="col-md-6",
+                ),
+            ],
+        ),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
+                    children=[
+                        html.Div(id="pca-info", className="row", children=[]),
+                    ],
+                    className="col-md-6",
+                ),
+                html.Div(
+                    children=[html.Div(id="control-checkbox", children=[])],
                     className="col-md-6",
                 ),
             ],

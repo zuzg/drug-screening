@@ -11,11 +11,13 @@ from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
 from umap import UMAP
 
+from dashboard.data.controls import generate_controls, controls_index_annotator
 from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import plot_projection_2d, table_from_df
+from dashboard.visualization.plots import plot_projection_2d, make_projection_plot
+from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
     (PCA(n_components=2), "PCA"),
@@ -63,7 +65,7 @@ def on_projection_files_upload(
     if projection_files:
         assays_preprocessor = MergedAssaysPreprocessor()
         assays_preprocessor.combine_assays_for_projections(tuple(projection_files))
-        assays_merged_df = assays_preprocessor.get_processed_df()
+        assays_merged_df = assays_preprocessor.get_processed_compounds_df()
 
     saved_name = f"{stored_uuid}_assays_merged.pq"
     file_storage.save_file(saved_name, assays_merged_df.reset_index().to_parquet())
@@ -82,7 +84,7 @@ def on_projections_visualization_entry(
     current_stage: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> go.Figure:
+) -> tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
     """
     Callback for projections visualization stage entry.
     It loads the data from the storage, computes and visualizes the projections.
@@ -90,7 +92,8 @@ def on_projections_visualization_entry(
     :param current_stage: index of the current stage
     :param stored_uuid: session uuid
     :param file_storage: file storage
-    :return: figure with projections
+    :return: figure with projections, table with projections, dropdown with projection attributes,
+    dropdown with projection methods, projection info, checkbox for controls
     """
     if current_stage != 1:
         return no_update
@@ -98,32 +101,41 @@ def on_projections_visualization_entry(
     load_name = f"{stored_uuid}_assays_merged.pq"
     merged_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(load_name)))
 
-    assays_preprocessor = MergedAssaysPreprocessor()
-    assays_preprocessor.set_compounds_df(merged_df)
-
-    # TODO: include both ACT/INH
+    # TODO: if "ACTIVATION" in col or "INHIBITION" in col - next PR as it will be one column only
     projection_columns = [
         col for col in merged_df.columns if "ACTIVATION" in col.upper()
     ]
-    assays_preprocessor.set_columns_for_projection(projection_columns)
+    controls_df = generate_controls(projection_columns)
+
+    assays_preprocessor = MergedAssaysPreprocessor()
+    assays_preprocessor.set_compounds_df(merged_df).set_controls_df(
+        controls_df
+    ).set_columns_for_projection(projection_columns)
 
     for projector, name in PROJECTION_SETUP:
         assays_preprocessor.apply_projection(projector, name)
+        assays_preprocessor.apply_projection(projector, name, transform_controls=True)
 
-    saved_name = f"{stored_uuid}_assays_projection.pq"
-    projections_df = assays_preprocessor.get_processed_df()
+    projections_df = assays_preprocessor.get_processed_compounds_df()
     file_storage.save_file(
-        saved_name, projections_df.reset_index(drop=True).to_parquet()
+        f"{stored_uuid}_assays_projection.pq",
+        projections_df.reset_index(drop=True).to_parquet(),
     )
 
-    #  TODO: include both ACT/INH
-    activation_columns = [col for col in projections_df.columns if "ACTIVATION" in col]
+    projection_controls_df = assays_preprocessor.annotate_controls(
+        controls_index_annotator
+    ).get_processed_controls_df()
+    file_storage.save_file(
+        f"{stored_uuid}_controls_projection.pq",
+        projection_controls_df.reset_index(drop=True).to_parquet(),
+    )
+
     dropdown_options = []
-    for value in activation_columns:
+    for value in projection_columns:
         option = {"label": value, "value": value}
         dropdown_options.append(option)
 
-    fig = plot_projection_2d(projections_df, activation_columns[0], "UMAP")
+    fig = plot_projection_2d(projections_df, projection_columns[0], "UMAP")
     projections_df = eos_to_ecbd_link(projections_df)
     table = table_from_df(projections_df, "projection-table")
 
@@ -132,7 +144,7 @@ def on_projections_visualization_entry(
             dcc.Dropdown(
                 id="projection-attribute-selection-box",
                 options=dropdown_options,
-                value=activation_columns[0],
+                value=projection_columns[0],
                 searchable=False,
                 clearable=False,
                 disabled=False,
@@ -156,11 +168,31 @@ def on_projections_visualization_entry(
         ]
     )
 
-    return (fig, table, attribute_options, method_options)
+    checkbox = html.Div(
+        dcc.Checklist(
+            options=[
+                {
+                    "label": "  Show control values",
+                    "value": "controls",
+                }
+            ],
+            value=[],
+            id="control-checkbox",
+        )
+    )
+
+    pca = PROJECTION_SETUP[0][0]
+    projection_info = pca_summary(pca, projection_columns)
+
+    return (fig, table, attribute_options, method_options, projection_info, checkbox)
 
 
-def on_dropdown_change(
-    method: str, attribute: str, stored_uuid: str, file_storage: FileStorage
+def on_dropdown_checkbox_change(
+    projection_type: str,
+    attribute: str,
+    controls: list[str],
+    stored_uuid: str,
+    file_storage: FileStorage,
 ) -> go.Figure:
     """
     Callback for dropdown change. It loads the data from the storage and visualizes the projections.
@@ -170,11 +202,20 @@ def on_dropdown_change(
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: figure with projections"""
+    compounds_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq"))
+    )
+    controls_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_controls_projection.pq"))
+    )
 
-    load_name = f"{stored_uuid}_assays_projection.pq"
-    projections_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(load_name)))
-    fig = plot_projection_2d(projections_df, attribute, method)
-    return fig
+    return make_projection_plot(
+        compounds_df,
+        controls_df,
+        attribute,
+        projection_type,
+        controls,
+    )
 
 
 def on_plot_selected_data(
@@ -238,6 +279,8 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("projection-table", "children"),
         Output("projection-attribute-selection-box", "children"),
         Output("projection-method-selection-box", "children"),
+        Output("pca-info", "children"),
+        Output("control-checkbox", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
@@ -246,9 +289,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("projection-plot", "figure", allow_duplicate=True),
         Input("projection-method-selection-box", "value"),
         Input("projection-attribute-selection-box", "value"),
+        Input("control-checkbox", "value"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_dropdown_change, file_storage=file_storage))
+    )(functools.partial(on_dropdown_checkbox_change, file_storage=file_storage))
     callback(
         Output("download-projections-csv", "data"),
         Input("save-projections-button", "n_clicks"),

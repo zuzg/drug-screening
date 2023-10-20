@@ -4,81 +4,56 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dash import dash_table, html
-from dash.dash_table.Format import Format, Scheme
 from plotly.subplots import make_subplots
 
 from dashboard.data.determination import four_param_logistic
+from dashboard.visualization.overlay import projection_plot_overlay_controls
 
 PLOTLY_TEMPLATE = "plotly_white"
 
 
-def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
+def make_projection_plot(
+    projection_df: pd.DataFrame,
+    controls_df: pd.DataFrame,
+    colormap_feature: str,
+    projection_type: str,
+    checkbox_values: list[str],
+) -> go.Figure:
     """
-    Construct a preview table from a dataframe.
-    Includes all rows and columns.
-    To limit the element size uses pagination.
-    :param df: dataframe to construct table from
-    :param table_id: id of the table
-    :return: html Div element containing the table and heading
-    """
-    style_link = [
-        {"id": x, "name": x, "type": "text", "presentation": "markdown"}
-        if (x == "EOS")
-        else {
-            "id": x,
-            "name": x,
-            "type": "numeric",
-            "format": Format(precision=3, scheme=Scheme.fixed),
-        }
-        for x in df.columns
-    ]
+    Construct a scatterplot from a dataframe.
 
-    return html.Div(
-        children=[
-            dash_table.DataTable(
-                columns=style_link,
-                data=df.to_dict("records"),
-                style_table={"overflowX": "auto", "overflowY": "auto"},
-                style_data={
-                    "padding-left": "10px",
-                    "padding-right": "10px",
-                    "width": "70px",
-                    "autosize": {"type": "fit", "resize": True},
-                    "overflow": "hidden",
-                },
-                style_cell={
-                    "font-family": "sans-serif",
-                    "font-size": "12px",
-                },
-                style_header={
-                    "backgroundColor": "rgb(230, 230, 230)",
-                    "fontWeight": "bold",
-                },
-                style_data_conditional=[
-                    {
-                        "if": {"row_index": "odd"},
-                        "backgroundColor": "rgb(248, 248, 248)",
-                    },
-                ],
-                filter_action="native",
-                filter_options={"case": "insensitive"},
-                sort_action="native",
-                column_selectable=False,
-                page_size=10,
-                id=table_id,
-            ),
-        ],
-        className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
+    :param projection_df: dataframe to construct plot from
+    :param colormap_feature: feature to use for coloring
+    :param projection_type: projection type
+    :param checkbox_values: list of checkbox values
+    :return: dcc Graph element containing the plot
+    """
+    figure = plot_projection_2d(
+        projection_df,
+        colormap_feature,
+        projection=projection_type,
     )
+    if checkbox_values and "controls" in checkbox_values:
+        default_style = {
+            "ALL NEGATIVE": ["#de425b", 12],
+            "ALL POSITIVE": ["#488f31", 12],
+            "ALL BUT ONE NEGATIVE": ["#eb7a52", 10],
+            "ALL BUT ONE POSITIVE": ["#8aac49", 10],
+        }
+
+        figure = projection_plot_overlay_controls(
+            figure,
+            controls_df,
+            default_style,
+            projection=projection_type,
+        )
+    return figure
 
 
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
     projection: str = "umap",
-    width: int = 800,
-    height: int = 600,
 ) -> go.Figure:
     """
     Plot selected projection and colour points with respect to selected feature.
