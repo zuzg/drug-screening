@@ -3,6 +3,7 @@ tmp/
 # Data
 data/raw/*
 !data/raw/.gitkeep
+notebooks/data
 
 # Jupyter Notebooks
 .ipynb_checkpoints
