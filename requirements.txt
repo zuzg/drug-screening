@@ -8,7 +8,7 @@ scikit-learn
 PyYAML==6.0
 jenkspy
 numpy
-umap-learn
+umap-learn==0.5.3
 dash
 dash-bootstrap-components
 nbformat>=4.2.0
