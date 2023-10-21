@@ -1,10 +1,10 @@
 import base64
 import functools
 import io
+import json
 import uuid
 from datetime import datetime
 from typing import List
-import json
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,6 @@ from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
     aggregate_well_plate_stats,
     combine_bmg_echo_data,
-    reorder_bmg_echo_columns,
     split_compounds_controls,
 )
 from dashboard.data.file_preprocessing.echo_files_parser import EchoFilesParser
@@ -31,6 +30,10 @@ from dashboard.visualization.plots import (
     plot_row_col_means,
     plot_z_per_plate,
     visualize_multiple_plates,
+)
+from dashboard.visualization.text_tables import (
+    make_filter_radio_options,
+    make_summary_stage_datatable,
 )
 
 # === STAGE 1 ===
@@ -277,12 +280,37 @@ def upload_echo_data(
     )
 
 
+def on_additional_options_change(
+    key: str,
+    formula: str,
+) -> dict[str, str]:
+    """
+    Update the additional screening options dictionary
+
+    :param screening_feature: screening feature
+    :param formula: formula
+    :return: updated dictionary
+    """
+    disabled = False if key == "activation" else True
+    options_dict = {}
+    options_dict["key"] = key
+    options_dict["feature_column"] = "% " + key.upper()
+    options_dict["without_pos"] = formula
+    return options_dict, disabled
+
+
 # === STAGE 5 ===
 
 
 def on_summary_entry(
-    current_stage: int, stored_uuid: str, z_slider: float, file_storage: FileStorage
-) -> tuple[pd.DataFrame, go.Figure, go.Figure, go.Figure]:
+    current_stage: int,
+    stored_uuid: str,
+    z_slider: float,
+    screening_options: dict,
+    file_storage: FileStorage,
+) -> tuple[
+    pd.DataFrame, go.Figure, go.Figure, float, float, float, float, str, html.Div
+]:
     """
     Callback for the stage 5 entry
     Loads the data from storage and prepares visualizations
@@ -309,36 +337,40 @@ def on_summary_entry(
         bmg_df, bmg_vals, z_slider["z_slider_value"]
     )
 
-    echo_bmg_combined = combine_bmg_echo_data(echo_df, filtered_df, filtered_vals)
-    drop_duplicates = (
-        True  # TODO: inform the user about it/allow for deciding what to do
+    echo_bmg_combined = combine_bmg_echo_data(
+        echo_df,
+        filtered_df,
+        filtered_vals,
+        screening_options["key"],
+        screening_options["without_pos"],
     )
-
-    if drop_duplicates:
-        echo_bmg_combined = echo_bmg_combined.drop_duplicates()
+    echo_bmg_combined = echo_bmg_combined.drop_duplicates()
 
     compounds_df, control_pos_df, control_neg_df = split_compounds_controls(
         echo_bmg_combined
     )
     compounds_df = compounds_df.dropna()
-
-    activation_min = round(compounds_df["% ACTIVATION"].min())
-    activation_max = round(compounds_df["% ACTIVATION"].max())
-    inhibition_min = round(compounds_df["% INHIBITION"].min())
-    inhibition_max = round(compounds_df["% INHIBITION"].max())
-
     file_storage.save_file(
         f"{stored_uuid}_echo_bmg_combined_df.pq", compounds_df.to_parquet()
     )
 
-    cmpd_plate_stats_df = aggregate_well_plate_stats(compounds_df, assign_x_coords=True)
-    pos_plate_stats_df = aggregate_well_plate_stats(control_pos_df)
-    neg_plate_stats_df = aggregate_well_plate_stats(control_neg_df)
+    cmpd_plate_stats_df = aggregate_well_plate_stats(
+        compounds_df, screening_options["feature_column"], assign_x_coords=True
+    )
+    pos_plate_stats_df = aggregate_well_plate_stats(
+        control_pos_df, screening_options["feature_column"]
+    )
+    neg_plate_stats_df = aggregate_well_plate_stats(
+        control_neg_df, screening_options["feature_column"]
+    )
     plate_stats_dfs = [cmpd_plate_stats_df, pos_plate_stats_df, neg_plate_stats_df]
 
     file_storage.save_file(
         f"{stored_uuid}_plate_stats_df.pq", cmpd_plate_stats_df.to_parquet()
     )
+
+    feature_min = round(compounds_df[screening_options["feature_column"]].min())
+    feature_max = round(compounds_df[screening_options["feature_column"]].max())
 
     fig_z_score = plot_activation_inhibition_zscore(
         compounds_df,
@@ -347,34 +379,31 @@ def on_summary_entry(
         (-3, 3),  # z-score min and max
     )
 
-    fig_activation = plot_activation_inhibition_zscore(
+    fig_feature = plot_activation_inhibition_zscore(
         compounds_df,
         plate_stats_dfs,
-        "% ACTIVATION",
-        (activation_min, activation_max),
-    )
-
-    fig_inhibition = plot_activation_inhibition_zscore(
-        compounds_df,
-        plate_stats_dfs,
-        "% INHIBITION",
-        (inhibition_min, inhibition_max),
+        screening_options["feature_column"],
+        (feature_min, feature_max),
     )
 
     compounds_url_df = eos_to_ecbd_link(compounds_df)
+    summary_stage_datatable = make_summary_stage_datatable(
+        compounds_url_df, screening_options["feature_column"]
+    )
+
+    radio_options = make_filter_radio_options(screening_options["key"])
 
     return (
-        compounds_url_df.to_dict("records"),
+        summary_stage_datatable,
         fig_z_score,
-        fig_activation,
-        fig_inhibition,
+        fig_feature,
         -3,  # z_score_min,
         3,  # z_score_max,
-        activation_min,
-        activation_max,
-        inhibition_min,
-        inhibition_max,
+        feature_min,
+        feature_max,
         f"number of compounds: {len(compounds_df)}",
+        f"{screening_options['feature_column']} range:",
+        radio_options,
     )
 
 
@@ -382,10 +411,8 @@ def on_filter_radio_or_range_update(
     key: str,
     z_score_min: float,
     z_score_max: float,
-    activation_min: float,
-    activation_max: float,
-    inhibition_min: float,
-    inhibition_max: float,
+    feature_min: float,
+    feature_max: float,
 ) -> dict:
     """
     Callback for the filter radio button update
@@ -393,10 +420,8 @@ def on_filter_radio_or_range_update(
     :param key: key to filter by
     :param z_score_min: min z-score value
     :param z_score_max: max z-score value
-    :param activation_min: min activation value
-    :param activation_max: max activation value
-    :param inhibition_min: min inhibition value
-    :param inhibition_max: max inhibition value
+    :param feature_min: min feature value
+    :param feature_max: max feature value
     :return: dictionary storing the ranges of interest
     """
 
@@ -405,18 +430,17 @@ def on_filter_radio_or_range_update(
     if key == "z_score":
         report_data_csv["key_min"] = z_score_min
         report_data_csv["key_max"] = z_score_max
-    elif key == "activation":
-        report_data_csv["key_min"] = activation_min
-        report_data_csv["key_max"] = activation_max
-    elif key == "inhibition":
-        report_data_csv["key_min"] = inhibition_min
-        report_data_csv["key_max"] = inhibition_max
-
+    elif key == "activation" or key == "inhibition":
+        report_data_csv["key_min"] = feature_min
+        report_data_csv["key_max"] = feature_max
     return report_data_csv
 
 
 def on_range_update(
-    min_value: float, max_value: float, figure: go.Figure, key: str
+    min_value: float,
+    max_value: float,
+    figure: go.Figure,
+    key: dict = {"feature_column": "Z-SCORE"},
 ) -> go.Figure:
     """
     Callback for the z-score range update button
@@ -427,7 +451,7 @@ def on_range_update(
     :param figure: figure to update
     :return: updated figure
     """
-
+    key = key["feature_column"]
     if max_value is None or max_value is None or max_value < min_value:
         return figure, True
 
@@ -456,13 +480,17 @@ def on_apply_button_click(
     min_value: float,
     max_value: float,
     figure: go.Figure,
+    act_inh_screening_options: dict,
+    key: str,
     file_storage: FileStorage,
-    key: str = "Z-SCORE",
 ) -> tuple[go.Figure, dict]:
     new_figure = go.Figure(figure)
 
+    print(key)
+
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
+    key = act_inh_screening_options["feature_column"] if key is None else key
 
     echo_bmg_combined_df = pd.read_parquet(
         pa.BufferReader(
@@ -654,22 +682,29 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(upload_echo_data, file_storage=file_storage))
 
     callback(
-        Output("echo-bmg-combined", "data"),
+        Output("activation-inhibition-screening-options", "data"),
+        Output("activation-formula-dropdown", "disabled"),
+        Input("screening-feature-dropdown", "value"),
+        Input("activation-formula-dropdown", "value"),
+    )(functools.partial(on_additional_options_change))
+
+    callback(
+        Output("compounds-data-table", "children"),
         Output("z-score-plot", "figure"),
-        Output("activation-plot", "figure"),
-        Output("inhibition-plot", "figure"),
+        Output("feature-plot", "figure"),
         Output("z-score-min-input", "value"),
         Output("z-score-max-input", "value"),
-        Output("activation-min-input", "value"),
-        Output("activation-max-input", "value"),
-        Output("inhibition-min-input", "value"),
-        Output("inhibition-max-input", "value"),
+        Output("feature-min-input", "value"),
+        Output("feature-max-input", "value"),
         Output("compounds-data-subtitle", "children"),
+        Output("tab-feature-header", "children"),
+        Output("filter-radio", "options"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         State("z-slider-value", "data"),
+        State("activation-inhibition-screening-options", "data"),
     )(functools.partial(on_summary_entry, file_storage=file_storage))
-
+    # Z-SCORE
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
         Output("z-score-button", "disabled"),
@@ -677,7 +712,7 @@ def register_callbacks(elements, file_storage):
         Input("z-score-max-input", "value"),
         State("z-score-plot", "figure"),
         prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="Z-SCORE"))
+    )(functools.partial(on_range_update))
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
         Input("z-score-button", "n_clicks"),
@@ -685,63 +720,40 @@ def register_callbacks(elements, file_storage):
         State("z-score-min-input", "value"),
         State("z-score-max-input", "value"),
         State("z-score-plot", "figure"),
+        State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
     )(
         functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="Z-SCORE"
+            on_apply_button_click, key="Z-SCORE", file_storage=file_storage
         )
     )
+    # ACTIVATION/INHIBITION
     callback(
-        Output("activation-plot", "figure", allow_duplicate=True),
-        Output("activation-button", "disabled"),
-        Input("activation-min-input", "value"),
-        Input("activation-max-input", "value"),
-        State("activation-plot", "figure"),
+        Output("feature-plot", "figure", allow_duplicate=True),
+        Output("feature-button", "disabled"),
+        Input("feature-min-input", "value"),
+        Input("feature-max-input", "value"),
+        State("feature-plot", "figure"),
+        State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="% ACTIVATION"))
+    )(functools.partial(on_range_update))
     callback(
-        Output("activation-plot", "figure", allow_duplicate=True),
-        Input("activation-button", "n_clicks"),
+        Output("feature-plot", "figure", allow_duplicate=True),
+        Input("feature-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("activation-min-input", "value"),
-        State("activation-max-input", "value"),
-        State("activation-plot", "figure"),
+        State("feature-min-input", "value"),
+        State("feature-max-input", "value"),
+        State("feature-plot", "figure"),
+        State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="% ACTIVATION"
-        )
-    )
-    callback(
-        Output("inhibition-plot", "figure", allow_duplicate=True),
-        Output("inhibition-button", "disabled"),
-        Input("inhibition-min-input", "value"),
-        Input("inhibition-max-input", "value"),
-        State("inhibition-plot", "figure"),
-        prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="% INHIBITION"))
-    callback(
-        Output("inhibition-plot", "figure", allow_duplicate=True),
-        Input("inhibition-button", "n_clicks"),
-        State("user-uuid", "data"),
-        State("inhibition-min-input", "value"),
-        State("inhibition-max-input", "value"),
-        State("inhibition-plot", "figure"),
-        prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="% INHIBITION"
-        )
-    )
+    )(functools.partial(on_apply_button_click, key=None, file_storage=file_storage))
     callback(
         Output("report-data-csv", "data"),
         Input("filter-radio", "value"),
         Input("z-score-min-input", "value"),
         Input("z-score-max-input", "value"),
-        Input("activation-min-input", "value"),
-        Input("activation-max-input", "value"),
-        Input("inhibition-min-input", "value"),
-        Input("inhibition-max-input", "value"),
+        Input("feature-min-input", "value"),
+        Input("feature-max-input", "value"),
     )(functools.partial(on_filter_radio_or_range_update))
     callback(
         Output("download-echo-bmg-combined", "data"),

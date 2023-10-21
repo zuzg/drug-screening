@@ -3,7 +3,7 @@ from functools import reduce
 import numpy as np
 import pandas as pd
 
-from dashboard.data.bmg_plate import Mode, get_activation_inhibition_zscore_dict
+from dashboard.data.bmg_plate import get_activation_inhibition_zscore_dict
 
 
 # NOTE: to be removed
@@ -137,7 +137,8 @@ def combine_bmg_echo_data(
     echo_df: pd.DataFrame,
     df_stats: pd.DataFrame,
     plate_values: np.ndarray,
-    modes: dict[Mode] = None,
+    mode: str,
+    without_pos: bool = False,
 ) -> pd.DataFrame:
     """
     Combine Echo data with activation and inhibition values.
@@ -145,15 +146,15 @@ def combine_bmg_echo_data(
     :param echo_df: dataframe with Echo data
     :param df_stats: dataframe containing statistics for each plate
     :param plate_values: numpy array with activation and inhibition values - shape: (#plates, 2, 16, 24)
-    :param modes: dictionary with modes for each plate
+    :param mode: mode to calculate activation and inhibition
     :return: dataframe with Echo data and activation and inhibition values
     """
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
 
-    if modes is None:
-        modes = dict()
-    act_inh_dict = get_activation_inhibition_zscore_dict(df_stats, plate_values, modes)
+    act_inh_dict = get_activation_inhibition_zscore_dict(
+        df_stats, plate_values, mode, without_pos
+    )
     dfs = []
     for barcode, values_dict in act_inh_dict.items():
         activation_inhibition_df = get_activation_inhibition_zscore_df(
@@ -194,7 +195,7 @@ def split_compounds_controls(df: pd.DataFrame) -> tuple[pd.DataFrame]:
 
 
 def aggregate_well_plate_stats(
-    df: pd.DataFrame, assign_x_coords: bool = False
+    df: pd.DataFrame, key: str, assign_x_coords: bool = False
 ) -> tuple[pd.DataFrame]:
     """
     Aggregates the statistics (mean and std) per plate needed for the plots.
@@ -207,25 +208,19 @@ def aggregate_well_plate_stats(
     """
 
     PLATE = "Destination Plate Barcode"
-    ACTIVATION = "% ACTIVATION"
-    INHIBITION = "% INHIBITION"
     Z_SCORE = "Z-SCORE"
 
     stats_df = (
-        df.groupby(PLATE)[[ACTIVATION, INHIBITION, Z_SCORE]]
+        df.groupby(PLATE)[[key, Z_SCORE]]
         .agg(["mean", "std", "min", "max"])
         .reset_index()
     )
     stats_df.columns = [
         PLATE,
-        f"{ACTIVATION}_mean",
-        f"{ACTIVATION}_std",
-        f"{ACTIVATION}_min",
-        f"{ACTIVATION}_max",
-        f"{INHIBITION}_mean",
-        f"{INHIBITION}_std",
-        f"{INHIBITION}_min",
-        f"{INHIBITION}_max",
+        f"{key}_mean",
+        f"{key}_std",
+        f"{key}_min",
+        f"{key}_max",
         f"{Z_SCORE}_mean",
         f"{Z_SCORE}_std",
         f"{Z_SCORE}_min",
@@ -233,7 +228,7 @@ def aggregate_well_plate_stats(
     ]
 
     if assign_x_coords:
-        for col in [ACTIVATION, INHIBITION, Z_SCORE]:
+        for col in [key, Z_SCORE]:
             stats_df = stats_df.sort_values(by=f"{col}_mean")  # sort by mean
             stats_df[f"{col}_x"] = range(len(stats_df))  # get the x coordinates
 
