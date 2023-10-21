@@ -101,10 +101,8 @@ def on_projections_visualization_entry(
     load_name = f"{stored_uuid}_assays_merged.pq"
     merged_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(load_name)))
 
-    # TODO: if "ACTIVATION" in col or "INHIBITION" in col - next PR as it will be one column only
-    projection_columns = [
-        col for col in merged_df.columns if "ACTIVATION" in col.upper()
-    ]
+    # take only columns with projections i.e. having % in the name
+    projection_columns = [col for col in merged_df.columns if "%" in col]
     controls_df = generate_controls(projection_columns)
 
     assays_preprocessor = MergedAssaysPreprocessor()
