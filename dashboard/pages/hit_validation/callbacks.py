@@ -34,6 +34,8 @@ def on_file_upload(
     stored_uuid: str,
     concentration_lower_bound: float,
     concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
     file_storage: FileStorage,
 ) -> tuple[html.Div, str]:
     """
@@ -44,6 +46,8 @@ def on_file_upload(
     :param stored_uuid: session uuid
     :param concentration_lower_bound: concentration lower bound
     :param concentration_upper_bound: concentration upper bound
+    :param top_lower_bound: top lower bound
+    :param top_upper_bound: top upper bound
     :param file_storage: file storage
     :return: icon indicating the status of the upload
     """
@@ -105,7 +109,11 @@ def on_file_upload(
 
     # Placeholder for hit determination
     hit_determination_df = perform_hit_determination(
-        screen_df, concentration_lower_bound, concentration_upper_bound
+        screen_df,
+        concentration_lower_bound,
+        concentration_upper_bound,
+        top_lower_bound,
+        top_upper_bound,
     )
     unfit = hit_determination_df.EOS[hit_determination_df.ic50.isna()].tolist()
 
@@ -158,21 +166,20 @@ FAIL_BOUNDS_ELEMENT = html.Div(
 )
 
 
-def on_concentration_bounds_change(
+def on_bounds_change(
     lower_bound: float, upper_bound: float
 ) -> tuple[float, float, html.Div]:
     """
-    Callback for concentration bounds change. It checks if the lower bound is greater
+    Callback for bounds change. It checks if the lower bound is greater
     than the upper bound.
 
     :param lower_bound: lower bound
     :param upper_bound: upper bound
     :return: icon indicating the status of the bounds
     """
-    if lower_bound > upper_bound:
-        return no_update, no_update, FAIL_BOUNDS_ELEMENT, {}
-    report_data = {"lower_bound": lower_bound, "upper_bound": upper_bound}
-    return lower_bound, upper_bound, "", report_data
+    if lower_bound is None or upper_bound is None or lower_bound > upper_bound:
+        return no_update, no_update, FAIL_BOUNDS_ELEMENT
+    return lower_bound, upper_bound, ""
 
 
 # === STAGE 2 ===
@@ -311,11 +318,22 @@ def on_selected_compound_changed(
 
 def on_json_generate_button_click(
     n_clicks,
-    correlation_plots_report,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
     file_storage: FileStorage,
 ):
     filename = f"hit_validation_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
-    json_object = json.dumps(correlation_plots_report, indent=4)
+    json_object = json.dumps(
+        {
+            "concentration_lower_bound": concentration_lower_bound,
+            "concentration_upper_bound": concentration_upper_bound,
+            "top_lower_bound": top_lower_bound,
+            "top_upper_bound": top_upper_bound,
+        },
+        indent=4,
+    )
     return dict(content=json_object, filename=filename)
 
 
@@ -349,17 +367,25 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
         State("concentration-upper-bound-store", "data"),
+        State("top-lower-bound-store", "data"),
+        State("top-upper-bound-store", "data"),
         prevent_initial_call="initial_duplicate",
     )(functools.partial(on_file_upload, file_storage=file_storage))
 
     callback(
         Output("concentration-lower-bound-store", "data"),
         Output("concentration-upper-bound-store", "data"),
-        Output("parameters-message", "children"),
-        Output("report-data-hit-validation-input", "data"),
+        Output("concentration-parameters-message", "children"),
         Input("concentration-lower-bound-input", "value"),
         Input("concentration-upper-bound-input", "value"),
-    )(on_concentration_bounds_change)
+    )(on_bounds_change)
+    callback(
+        Output("top-lower-bound-store", "data"),
+        Output("top-upper-bound-store", "data"),
+        Output("top-parameters-message", "children"),
+        Input("top-lower-bound-input", "value"),
+        Input("top-upper-bound-input", "value"),
+    )(on_bounds_change)
 
     callback(
         Output("compounds-list-container", "children"),
@@ -397,7 +423,10 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("download-json-settings-hit-validation", "data"),
         Input("generate-json-button", "n_clicks"),
-        State("report-data-hit-validation-input", "data"),
+        State("concentration-lower-bound-store", "data"),
+        State("concentration-upper-bound-store", "data"),
+        State("top-lower-bound-store", "data"),
+        State("top-upper-bound-store", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
 

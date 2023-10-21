@@ -24,6 +24,8 @@ pb.extend_layout(
         children=[
             dcc.Store(id="concentration-lower-bound-store", data=0),
             dcc.Store(id="concentration-upper-bound-store", data=10),
+            dcc.Store(id="top-lower-bound-store", data=30),
+            dcc.Store(id="top-upper-bound-store", data=80),
         ]
     )
 )

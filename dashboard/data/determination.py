@@ -70,19 +70,25 @@ def curve_fit_for_activation(screen_df: pd.DataFrame) -> pd.DataFrame:
     return curve_fit_df.set_index("EOS")
 
 
-ACTIVITY_THRESHOLD = 10
-MAX_MIN_VALUE_THRESHOLD = 75
-MIN_MAX_VALUE_THRESHOLD = 30
-IC50_THRESHOLD = 10
-UPPER_LIMIT_LOWER_BOUND = 30
-UPPER_LIMIT_UPPER_BOUND = 80
+MAX_MIN_VALUE_THRESHOLD = 75  # Keep
+MIN_MAX_VALUE_THRESHOLD = 30  # Keep
 
 
-def process_activation_df(activation_df: pd.DataFrame) -> pd.DataFrame:
+def process_activation_df(
+    activation_df: pd.DataFrame,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
+) -> pd.DataFrame:
     """
     Performs the final processing of the activation dataframe.
 
     :param activation_df: activation dataframe
+    :param concentration_lower_bound: lower bound for concentration
+    :param concentration_upper_bound: upper bound for concentration
+    :param top_lower_bound: lower bound for top
+    :param top_upper_bound: upper bound for top
     :return: processed activation dataframe with determined activity
     """
     activation_df["all_conc_active"] = (
@@ -98,30 +104,35 @@ def process_activation_df(activation_df: pd.DataFrame) -> pd.DataFrame:
         np.where(activation_df.all_conc_inactive, ">", activation_df.operator),
     )
     activation_df["is_reverse_dose"] = activation_df.slope < 0
-    activation_df["is_active"] = activation_df.ic50 < ACTIVITY_THRESHOLD
+    activation_df["is_active"] = (activation_df.ic50 < concentration_upper_bound) & (
+        activation_df.ic50 > concentration_lower_bound
+    )
     activation_df["activity_final"] = np.where(
         activation_df.operator != "=",
         "inconclusive",
         np.where(
-            (activation_df.ic50 >= IC50_THRESHOLD)
-            | (activation_df.upper_limit <= UPPER_LIMIT_LOWER_BOUND),
+            (activation_df.ic50 >= concentration_upper_bound)
+            | (activation_df.ic50 <= concentration_lower_bound)
+            | (activation_df.upper_limit <= top_lower_bound),
             "inactive",
             "active",
         ),
     )
     activation_df["is_partially_active"] = (
-        (activation_df.upper_limit > UPPER_LIMIT_LOWER_BOUND)
-        & (activation_df.upper_limit < UPPER_LIMIT_UPPER_BOUND)
-        & (activation_df.ic50 < IC50_THRESHOLD)
+        (activation_df.upper_limit > top_lower_bound)
+        & (activation_df.upper_limit < top_upper_bound)
+        & (activation_df.ic50 < concentration_upper_bound)
+        & (activation_df.ic50 > concentration_lower_bound)
     )
     return activation_df
 
 
-# TODO: use bounds, allow to customize limits/constants
 def perform_hit_determination(
     screen_df: pd.DataFrame,
     concentration_lower_bound: float,
     concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
 ) -> pd.DataFrame:
     """
     Performs hit determination on the screening data.
@@ -129,6 +140,8 @@ def perform_hit_determination(
     :param screen_df: screening data
     :param concentration_lower_bound: lower bound for concentration
     :param concentration_upper_bound: upper bound for concentration
+    :param top_lower_bound: lower bound for top
+    :param top_upper_bound: upper bound for top
     :return: hit determination data
     """
     sorted_df = screen_df.sort_values(by=["EOS", "CONCENTRATION"])
@@ -147,6 +160,14 @@ def perform_hit_determination(
     activation_df = aggregated_df.merge(
         curve_fit_df, how="inner", left_on="EOS", right_on="EOS"
     ).rename(columns=rename_dict)
+
     activation_df["TOP"] = activation_df["upper_limit"]
     activation_df["BOTTOM"] = activation_df["lower_limit"]
-    return process_activation_df(activation_df)
+
+    return process_activation_df(
+        activation_df,
+        concentration_lower_bound,
+        concentration_upper_bound,
+        top_lower_bound,
+        top_upper_bound,
+    )
