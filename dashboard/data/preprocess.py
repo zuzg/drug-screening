@@ -107,33 +107,31 @@ class MergedAssaysPreprocessor:
         self,
         projector: Projector,
         projection_name: str,
-        transform_controls: bool = False,
     ) -> MergedAssaysPreprocessor:
         """
         Apply a projection to the dataframe using a given projector
 
         :param projector: Projector instance
         :param projection_name: name of the projection, to be inserted in the projection columns names
-        :param transform_controls: whether to transform controls or compounds
         :return: preprocessor itself
         """
 
-        if transform_controls:
-            X = self.controls_df[self.columns_for_projection].to_numpy()
-            X_projected = projector.transform(X)
-        else:
-            X = self.compounds_df[self.columns_for_projection].to_numpy()
-            X_projected = projector.fit_transform(X)
+        X = self.compounds_df[self.columns_for_projection].to_numpy()
+        X_projected = projector.fit_transform(X)
+
+        X_controls = self.controls_df[self.columns_for_projection].to_numpy()
+        X_projected_controls = projector.transform(X_controls)
+
         suffixes = ["X", "Y"]
 
         if X_projected.shape[1] > 2:
             # if more than 2 projected dimensions, use numbers as suffixes
             suffixes = range(X_projected.shape[0])
+
         for suffix, col in zip(suffixes, X_projected.T):
-            if transform_controls:
-                self.controls_df[f"{projection_name}_{suffix}"] = col
-            else:
-                self.compounds_df[f"{projection_name}_{suffix}"] = col
+            self.compounds_df[f"{projection_name}_{suffix}"] = col
+        for suffix, col in zip(suffixes, X_projected_controls.T):
+            self.controls_df[f"{projection_name}_{suffix}"] = col
         return self
 
     def get_processed_compounds_df(self) -> pd.DataFrame:

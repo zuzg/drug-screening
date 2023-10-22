@@ -11,12 +11,12 @@ from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
 from umap import UMAP
 
-from dashboard.data.controls import generate_controls, controls_index_annotator
+from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import plot_projection_2d, make_projection_plot
+from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
@@ -40,7 +40,7 @@ def on_projection_files_upload(
     last_modified: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> html.Div:
+) -> tuple[html.Div, str]:
     """
     Callback for file upload. TBD
 
@@ -48,6 +48,7 @@ def on_projection_files_upload(
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: icon indicating the status of the upload
+    :return: uuid of the stored data
     """
     if content is None:
         return no_update
@@ -70,10 +71,13 @@ def on_projection_files_upload(
     saved_name = f"{stored_uuid}_assays_merged.pq"
     file_storage.save_file(saved_name, assays_merged_df.reset_index().to_parquet())
 
-    return html.Div(
-        children=[
-            make_file_list_component(filenames, [], 1),
-        ],
+    return (
+        html.Div(
+            children=[
+                make_file_list_component(filenames, [], 1),
+            ],
+        ),
+        stored_uuid,
     )
 
 
@@ -112,7 +116,6 @@ def on_projections_visualization_entry(
 
     for projector, name in PROJECTION_SETUP:
         assays_preprocessor.apply_projection(projector, name)
-        assays_preprocessor.apply_projection(projector, name, transform_controls=True)
 
     projections_df = assays_preprocessor.get_processed_compounds_df()
     file_storage.save_file(
@@ -267,10 +270,12 @@ def on_save_projections_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
+        Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-projection-data", "contents"),
         Input("upload-projection-data", "filename"),
         Input("upload-projection-data", "last_modified"),
         State("user-uuid", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_projection_files_upload, file_storage=file_storage))
     callback(
         Output("projection-plot", "figure", allow_duplicate=True),
