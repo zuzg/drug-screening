@@ -10,7 +10,17 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
-from dash import Input, Output, State, callback, callback_context, dcc, html, no_update
+from dash import (
+    Input,
+    Output,
+    State,
+    callback,
+    callback_context,
+    dcc,
+    html,
+    no_update,
+    dash_table,
+)
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
 from dashboard.data.combine import (
@@ -151,13 +161,6 @@ def on_outlier_purge_stage_entry(
     compounds_count = plates_count * bmg_vals.shape[2] * (bmg_vals.shape[3] - 2)
     outliers_count = (bmg_vals[:, 1] == 1).sum()
 
-    report_data = {
-        "plates_count": plates_count,
-        "compounds_count": compounds_count,
-        "outliers_count": outliers_count,
-        "outliers_only_checklist": outliers_only_checklist,
-    }
-
     if show_only_with_outliers:
         has_outliers_mask = np.any(bmg_vals[:, 1] == 1, axis=(-1, -2))
         bmg_df = bmg_df[has_outliers_mask]
@@ -180,6 +183,13 @@ def on_outlier_purge_stage_entry(
     )
 
     max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
+
+    report_data = {
+        "plates_count": plates_count,
+        "compounds_count": compounds_count,
+        "outliers_count": outliers_count,
+        "outliers_only_checklist": show_only_with_outliers,
+    }
 
     return (
         report_data,
@@ -230,6 +240,8 @@ def on_plates_stats_stage_entry(
             full_html=False, include_plotlyjs="cdn"
         ),
         "z_slider_value": value,
+        "row_col_fig": row_col_fig.to_html(full_html=False, include_plotlyjs="cdn"),
+        "z_fig": z_fig.to_html(full_html=False, include_plotlyjs="cdn"),
     }
 
     z_slider_data = {"z_slider_value": value}
@@ -393,6 +405,11 @@ def on_summary_entry(
 
     radio_options = make_filter_radio_options(screening_options["key"])
 
+    report_data = {
+        "fig_z_score": fig_z_score.to_html(full_html=False, include_plotlyjs="cdn"),
+        "fig_feature": fig_feature.to_html(full_html=False, include_plotlyjs="cdn"),
+    }
+
     return (
         summary_stage_datatable,
         fig_z_score,
@@ -404,6 +421,7 @@ def on_summary_entry(
         f"number of compounds: {len(compounds_df)}",
         f"{screening_options['feature_column']} range:",
         radio_options,
+        report_data,
     )
 
 
@@ -592,10 +610,12 @@ def on_report_generate_button_click(
     n_clicks,
     report_data_second_stage: dict,
     report_data_third_stage: dict,
+    report_data_screening_summary_plots: dict,
     file_storage: FileStorage,
 ):
     filename = f"screening_report_{datetime.now().strftime('%Y-%m-%d')}.html"
     report_data_second_stage.update(report_data_third_stage)
+    report_data_second_stage.update(report_data_screening_summary_plots)
     jinja_template = generate_jinja_report(report_data_second_stage)
     return html.Div(
         className="col",
@@ -699,6 +719,7 @@ def register_callbacks(elements, file_storage):
         Output("compounds-data-subtitle", "children"),
         Output("tab-feature-header", "children"),
         Output("filter-radio", "options"),
+        Output("report-data-screening-summary-plots", "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         State("z-slider-value", "data"),
@@ -774,6 +795,7 @@ def register_callbacks(elements, file_storage):
         Input("generate-report-button", "n_clicks"),
         State("report-data-second-stage", "data"),
         State("report-data-third-stage", "data"),
+        State("report-data-screening-summary-plots", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
     callback(
