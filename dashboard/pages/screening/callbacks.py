@@ -291,7 +291,7 @@ def on_additional_options_change(
     :param formula: formula
     :return: updated dictionary
     """
-    disabled = False if key == "activation" else True
+    disabled = key != "activation"
     options_dict = {}
     options_dict["key"] = key
     options_dict["feature_column"] = "% " + key.upper()
@@ -686,7 +686,7 @@ def register_callbacks(elements, file_storage):
         Output("activation-formula-dropdown", "disabled"),
         Input("screening-feature-dropdown", "value"),
         Input("activation-formula-dropdown", "value"),
-    )(functools.partial(on_additional_options_change))
+    )(on_additional_options_change)
 
     callback(
         Output("compounds-data-table", "children"),
@@ -736,7 +736,7 @@ def register_callbacks(elements, file_storage):
         State("feature-plot", "figure"),
         State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_range_update))
+    )(on_range_update)
     callback(
         Output("feature-plot", "figure", allow_duplicate=True),
         Input("feature-button", "n_clicks"),
