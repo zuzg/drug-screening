@@ -293,6 +293,15 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
+    smiles_row = pd.read_csv("dashboard/assets/ml/predictions.csv").loc[
+        lambda df: df["EOS"] == selected_compound
+    ]
+    smiles, toxicity = (
+        smiles_row["smiles"].to_numpy()[0],
+        smiles_row["toxicity"].to_numpy()[0],
+    )
+    # smiles_graph = plot_smiles(smiles)
+
     result = {
         "id": entry["EOS"],
         "min-modulation": round(entry["min_value"], 5),
@@ -309,6 +318,8 @@ def on_selected_compound_changed(
         "graph": graph,
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
+        "smiles": smiles,
+        "toxicity": round(toxicity, 5),
     }
     return tuple(result.values())
 
@@ -412,6 +423,8 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("hit-browser-plot", "figure"),
         Output("hit-browser-top", "value"),
         Output("hit-browser-bottom", "value"),
+        Output("smiles", "children"),
+        Output("toxicity", "children"),
         Input("selected-compound-store", "data"),
         Input("hit-browser-unstack-button", "n_clicks"),
         Input("hit-browser-apply-button", "n_clicks"),

@@ -44,6 +44,42 @@ PARAMS_DISPLAY_SPEC = [
         "units": "",
     },
 ]
+BOTTOM_PANEL = html.Section(
+    className="row",
+    children=[
+        html.H5("SMILES prediction"),
+        html.Div(
+            className="row",
+            children=[
+                html.H6(
+                    "SMILES",
+                    id="smiles",
+                ),
+                html.Div(
+                    children=[
+                        html.Span(
+                            "Acute Toxicity LD50:",
+                            className="fw-bold fixed-width-200",
+                        ),
+                        html.Span(
+                            children=[
+                                html.Span("-", id="toxicity"),
+                                html.Span(
+                                    "-log(mol/kg)",
+                                ),
+                            ],
+                            className="d-flex flex-row gap-2",
+                        ),
+                    ],
+                    className="d-flex flex-row w-100 gap-4 justify-content-between border-bottom border-1",
+                ),
+                dcc.Markdown(
+                    "Reference: [link](https://pubs.acs.org/doi/abs/10.1021/tx900189p?casa_token=vfBbuxuUCqEAAAAA:YAcI0r4Z3rtlRYP_l5H8OlTfdUh3DVlO6ws_h1NkhpaXH3-NrdI2-s5ghWWJbxfPQw-KhQIAwMi1Di3v)"
+                ),
+            ],
+        ),
+    ],
+)
 
 RIGHT_PANEL = html.Div(
     id="hit-browser-container",
@@ -143,6 +179,7 @@ RIGHT_PANEL = html.Div(
                                 ),
                             ],
                         ),
+                        BOTTOM_PANEL,
                     ],
                 ),
             ],
