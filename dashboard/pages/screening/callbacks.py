@@ -3,7 +3,6 @@ import functools
 import io
 import uuid
 from datetime import datetime
-from typing import List
 import json
 
 import numpy as np
@@ -396,6 +395,13 @@ def on_summary_entry(
         activation_max,
         inhibition_min,
         inhibition_max,
+        # NOTE: this will be cleared in the next PR (ACT/INH into one)
+        False,
+        False,
+        False,
+        False,
+        False,
+        False,
         f"number of compounds: {len(compounds_df)}",
         report_data,
     )
@@ -439,22 +445,32 @@ def on_filter_radio_or_range_update(
 
 
 def on_range_update(
-    min_value: float, max_value: float, figure: go.Figure, key: str
+    min_value: float,
+    max_value: float,
+    figure: go.Figure,
+    stored_uuid: str,
+    file_storage: FileStorage,
+    key: str,
 ) -> go.Figure:
     """
     Callback for the z-score range update button
-    Adds the range to the plot
+    Adds the range to the plot and updates the compounds outside range
 
     :param min_value: min value of the range
     :param max_value: max value of the range
     :param figure: figure to update
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :param key: key to filter by
     :return: updated figure
     """
 
     if max_value is None or max_value is None or max_value < min_value:
-        return figure, True
+        return figure
 
     new_figure = go.Figure(figure)
+
+    # update the min/max range
     trace_name = "MIN/MAX range"
     trace_data = next(filter(lambda trace: trace.name == trace_name, new_figure.data))
 
@@ -470,30 +486,15 @@ def on_range_update(
         selector=dict(name="max"),
     )
 
-    return new_figure, False
-
-
-def on_apply_button_click(
-    n_clicks: int,
-    stored_uuid: str,
-    min_value: float,
-    max_value: float,
-    figure: go.Figure,
-    file_storage: FileStorage,
-    key: str = "Z-SCORE",
-) -> tuple[go.Figure, dict]:
-    new_figure = go.Figure(figure)
-
+    # update the compounds outside range
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
 
-    echo_bmg_combined_df = pd.read_parquet(
+    compounds_df = pd.read_parquet(
         pa.BufferReader(
             file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
         )
     )
-
-    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined_df)
     cmpd_stats_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
     )
@@ -556,6 +557,8 @@ def on_save_results_click(
             echo_bmg_combined_df["% INHIBITION"] >= report_data_csv["key_max"]
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
+
+    echo_bmg_combined_df = echo_bmg_combined_df.reset_index(drop=True)
 
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
@@ -689,6 +692,12 @@ def register_callbacks(elements, file_storage):
         Output("activation-max-input", "value"),
         Output("inhibition-min-input", "value"),
         Output("inhibition-max-input", "value"),
+        Output("z-score-min-input", "disabled"),
+        Output("z-score-max-input", "disabled"),
+        Output("activation-min-input", "disabled"),
+        Output("activation-max-input", "disabled"),
+        Output("inhibition-min-input", "disabled"),
+        Output("inhibition-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
         Output("report-data-screening-summary-plots", "data"),
         Input(elements["STAGES_STORE"], "data"),
@@ -698,67 +707,28 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        Output("z-score-button", "disabled"),
         Input("z-score-min-input", "value"),
         Input("z-score-max-input", "value"),
         State("z-score-plot", "figure"),
-        prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="Z-SCORE"))
-    callback(
-        Output("z-score-plot", "figure", allow_duplicate=True),
-        Input("z-score-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("z-score-min-input", "value"),
-        State("z-score-max-input", "value"),
-        State("z-score-plot", "figure"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="Z-SCORE"
-        )
-    )
+    )(functools.partial(on_range_update, file_storage=file_storage, key="Z-SCORE"))
     callback(
         Output("activation-plot", "figure", allow_duplicate=True),
-        Output("activation-button", "disabled"),
         Input("activation-min-input", "value"),
         Input("activation-max-input", "value"),
         State("activation-plot", "figure"),
-        prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="% ACTIVATION"))
-    callback(
-        Output("activation-plot", "figure", allow_duplicate=True),
-        Input("activation-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("activation-min-input", "value"),
-        State("activation-max-input", "value"),
-        State("activation-plot", "figure"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="% ACTIVATION"
-        )
-    )
+    )(functools.partial(on_range_update, file_storage=file_storage, key="% ACTIVATION"))
     callback(
         Output("inhibition-plot", "figure", allow_duplicate=True),
-        Output("inhibition-button", "disabled"),
         Input("inhibition-min-input", "value"),
         Input("inhibition-max-input", "value"),
         State("inhibition-plot", "figure"),
-        prevent_initial_call=True,
-    )(functools.partial(on_range_update, key="% INHIBITION"))
-    callback(
-        Output("inhibition-plot", "figure", allow_duplicate=True),
-        Input("inhibition-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("inhibition-min-input", "value"),
-        State("inhibition-max-input", "value"),
-        State("inhibition-plot", "figure"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, file_storage=file_storage, key="% INHIBITION"
-        )
-    )
+    )(functools.partial(on_range_update, file_storage=file_storage, key="% INHIBITION"))
     callback(
         Output("report-data-csv", "data"),
         Input("filter-radio", "value"),

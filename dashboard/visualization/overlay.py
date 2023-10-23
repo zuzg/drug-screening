@@ -36,7 +36,7 @@ def projection_plot_overlay_controls(
             ),
             name=str.upper(name).replace("_", " "),
             text=group["EOS"].str.split(";"),
-            hovertemplate="<b>%{text[0]}</b><br>"
+            hovertemplate="<b> %{text[0]}</b><br>"
             + "<b>%{text[1]}</b><br>"
             + "X: %{x:.4f}<br>Y: %{y:.4f}<br>"
             + "<extra></extra>",
@@ -44,7 +44,7 @@ def projection_plot_overlay_controls(
 
     fig_controls.update_layout(
         legend=dict(
-            title="   CONTROLS",
+            title="CONTROLS",
             yanchor="bottom",
             y=0.01,
             xanchor="left",

@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import pandas as pd
-import numpy as np
-
+import io
+from functools import reduce
 from typing import Protocol, Callable, Any
+
+import numpy as np
+import pandas as pd
 
 
 class Projector(Protocol):
@@ -17,87 +19,77 @@ class Projector(Protocol):
 class MergedAssaysPreprocessor:
     def __init__(
         self,
-        raw_compounds_df: pd.DataFrame,
-        chemical_columns: list[str],
-        key_column: str = "EOS",
     ):
         """
-        :param raw_compounds_df: compounds dataframe to be processed
-        :param chemical_columns: list of names of chemical colums
-        :param key_column: name of the key column, defaults to "EOS"
+        Parser for csv projection files.
         """
-        self.chemical_columns = chemical_columns
-        self.compounds_df = raw_compounds_df.set_index(key_column)
+        self.compounds_df = None
+        self.controls_df = None
+        self.columns_for_projection = None
 
-    def restrict_to_chemicals(self) -> MergedAssaysPreprocessor:
-        """
-        Restrict the dataframe to the chemical columns (drops all other columns)
+    def combine_assays_for_projections(
+        self, projection_files: tuple[str, io.StringIO], id_column: str = "EOS"
+    ) -> MergedAssaysPreprocessor:
+        processed_dfs = []
+        COLUMNS_TO_DROP = [
+            "Source Plate Barcode",
+            "Source Well",
+            "Destination Plate Barcode",
+            "Destination Well",
+            "Actual Volume",
+        ]
 
-        :return: preprocessor itself
-        """
-        self.compounds_df = self.compounds_df[self.chemical_columns]
+        for filename, filecontent in projection_files:
+            df = pd.read_csv(filecontent, index_col=[0]).drop(columns=COLUMNS_TO_DROP)
+            processed_df = df.groupby(id_column).mean()
+            processed_df = processed_df.rename(
+                columns={
+                    "% ACTIVATION": f"% ACTIVATION {filename}",
+                    "% INHIBITION": f"%INHIBITION {filename}",
+                    "Z-SCORE": f"Z-SCORE {filename}",
+                }
+            )
+            processed_dfs.append(processed_df)
+
+        self.compounds_df = reduce(
+            lambda left, right: pd.merge(left, right, on=id_column, how="inner"),
+            processed_dfs,
+        )
         return self
 
-    def group_duplicates_by_function(self, func_name: str) -> MergedAssaysPreprocessor:
+    def set_compounds_df(self, compounds_df: pd.DataFrame) -> MergedAssaysPreprocessor:
         """
-        Group duplicates by a function (e.g. mean, median, max, min, etc.)
+        Set the compounds dataframe
 
-        :param func_name: name of the function to use
+        :param compounds_df: compounds dataframe
         :return: preprocessor itself
         """
-        self.compounds_df = self.compounds_df.groupby(level=0).agg(func_name)
+        self.compounds_df = compounds_df
         return self
 
-    def drop_na(self) -> MergedAssaysPreprocessor:
+    def set_controls_df(self, controls_df: pd.DataFrame) -> MergedAssaysPreprocessor:
         """
-        Drops duplicates in the dataframe.
+        Set the controls dataframe
 
+        :param controls_df: controls dataframe
         :return: preprocessor itself
         """
-        self.compounds_df.dropna(inplace=True)
+        self.controls_df = controls_df
         return self
 
-    def apply_projection(
-        self,
-        projector: Projector,
-        projection_name: str,
-        just_transform: bool = False,
+    def set_columns_for_projection(
+        self, columns_for_projection: list[str]
     ) -> MergedAssaysPreprocessor:
         """
-        Apply a projection to the dataframe using a given projector
+        Set the columns for projection based on a key
 
-        :param projector: Projector instance
-        :param projection_name: name of the projection, to be inserted in the projection columns names
-        :param just_transform: whether to use just transform or fit and transform, defaults to False
+        :param key: key to search for in the column names
         :return: preprocessor itself
         """
-        X = self.compounds_df[self.chemical_columns].to_numpy()
-        if just_transform:
-            X_projected = projector.transform(X)
-        else:
-            X_projected = projector.fit_transform(X)
-        suffixes = ["X", "Y"]
-        if X_projected.shape[1] > 2:
-            # if more than 2 projected dimensions, use numbers as suffixes
-            suffixes = range(X_projected.shape[0])
-        for suffix, col in zip(suffixes, X_projected.T):
-            self.compounds_df[f"{projection_name}_{suffix}"] = col
+        self.columns_for_projection = columns_for_projection
         return self
 
-    def append_ecbd_links(
-        self,
-        ecbd_links: pd.DataFrame,
-    ) -> MergedAssaysPreprocessor:
-        """
-        Append ecbd links to the dataframe.
-
-        :param ecbd_links: dataframe of ecbd links to corresponding compounds
-        :return: preprocessor itself
-        """
-        self.compounds_df = self.compounds_df.join(ecbd_links, how="left")
-        return self
-
-    def annotate_by_index(
+    def annotate_controls(
         self, annotator: Callable[[Any], str]
     ) -> MergedAssaysPreprocessor:
         """
@@ -106,16 +98,57 @@ class MergedAssaysPreprocessor:
         :param annotator: function to annotate the dataframe
         :return: preprocessor itself
         """
-        self.compounds_df["annotation"] = self.compounds_df.index.map(annotator)
+        self.controls_df.set_index("EOS", inplace=True)
+        self.controls_df["annotation"] = self.controls_df.index.map(annotator)
+        self.controls_df.reset_index(inplace=True)
         return self
 
-    def get_processed_df(self) -> pd.DataFrame:
+    def apply_projection(
+        self,
+        projector: Projector,
+        projection_name: str,
+    ) -> MergedAssaysPreprocessor:
+        """
+        Apply a projection to the dataframe using a given projector
+
+        :param projector: Projector instance
+        :param projection_name: name of the projection, to be inserted in the projection columns names
+        :return: preprocessor itself
+        """
+
+        X = self.compounds_df[self.columns_for_projection].to_numpy()
+        X_projected = projector.fit_transform(X)
+
+        X_controls = self.controls_df[self.columns_for_projection].to_numpy()
+        X_projected_controls = projector.transform(X_controls)
+
+        suffixes = ["X", "Y"]
+
+        if X_projected.shape[1] > 2:
+            # if more than 2 projected dimensions, use numbers as suffixes
+            suffixes = range(X_projected.shape[0])
+
+        for suffix, col in zip(suffixes, X_projected.T):
+            self.compounds_df[f"{projection_name}_{suffix}"] = col
+        for suffix, col in zip(suffixes, X_projected_controls.T):
+            self.controls_df[f"{projection_name}_{suffix}"] = col
+        return self
+
+    def get_processed_compounds_df(self) -> pd.DataFrame:
         """
         Get the processed dataframe
 
         :return: processed dataframe
         """
         return self.compounds_df
+
+    def get_processed_controls_df(self) -> pd.DataFrame:
+        """
+        Get the processed controls dataframe
+
+        :return: processed controls dataframe
+        """
+        return self.controls_df
 
 
 # NOTE: to clarify

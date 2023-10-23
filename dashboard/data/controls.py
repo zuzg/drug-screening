@@ -14,11 +14,11 @@ def controls_index_annotator(index: Any) -> str:
     :return: control annotation
     """
     index_as_str = str(index)
-    num_assays = index_as_str.count("Assay")
+    num_assays = index_as_str.count("%")
     if not num_assays:
         return "NOT CONTROL"
     pos, neg = index_as_str.split(";")
-    pos_assays = pos.count("Assay")
+    pos_assays = pos.count("%")
     neg_assays = num_assays - pos_assays
     if not pos_assays:
         return "ALL NEGATIVE"
