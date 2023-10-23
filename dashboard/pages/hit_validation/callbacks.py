@@ -294,7 +294,7 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
-    smiles_row = pd.read_csv("dashboard/assets/ml/predictions.csv").loc[
+    smiles_row = pd.read_parquet("dashboard/assets/ml/predictions.pq").loc[
         lambda df: df["EOS"] == selected_compound
     ]
     smiles, toxicity = (
@@ -321,7 +321,7 @@ def on_selected_compound_changed(
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
         "smiles": smiles_html,
-        "toxicity": round(toxicity, 5),
+        "toxicity": round(float(toxicity), 5),
     }
     return tuple(result.values())
 
