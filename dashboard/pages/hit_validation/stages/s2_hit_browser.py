@@ -47,12 +47,11 @@ PARAMS_DISPLAY_SPEC = [
 BOTTOM_PANEL = html.Section(
     className="row",
     children=[
-        html.H5("SMILES prediction"),
+        html.H5("Toxicity prediction based on SMILES"),
         html.Div(
             className="row",
             children=[
-                html.H6(
-                    "SMILES",
+                html.Div(
                     id="smiles",
                 ),
                 html.Div(
