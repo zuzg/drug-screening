@@ -1,9 +1,11 @@
 tmp/
+**/out/
 
 # Data
 data/raw/*
 !data/raw/.gitkeep
 notebooks/data
+.drug-screening-data/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
@@ -12,3 +14,4 @@ notebooks/data
 *.py[cod]
 __pycache__/
 *$py.class
+.venv/

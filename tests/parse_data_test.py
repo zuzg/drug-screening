@@ -1,4 +1,4 @@
-from src.data.combine import combine_assays
+from dashboard.data.combine import combine_assays
 
 
 def test_combining_experiments():
