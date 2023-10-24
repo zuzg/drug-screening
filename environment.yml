@@ -19,3 +19,6 @@ dependencies:
   - dash
   - umap-learn
   - pre-commit
+  - pip
+  - pip:
+    - dash_dangerously_set_inner_html
