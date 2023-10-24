@@ -476,7 +476,7 @@ def plot_activation_inhibition_zscore(
         compounds_df[key] <= min_max_range[1]
     )
     outside_range_df = compounds_df[~mask].copy()
-    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+    outside_range_df = outside_range_df[[key, WELL, PLATE, "EOS"]].merge(
         cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
@@ -490,7 +490,7 @@ def plot_activation_inhibition_zscore(
             customdata=np.stack(
                 (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
             ),
-            text=compounds_df["EOS"],
+            text=outside_range_df["EOS"],
             hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>value: %{y:.4f}<extra>%{text}</extra>",
         )
     )
