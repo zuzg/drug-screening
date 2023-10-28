@@ -17,3 +17,4 @@ plotly
 rdkit
 pyarrow
 jinja2
+dash_dangerously_set_inner_html

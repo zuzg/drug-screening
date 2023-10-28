@@ -1,10 +1,16 @@
 from itertools import product
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.tools as tls
 from plotly.subplots import make_subplots
+from rdkit import Chem
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import rdDepictor
+
 
 from dashboard.data.determination import four_param_logistic
 from dashboard.visualization.overlay import projection_plot_overlay_controls
@@ -633,3 +639,21 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         },
         data=data,
     )
+
+
+def plot_smiles(smiles_string: str) -> str:
+    """
+    Plot SMILES
+
+    :param smiles_string: string with SMILES
+    :return: svg with plot
+    """
+    mol = Chem.MolFromSmiles(smiles_string)
+    rdDepictor.Compute2DCoords(mol)
+    mc = Chem.Mol(mol.ToBinary())
+    Chem.Kekulize(mc)
+    drawer = Draw.MolDraw2DSVG(200, 200)
+    drawer.DrawMolecule(mc)
+    drawer.FinishDrawing()
+    svg = drawer.GetDrawingText().replace("svg:", "")
+    return svg
