@@ -30,10 +30,6 @@ def make_main_header(page_registry: dict):
     order = [
         "home",
         "about",
-        "screening",
-        "correlation",
-        "hit_validation",
-        "data_projection",
     ]
     nav_bar = html.Ul(
         children=[
@@ -41,13 +37,13 @@ def make_main_header(page_registry: dict):
                 dcc.Link(
                     page_registry[f"pages.{name}.page"]["name"],
                     href=page_registry[f"pages.{name}.page"]["path"],
-                    className="nav-link mx-2",
+                    className="nav-link custom-nav-link mx-2",
                 ),
                 className="nav-item",
             )
             for name in order
         ],
-        className="nav nav-pills",
+        className="nav",
     )
     return html.Header(
         className="p-3 text-bg-dark",
@@ -58,9 +54,13 @@ def make_main_header(page_registry: dict):
                     html.Div(
                         className="d-flex flex-wrap align-items-center justify-content-between",
                         children=[
-                            html.H1("Drug Screening Dashboard"),
-                            html.Div(
-                                className="d-flex flex-wrap align-items-center justify-content-between m-1 text-end",
+                            html.Img(
+                                src="/assets/images/disjoint-path-underlined.svg",
+                                alt="Logo",
+                                className="d-inline-block align-text-top",
+                                height=60,
+                            ),
+                            html.Nav(
                                 children=[nav_bar],
                             ),
                         ],
@@ -93,6 +93,45 @@ def make_footer(version: str) -> html.Footer:
             )
         ],
     )
+
+
+def make_card_component(
+    title: str, description: str | list[html.Div | str], icon: str, link: str
+) -> html.Section:
+    header = html.Header(
+        className="gap-4 d-flex flex-row justify-content-between min-h-80px mb-4",
+        children=[
+            html.H3(title),
+            html.I(className=f"fa-solid {icon} fa-2xl mt-3 text-primary"),
+        ],
+    )
+    footer = html.Footer(
+        className="d-flex justify-content-center w-100",
+        children=[
+            dcc.Link(
+                html.Button(
+                    className="btn btn-outline-primary w-100",
+                    children=[
+                        "Start",
+                    ],
+                ),
+                className="w-100",
+                href=link,
+            )
+        ],
+    )
+    card = html.Section(
+        className="h-100 d-flex flex-column shadow-lg rounded p-4",
+        children=[
+            header,
+            html.P(
+                className="flex-grow-1",
+                children=description,
+            ),
+            footer,
+        ],
+    )
+    return card
 
 
 def make_page_controls_rich_widget(
