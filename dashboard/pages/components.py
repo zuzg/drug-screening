@@ -34,6 +34,7 @@ def make_main_header(page_registry: dict):
         "screening",
         "correlation",
         "hit_validation",
+        "data_projection",
     ]
     nav_bar = html.Ul(
         children=[
