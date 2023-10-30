@@ -29,6 +29,11 @@ PARAMS_DISPLAY_SPEC = [
         "units": "µM",
     },
     {
+        "label": "Modulation IC50",
+        "id": "ic50-y-value",
+        "units": "%",
+    },
+    {
         "label": "Curve Slope",
         "id": "curve-slope-value",
         "units": "",
@@ -41,6 +46,11 @@ PARAMS_DISPLAY_SPEC = [
     {
         "label": "Is Active",
         "id": "is-active-value",
+        "units": "",
+    },
+    {
+        "label": "Is Partially Active",
+        "id": "is-partially-active-value",
         "units": "",
     },
 ]
@@ -138,6 +148,19 @@ RIGHT_PANEL = html.Div(
                                             id="hit-browser-unstack-button",
                                             className="btn btn-primary flex-grow-1",
                                             children="Unstack",
+                                        ),
+                                    ],
+                                ),
+                                html.Span(
+                                    className="d-flex flex-row gap-3 w-100",
+                                    children=[
+                                        html.Button(
+                                            id="save-individual-EOS-result-button",
+                                            className="btn btn-primary flex-grow-1",
+                                            children="Save result",
+                                        ),
+                                        dcc.Download(
+                                            id="download-EOS-individual-report"
                                         ),
                                     ],
                                 ),

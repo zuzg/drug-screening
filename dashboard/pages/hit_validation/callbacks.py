@@ -21,7 +21,7 @@ from dash import (
 )
 
 from dashboard.storage import FileStorage
-from dashboard.data.determination import perform_hit_determination
+from dashboard.data.determination import perform_hit_determination, four_param_logistic
 from dashboard.visualization.plots import plot_ic50
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
@@ -229,7 +229,9 @@ def on_compound_button_click(n_clicks: int, compound_id: str) -> str:
 
 activity_icons = {
     "active": html.I(className="fas fa-check-circle text-success"),
+    True: html.I(className="fas fa-check-circle text-success"),
     "inactive": html.I(className="fas fa-times-circle text-danger"),
+    False: html.I(className="fas fa-times-circle text-danger"),
     "inconclusive": html.I(className="fas fa-question-circle text-warning"),
 }
 
@@ -293,11 +295,20 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
+    modulation_ic50 = four_param_logistic(
+        entry["ic50"],
+        entry["BOTTOM"],
+        entry["TOP"],
+        entry["ic50"],
+        entry["slope"],
+    )
+
     result = {
         "id": entry["EOS"],
         "min-modulation": round(entry["min_value"], 5),
         "max-modulation": round(entry["max_value"], 5),
         "ic50": round(entry["ic50"], 5),
+        "modulation_ic50": round(modulation_ic50, 5),
         "curve-slope": round(entry["slope"], 5),
         "r2": round(entry["r2"] * 100, 5),
         "is-active": html.Span(
@@ -306,11 +317,28 @@ def on_selected_compound_changed(
                 html.Span(entry["activity_final"].upper(), className="ms-1"),
             ]
         ),
+        "is-partially-active": html.Span(
+            children=[
+                activity_icons[entry["is_partially_active"]],
+                html.Span(
+                    "TRUE" if entry["is_partially_active"] else "FALSE",
+                    className="ms-1",
+                ),
+            ]
+        ),
         "graph": graph,
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
     }
-    return tuple(result.values())
+
+    return tuple(list(result.values()) + [result])
+
+
+def on_save_individual_EOS_result_button_click(
+    n_clicks, report_data, file_storage: FileStorage
+):
+    print(report_data)
+    return report_data
 
 
 # === STAGE 3 ===
@@ -406,12 +434,15 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("min-modulation-value", "children"),
         Output("max-modulation-value", "children"),
         Output("ic50-value", "children"),
+        Output("ic50-y-value", "children"),
         Output("curve-slope-value", "children"),
         Output("r2-value", "children"),
         Output("is-active-value", "children"),
+        Output("is-partially-active-value", "children"),
         Output("hit-browser-plot", "figure"),
         Output("hit-browser-top", "value"),
         Output("hit-browser-bottom", "value"),
+        Output("report-data-hit-validation-hit-browser", "data"),
         Input("selected-compound-store", "data"),
         Input("hit-browser-unstack-button", "n_clicks"),
         Input("hit-browser-apply-button", "n_clicks"),
@@ -419,6 +450,17 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("hit-browser-bottom", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_selected_compound_changed, file_storage=file_storage))
+
+    callback(
+        Output("download-EOS-individual-report", "data"),
+        Input("save-individual-EOS-result-button", "n_clicks"),
+        State("report-data-hit-validation-hit-browser", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_save_individual_EOS_result_button_click, file_storage=file_storage
+        )
+    )
 
     callback(
         Output("download-json-settings-hit-validation", "data"),
