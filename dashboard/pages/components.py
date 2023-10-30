@@ -55,10 +55,10 @@ def make_main_header(page_registry: dict):
                         className="d-flex flex-wrap align-items-center justify-content-between",
                         children=[
                             html.Img(
-                                src="/assets/images/disjoint-path-underlined.svg",
+                                src="/assets/images/logo.svg",
                                 alt="Logo",
                                 className="d-inline-block align-text-top",
-                                height=60,
+                                height=50,
                             ),
                             html.Nav(
                                 children=[nav_bar],
