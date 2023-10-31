@@ -1,10 +1,16 @@
 from itertools import product
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.tools as tls
 from plotly.subplots import make_subplots
+from rdkit import Chem
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import rdDepictor
+
 
 from dashboard.data.determination import four_param_logistic
 from dashboard.visualization.overlay import projection_plot_overlay_controls
@@ -53,7 +59,7 @@ def make_projection_plot(
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
-    projection: str = "umap",
+    projection: str = "pca",
 ) -> go.Figure:
     """
     Plot selected projection and colour points with respect to selected feature.
@@ -476,7 +482,7 @@ def plot_activation_inhibition_zscore(
         compounds_df[key] <= min_max_range[1]
     )
     outside_range_df = compounds_df[~mask].copy()
-    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+    outside_range_df = outside_range_df[[key, WELL, PLATE, "EOS"]].merge(
         cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
@@ -490,7 +496,7 @@ def plot_activation_inhibition_zscore(
             customdata=np.stack(
                 (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
             ),
-            text=compounds_df["EOS"],
+            text=outside_range_df["EOS"],
             hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>value: %{y:.4f}<extra>%{text}</extra>",
         )
     )
@@ -633,3 +639,21 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         },
         data=data,
     )
+
+
+def plot_smiles(smiles_string: str) -> str:
+    """
+    Plot SMILES
+
+    :param smiles_string: string with SMILES
+    :return: svg with plot
+    """
+    mol = Chem.MolFromSmiles(smiles_string)
+    rdDepictor.Compute2DCoords(mol)
+    mc = Chem.Mol(mol.ToBinary())
+    Chem.Kekulize(mc)
+    drawer = Draw.MolDraw2DSVG(200, 200)
+    drawer.DrawMolecule(mc)
+    drawer.FinishDrawing()
+    svg = drawer.GetDrawingText().replace("svg:", "")
+    return svg
