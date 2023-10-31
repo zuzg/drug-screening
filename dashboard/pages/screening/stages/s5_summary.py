@@ -58,16 +58,6 @@ SUMMARY_STAGE = html.Div(
                                                 ),
                                             ],
                                         ),
-                                        html.Div(
-                                            className="col",
-                                            children=[
-                                                dbc.Button(
-                                                    "Apply",
-                                                    id="z-score-button",
-                                                    disabled=True,
-                                                )
-                                            ],
-                                        ),
                                     ],
                                 ),
                                 dcc.Graph(
@@ -115,16 +105,6 @@ SUMMARY_STAGE = html.Div(
                                                 ),
                                             ],
                                         ),
-                                        html.Div(
-                                            className="col",
-                                            children=[
-                                                dbc.Button(
-                                                    "Apply",
-                                                    id="feature-button",
-                                                    disabled=True,
-                                                )
-                                            ],
-                                        ),
                                     ],
                                 ),
                                 dcc.Graph(
@@ -163,7 +143,6 @@ SUMMARY_STAGE = html.Div(
                     className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary",
                     children=[],
                     id="compounds-data-table",
-                    # children=[_ACT_INH_DATATABLE],
                 ),
             ],
         ),

@@ -5,12 +5,6 @@ from collections import namedtuple
 from enum import Enum, auto
 
 
-class Mode(Enum):
-    ACTIVATION = auto()
-    INHIBITION = auto()
-    ALL = auto()
-
-
 PlateSummary = namedtuple(
     "PlateSummary",
     [

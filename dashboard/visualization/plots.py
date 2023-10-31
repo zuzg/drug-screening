@@ -1,22 +1,65 @@
 from itertools import product
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.tools as tls
 from plotly.subplots import make_subplots
+from rdkit import Chem
+from rdkit.Chem import Draw
+from rdkit.Chem.Draw import rdDepictor
+
 
 from dashboard.data.determination import four_param_logistic
+from dashboard.visualization.overlay import projection_plot_overlay_controls
 
 PLOTLY_TEMPLATE = "plotly_white"
+
+
+def make_projection_plot(
+    projection_df: pd.DataFrame,
+    controls_df: pd.DataFrame,
+    colormap_feature: str,
+    projection_type: str,
+    checkbox_values: list[str],
+) -> go.Figure:
+    """
+    Construct a scatterplot from a dataframe.
+
+    :param projection_df: dataframe to construct plot from
+    :param colormap_feature: feature to use for coloring
+    :param projection_type: projection type
+    :param checkbox_values: list of checkbox values
+    :return: dcc Graph element containing the plot
+    """
+    figure = plot_projection_2d(
+        projection_df,
+        colormap_feature,
+        projection=projection_type,
+    )
+    if checkbox_values and "controls" in checkbox_values:
+        default_style = {
+            "ALL NEGATIVE": ["#de425b", 12],
+            "ALL POSITIVE": ["#488f31", 12],
+            "ALL BUT ONE NEGATIVE": ["#eb7a52", 10],
+            "ALL BUT ONE POSITIVE": ["#8aac49", 10],
+        }
+
+        figure = projection_plot_overlay_controls(
+            figure,
+            controls_df,
+            default_style,
+            projection=projection_type,
+        )
+    return figure
 
 
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
     projection: str = "umap",
-    width: int = 800,
-    height: int = 600,
 ) -> go.Figure:
     """
     Plot selected projection and colour points with respect to selected feature.
@@ -30,21 +73,22 @@ def plot_projection_2d(
     """
     projection_x = f"{projection.upper()}_X"
     projection_y = f"{projection.upper()}_Y"
+    feature_processed = feature.replace("_", " ").upper()
     fig = px.scatter(
         df,
         x=projection_x,
         y=projection_y,
-        text="EOS",
         color=df[feature],
         range_color=[0, df[feature].max()],
         labels={
             projection_x: "X",
             projection_y: "Y",
-            "EOS": "Compound ID",
+            "EOS": "ID",
+            feature: feature_processed,
         },
-        title=f"{projection.upper()} projection with respect to {feature}",
-        width=width,
-        height=height,
+        title=f"{projection.upper()} projection with respect to {feature_processed}",
+        # width=width,
+        # height=height,
         hover_data={
             "EOS": True,
             projection_x: ":.3f",
@@ -53,6 +97,7 @@ def plot_projection_2d(
         },
     )
 
+    fig.update_traces(marker={"size": 8})
     fig.update_yaxes(title_standoff=15, automargin=True)
     fig.update_xaxes(title_standoff=30, automargin=True)
     fig.update_layout(
@@ -437,7 +482,7 @@ def plot_activation_inhibition_zscore(
         compounds_df[key] <= min_max_range[1]
     )
     outside_range_df = compounds_df[~mask].copy()
-    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+    outside_range_df = outside_range_df[[key, WELL, PLATE, "EOS"]].merge(
         cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
@@ -451,7 +496,7 @@ def plot_activation_inhibition_zscore(
             customdata=np.stack(
                 (outside_range_df[PLATE], outside_range_df[WELL]), axis=-1
             ),
-            text=compounds_df["EOS"],
+            text=outside_range_df["EOS"],
             hovertemplate="plate: %{customdata[0]}<br>well: %{customdata[1]}<br>value: %{y:.4f}<extra>%{text}</extra>",
         )
     )
@@ -594,3 +639,21 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         },
         data=data,
     )
+
+
+def plot_smiles(smiles_string: str) -> str:
+    """
+    Plot SMILES
+
+    :param smiles_string: string with SMILES
+    :return: svg with plot
+    """
+    mol = Chem.MolFromSmiles(smiles_string)
+    rdDepictor.Compute2DCoords(mol)
+    mc = Chem.Mol(mol.ToBinary())
+    Chem.Kekulize(mc)
+    drawer = Draw.MolDraw2DSVG(200, 200)
+    drawer.DrawMolecule(mc)
+    drawer.FinishDrawing()
+    svg = drawer.GetDrawingText().replace("svg:", "")
+    return svg

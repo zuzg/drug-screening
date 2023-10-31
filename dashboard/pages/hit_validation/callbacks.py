@@ -1,4 +1,5 @@
 import base64
+import dash_dangerously_set_inner_html as dhtml
 import io
 import uuid
 import functools
@@ -22,7 +23,7 @@ from dash import (
 
 from dashboard.storage import FileStorage
 from dashboard.data.determination import perform_hit_determination
-from dashboard.visualization.plots import plot_ic50
+from dashboard.visualization.plots import plot_ic50, plot_smiles
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
@@ -293,6 +294,16 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
+    smiles_row = pd.read_parquet("dashboard/assets/ml/predictions.pq").loc[
+        lambda df: df["EOS"] == selected_compound
+    ]
+    smiles, toxicity = (
+        smiles_row["smiles"].to_numpy()[0],
+        smiles_row["toxicity"].to_numpy()[0],
+    )
+    smiles_graph = plot_smiles(smiles)
+    smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
+
     result = {
         "id": entry["EOS"],
         "min-modulation": round(entry["min_value"], 5),
@@ -309,6 +320,8 @@ def on_selected_compound_changed(
         "graph": graph,
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
+        "smiles": smiles_html,
+        "toxicity": round(float(toxicity), 5),
     }
     return tuple(result.values())
 
@@ -412,6 +425,8 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("hit-browser-plot", "figure"),
         Output("hit-browser-top", "value"),
         Output("hit-browser-bottom", "value"),
+        Output("smiles", "children"),
+        Output("toxicity", "children"),
         Input("selected-compound-store", "data"),
         Input("hit-browser-unstack-button", "n_clicks"),
         Input("hit-browser-apply-button", "n_clicks"),

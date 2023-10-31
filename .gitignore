@@ -4,6 +4,7 @@ tmp/
 # Data
 data/raw/*
 !data/raw/.gitkeep
+notebooks/data
 .drug-screening-data/
 
 # Jupyter Notebooks

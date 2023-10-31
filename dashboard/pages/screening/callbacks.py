@@ -4,7 +4,7 @@ import io
 import json
 import uuid
 from datetime import datetime
-from typing import List
+import json
 
 import numpy as np
 import pandas as pd
@@ -458,22 +458,31 @@ def on_range_update(
     min_value: float,
     max_value: float,
     figure: go.Figure,
-    key: dict = {"feature_column": "Z-SCORE"},
+    stored_uuid: str,
+    key: dict,
+    file_storage: FileStorage,
 ) -> go.Figure:
     """
     Callback for the z-score range update button
-    Adds the range to the plot
+    Adds the range to the plot and updates the compounds outside range
 
     :param min_value: min value of the range
     :param max_value: max value of the range
     :param figure: figure to update
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :param key: key to filter by
     :return: updated figure
     """
-    key = key["feature_column"]
-    if max_value is None or max_value is None or max_value < min_value:
-        return figure, True
+    if key != "Z-SCORE":
+        key = key["feature_column"]
+
+    if min_value is None or max_value is None or max_value < min_value:
+        return figure
 
     new_figure = go.Figure(figure)
+
+    # update the min/max range
     trace_name = "MIN/MAX range"
     trace_data = next(filter(lambda trace: trace.name == trace_name, new_figure.data))
 
@@ -489,34 +498,15 @@ def on_range_update(
         selector=dict(name="max"),
     )
 
-    return new_figure, False
-
-
-def on_apply_button_click(
-    n_clicks: int,
-    stored_uuid: str,
-    min_value: float,
-    max_value: float,
-    figure: go.Figure,
-    act_inh_screening_options: dict,
-    key: str,
-    file_storage: FileStorage,
-) -> tuple[go.Figure, dict]:
-    new_figure = go.Figure(figure)
-
-    print(key)
-
+    # update the compounds outside range
     PLATE = "Destination Plate Barcode"
     WELL = "Destination Well"
-    key = act_inh_screening_options["feature_column"] if key is None else key
 
-    echo_bmg_combined_df = pd.read_parquet(
+    compounds_df = pd.read_parquet(
         pa.BufferReader(
             file_storage.read_file(f"{stored_uuid}_echo_bmg_combined_df.pq")
         )
     )
-
-    compounds_df, _, _ = split_compounds_controls(echo_bmg_combined_df)
     cmpd_stats_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_plate_stats_df.pq"))
     )
@@ -531,6 +521,7 @@ def on_apply_button_click(
         x=outside_range_df[f"{key}_x"],
         y=outside_range_df[key],
         customdata=np.stack((outside_range_df[PLATE], outside_range_df[WELL]), axis=-1),
+        text=outside_range_df["EOS"],
         selector=dict(name="COMPOUNDS OUTSIDE"),
     )
 
@@ -580,6 +571,8 @@ def on_save_results_click(
         )
         echo_bmg_combined_df = echo_bmg_combined_df[mask]
 
+    echo_bmg_combined_df = echo_bmg_combined_df.reset_index(drop=True)
+
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
@@ -611,7 +604,6 @@ def on_report_generate_button_click(
     report_data_second_stage: dict,
     report_data_third_stage: dict,
     report_data_screening_summary_plots: dict,
-    file_storage: FileStorage,
 ):
     filename = f"screening_report_{datetime.now().strftime('%Y-%m-%d')}.html"
     report_data_second_stage.update(report_data_third_stage)
@@ -633,7 +625,6 @@ def on_json_generate_button_click(
     report_data_second_stage: dict,
     report_data_third_stage: dict,
     report_data_csv: dict,
-    file_storage: FileStorage,
 ):
     filename = f"screening_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     process_settings = read_stages_stats(
@@ -728,46 +719,22 @@ def register_callbacks(elements, file_storage):
     # Z-SCORE
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
-        Output("z-score-button", "disabled"),
         Input("z-score-min-input", "value"),
         Input("z-score-max-input", "value"),
         State("z-score-plot", "figure"),
-        prevent_initial_call=True,
-    )(functools.partial(on_range_update))
-    callback(
-        Output("z-score-plot", "figure", allow_duplicate=True),
-        Input("z-score-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("z-score-min-input", "value"),
-        State("z-score-max-input", "value"),
-        State("z-score-plot", "figure"),
-        State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_apply_button_click, key="Z-SCORE", file_storage=file_storage
-        )
-    )
+    )(functools.partial(on_range_update, key="Z-SCORE", file_storage=file_storage))
     # ACTIVATION/INHIBITION
     callback(
         Output("feature-plot", "figure", allow_duplicate=True),
-        Output("feature-button", "disabled"),
         Input("feature-min-input", "value"),
         Input("feature-max-input", "value"),
         State("feature-plot", "figure"),
-        State("activation-inhibition-screening-options", "data"),
-        prevent_initial_call=True,
-    )(on_range_update)
-    callback(
-        Output("feature-plot", "figure", allow_duplicate=True),
-        Input("feature-button", "n_clicks"),
         State("user-uuid", "data"),
-        State("feature-min-input", "value"),
-        State("feature-max-input", "value"),
-        State("feature-plot", "figure"),
         State("activation-inhibition-screening-options", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_apply_button_click, key=None, file_storage=file_storage))
+    )(functools.partial(on_range_update, file_storage=file_storage))
     callback(
         Output("report-data-csv", "data"),
         Input("filter-radio", "value"),
@@ -775,7 +742,7 @@ def register_callbacks(elements, file_storage):
         Input("z-score-max-input", "value"),
         Input("feature-min-input", "value"),
         Input("feature-max-input", "value"),
-    )(functools.partial(on_filter_radio_or_range_update))
+    )(on_filter_radio_or_range_update)
     callback(
         Output("download-echo-bmg-combined", "data"),
         Input("save-results-button", "n_clicks"),
@@ -797,7 +764,7 @@ def register_callbacks(elements, file_storage):
         State("report-data-third-stage", "data"),
         State("report-data-screening-summary-plots", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_report_generate_button_click, file_storage=file_storage))
+    )(on_report_generate_button_click)
     callback(
         Output("download-json-settings-screening", "data"),
         Input("generate-json-button", "n_clicks"),
@@ -805,4 +772,4 @@ def register_callbacks(elements, file_storage):
         State("report-data-third-stage", "data"),
         State("report-data-csv", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
+    )(on_json_generate_button_click)
