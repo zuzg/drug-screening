@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 
 from dashboard.data.bmg_plate import (
-    Mode,
     calculate_activation_inhibition_zscore,
     filter_low_quality_plates,
     get_activation_inhibition_zscore_dict,
@@ -50,19 +49,19 @@ def test_calculate_activation_inhibition_zscore(stats_for_all):
     values = np.array([5, 3, 3])
 
     activation, inhibition, z_score = calculate_activation_inhibition_zscore(
-        values, stats_for_all
+        values, stats_for_all, "activation", False
     )
     assert (
         round(activation[2], 2) == -199.25
-        and round(inhibition[1], 2) == -199.25
         and round(z_score[0], 2) == -82.92
+        and inhibition is None
     )
 
 
 def test_get_activation_inhibition_zscore_dict(df_stats):
     values = np.full((2, 2, 16, 24), 2)
     values[1] = 1.5
-    z_dict = get_activation_inhibition_zscore_dict(df_stats, values, modes=dict())
+    z_dict = get_activation_inhibition_zscore_dict(df_stats, values, "activation")
     assert np.array_equal(z_dict["1234"]["z_score"], np.full((16, 24), 1.0))
 
 

@@ -23,6 +23,7 @@ EXTRA = html.Div(
         dcc.Store(id="report-data-correlation-plots", storage_type="local"),
         dcc.Store(id="report-data-hit-validation-input", storage_type="local"),
         dcc.Store(id="report-data-hit-validation-hit-browser", storage_type="local"),
+        dcc.Store(id="activation-inhibition-screening-options", storage_type="local"),
     ],
 )
 

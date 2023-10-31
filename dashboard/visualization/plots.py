@@ -59,7 +59,7 @@ def make_projection_plot(
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
-    projection: str = "umap",
+    projection: str = "pca",
 ) -> go.Figure:
     """
     Plot selected projection and colour points with respect to selected feature.
