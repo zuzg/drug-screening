@@ -22,7 +22,11 @@ from dash import (
 )
 
 from dashboard.storage import FileStorage
-from dashboard.data.determination import perform_hit_determination, four_param_logistic
+from dashboard.data.determination import (
+    perform_hit_determination,
+    four_param_logistic,
+    find_argument_four_param_logistic,
+)
 from dashboard.visualization.plots import plot_ic50
 from dashboard.data.determination import perform_hit_determination
 from dashboard.visualization.plots import plot_ic50, plot_smiles
@@ -309,6 +313,14 @@ def on_selected_compound_changed(
         entry["slope"],
     )
 
+    concentration_50 = find_argument_four_param_logistic(
+        50,
+        entry["BOTTOM"],
+        entry["TOP"],
+        entry["ic50"],
+        entry["slope"],
+    )
+
     smiles_row = pd.read_parquet("dashboard/assets/ml/predictions.pq").loc[
         lambda df: df["EOS"] == selected_compound
     ]
@@ -325,6 +337,7 @@ def on_selected_compound_changed(
         "max_modulation": round(entry["max_value"], 5),
         "ic50": round(entry["ic50"], 5),
         "modulation_ic50": round(modulation_ic50, 5),
+        "concentration_50": round(float(concentration_50), 5),
         "curve_slope": round(entry["slope"], 5),
         "r2": round(entry["r2"] * 100, 5),
         "is_active": html.Span(
@@ -461,6 +474,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("max-modulation-value", "children"),
         Output("ic50-value", "children"),
         Output("ic50-y-value", "children"),
+        Output("concentration-50", "children"),
         Output("curve-slope-value", "children"),
         Output("r2-value", "children"),
         Output("is-active-value", "children"),

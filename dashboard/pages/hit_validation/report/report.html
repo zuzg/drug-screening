@@ -26,7 +26,7 @@
     }
 
     h3 {
-        text-align: center;
+        text-align: left;
         font-weight: bold;
         font-size: 24px;
     }
@@ -55,18 +55,54 @@
         Statistics
     </h3>
     <p>
-    <ul>
-        <li>Min Modulation: {{min_modulation}}%
-        <li>Max Modulation: {{max_modulation}}%
-        <li>IC50: {{ic50}}µM
-        <li>Modulation IC50: {{modulation_ic50}}%
-        <li>Curve Slope: {{curve_slope}}
-        <li>R2 (Curve Fit): {{r2}}%
-        <li>Is Active: {{is_active_html}}
-        <li>Is Partially Active: {{is_partially_active_html}}
-        <li>Top plot value: {{top}}
-        <li>Bottom plot value: {{bottom}}
-    </ul>
+    <table>
+        <tbody>
+            <tr>
+                <td>Min Modulation</td>
+                <td>{{min_modulation}}%</td>
+            </tr>
+            <tr>
+                <td>Max Modulation</td>
+                <td>{{max_modulation}}%</td>
+            </tr>
+            <tr>
+                <td>IC50</td>
+                <td>{{ic50}}µM</td>
+            </tr>
+            <tr>
+                <td>Modulation IC50</td>
+                <td>{{modulation_ic50}}%</td>
+            </tr>
+            <tr>
+                <td>Concentration for 50% modulation</td>
+                <td>{{concentration_50}}µM</td>
+            </tr>
+            <tr>
+                <td>Curve Slope</td>
+                <td>{{curve_slope}}</td>
+            </tr>
+            <tr>
+                <td>R2 (Curve Fit)</td>
+                <td>{{r2}}%</td>
+            </tr>
+            <tr>
+                <td>Activity status</td>
+                <td>{{is_active_html}}</td>
+            </tr>
+            <tr>
+                <td>Is Partially Active</td>
+                <td>{{is_partially_active_html}}</td>
+            </tr>
+            <tr>
+                <td>Top plot value</td>
+                <td>{{top}}</td>
+            </tr>
+            <tr>
+                <td>Bottom plot value</td>
+                <td>{{bottom}}</td>
+            </tr>
+        </tbody>
+    </table>
     </p>
     <h3>
         Toxicity prediction based on SMILES

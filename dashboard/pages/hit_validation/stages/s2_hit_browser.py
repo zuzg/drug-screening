@@ -34,6 +34,11 @@ PARAMS_DISPLAY_SPEC = [
         "units": "%",
     },
     {
+        "label": "Concentration for 50% modulation",
+        "id": "concentration-50",
+        "units": "µM",
+    },
+    {
         "label": "Curve Slope",
         "id": "curve-slope-value",
         "units": "",
