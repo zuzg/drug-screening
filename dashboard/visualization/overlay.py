@@ -6,7 +6,7 @@ def projection_plot_overlay_controls(
     fig: go.Figure,
     controls_df: pd.DataFrame,
     style_dict: dict[str, list[str, int]],
-    projection: str = "umap",
+    projection: str = "pca",
 ) -> go.Figure:
     """
     Add control values to the plot of selected projection.

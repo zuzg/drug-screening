@@ -9,7 +9,8 @@ import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
-from umap import UMAP
+
+# from umap import UMAP
 
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
@@ -21,14 +22,14 @@ from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
     (PCA(n_components=2), "PCA"),
-    (
-        UMAP(
-            n_components=2,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP",
-    ),
+    # (
+    #     UMAP(
+    #         n_components=2,
+    #         n_neighbors=10,
+    #         min_dist=0.1,
+    #     ),
+    #     "UMAP",
+    # ),
 ]
 
 # === STAGE 1 ===
@@ -136,7 +137,7 @@ def on_projections_visualization_entry(
         option = {"label": value, "value": value}
         dropdown_options.append(option)
 
-    fig = plot_projection_2d(projections_df, projection_columns[0], "UMAP")
+    fig = plot_projection_2d(projections_df, projection_columns[0], "PCA")
     projections_df = eos_to_ecbd_link(projections_df)
     table = table_from_df(projections_df, "projection-table")
 
@@ -158,10 +159,10 @@ def on_projections_visualization_entry(
             dcc.Dropdown(
                 id="projection-method-selection-box",
                 options=[
-                    {"label": "UMAP", "value": "UMAP"},
+                    # {"label": "UMAP", "value": "UMAP"},
                     {"label": "PCA", "value": "PCA"},
                 ],
-                value="UMAP",
+                value="PCA",
                 searchable=False,
                 clearable=False,
                 disabled=False,
