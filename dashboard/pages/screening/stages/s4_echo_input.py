@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 ECHO_DESC = """
 ECHO files in ".csv" format should have [DETAILS] and (if there are exceptions in the file) [EXCEPTIONS] tags
@@ -57,6 +57,82 @@ ECHO_INPUT_STAGE = html.Div(
                     multiple=False,
                     className="text-center upload-box",
                 ),
+            ],
+            className="grid-2-1",
+        ),
+        html.Div(
+            children=[
+                html.Div(
+                    children=[
+                        html.Div(
+                            children=[
+                                html.H5("Additional options "),
+                                html.Div(
+                                    children=[
+                                        html.Div(
+                                            className="row",
+                                            children=[
+                                                html.Div(
+                                                    [
+                                                        html.Span("Screening feature:"),
+                                                        html.Div(
+                                                            children=[
+                                                                dcc.Dropdown(
+                                                                    options=[
+                                                                        {
+                                                                            "label": "% ACTIVATION",
+                                                                            "value": "activation",
+                                                                        },
+                                                                        {
+                                                                            "label": "% INHIBITION",
+                                                                            "value": "inhibition",
+                                                                        },
+                                                                    ],
+                                                                    value="activation",
+                                                                    id="screening-feature-dropdown",
+                                                                    clearable=False,
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    className="col",
+                                                ),
+                                                html.Div(
+                                                    [
+                                                        html.Span(
+                                                            "Activation formula:"
+                                                        ),
+                                                        html.Div(
+                                                            children=[
+                                                                dcc.Dropdown(
+                                                                    options=[
+                                                                        {
+                                                                            "label": "((x - μn)/(μp - μn)) * 100%",
+                                                                            "value": False,
+                                                                        },
+                                                                        {
+                                                                            "label": "(x - μn)/μn * 100%",
+                                                                            "value": True,
+                                                                        },
+                                                                    ],
+                                                                    value=False,
+                                                                    id="activation-formula-dropdown",
+                                                                    clearable=False,
+                                                                ),
+                                                            ],
+                                                        ),
+                                                    ],
+                                                    className="col",
+                                                ),
+                                            ],
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                html.Div(),
             ],
             className="grid-2-1",
         ),

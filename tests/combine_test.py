@@ -6,7 +6,6 @@ from dashboard.data.combine import (
     split_compounds_controls,
     combine_bmg_echo_data,
 )
-from dashboard.data.bmg_plate import Mode
 
 
 def test_values_array_to_column():
@@ -69,8 +68,7 @@ def test_combine_bmg_echo_data(df_stats):
         r"0(?!$)", "", regex=True
     )
     plate_values = np.random.rand(1, 2, 16, 24)
-    modes = {"1234": Mode.ACTIVATION}
-    combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, modes)
+    combined_df = combine_bmg_echo_data(echo_df, df_stats, plate_values, "activation")
 
     assert len(combined_df) == 384
     assert set(combined_df.columns) == set(echo_data.keys()) | {
