@@ -9,7 +9,6 @@ import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
-from umap import UMAP
 
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
@@ -18,6 +17,12 @@ from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
 from dashboard.visualization.text_tables import pca_summary, table_from_df
+
+
+class UMAP:
+    def __init__(self, *args, **kwargs) -> None:
+        pass
+
 
 PROJECTION_SETUP = [
     (PCA(n_components=2), "PCA"),

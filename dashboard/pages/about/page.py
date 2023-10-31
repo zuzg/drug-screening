@@ -7,44 +7,39 @@ register_page(path="/about", name=NAME, module=__name__)
 
 pb = PageBuilder(name=NAME)
 
+ABOUT_HEADING = """
+An online tool designed to automate and standardize the
+High-Throughput Screening (HTS) process.
+"""
+
+ABOUT_DESC = [
+    """
+Our goal is to simplify the workflow and ensure consistent, reproducible results.
+Every feature that can be customized allows you to save and reuse your configurations.
+Each report adheres to the same structured format.
+""",
+    html.Br(),
+    html.Br(),
+    """
+Finally, by employing the same dataset and parameters, you can consistently achieve identical outcomes.
+""",
+]
+
 ABOUT_CONTENT = html.Main(
-    className="container-xl flex-grow-1",
+    className="container-xl h-100 d-flex flex-row mx-5 px-5 mt-5 gap-5",
     children=[
         html.Div(
-            className="row",
+            className="w-50",
             children=[
                 html.H2(
-                    "General Info",
-                    className="border-bottom",
+                    ABOUT_HEADING,
+                    className="border-bottom mb-4 py-1",
                 ),
                 html.P(
-                    "This dashboard was prepared with the idea of being a tool to facilitate and accelerate the analysis of a large number of compounds.",
+                    ABOUT_DESC,
                 ),
-                html.H2(
-                    "How to use it",
-                    className="border-bottom",
-                ),
-                html.Ol(
-                    children=[
-                        html.Li(
-                            'Press "Upload" button to add assay files for analysis (make sure to select at least two files).'
-                        ),
-                        html.Li(
-                            "Calculating and displaying all the projections will take some time."
-                        ),
-                        html.Li(
-                            "The Data Projection plot presents assays' activations and/or inhibitions projected onto 2D space. The coloring is based on an attribute chosen in a dropdown menu. The checkbox below the plot adds control data to the visualization."
-                        ),
-                        html.Li(
-                            "Selecting any area on the Data Projection plot changes the content of the Selected Data Preview table."
-                        ),
-                        html.Li("The bottom section shows different statistics."),
-                    ]
-                ),
-                html.H2(
-                    "Authors",
-                    className="border-bottom",
-                ),
+                html.Br(),
+                html.Span("Authors:", className="fw-bold"),
                 html.Ul(
                     children=[
                         html.Li(
@@ -63,9 +58,18 @@ ABOUT_CONTENT = html.Main(
                 ),
             ],
         ),
+        html.Div(
+            className="w-50",
+            children=[
+                html.Span("Developed in collaboration with"),
+                html.A(
+                    " Polish Academy of Sciences, Institute of Bioorganic Chemistry",
+                    href="https://portal.ichb.pl/homepage/",
+                ),
+            ],
+        ),
     ],
 )
-
 
 pb.extend_layout(ABOUT_CONTENT)
 
