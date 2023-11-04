@@ -20,6 +20,22 @@ def four_param_logistic(
     return upper_limit + (lower_limit - upper_limit) / (1 + (x / ic50) ** slope)
 
 
+def find_argument_four_param_logistic(
+    y: float, lower_limit: float, upper_limit: float, ic50: float, slope: float
+) -> float:
+    """
+    Four parameter logistic function used for curve fitting.
+
+    :param y: value of the function
+    :param lower_limit: minimum value that the function can take
+    :param upper_limit: maximum value that the function can take
+    :param ic50: the x value of the inflection point
+    :param slope: the steepness of the curve
+    :return: argument of the function for given y
+    """
+    return ic50 * ((lower_limit - upper_limit) / (y - upper_limit) - 1) ** (1 / slope)
+
+
 def curve_fit_for_activation(screen_df: pd.DataFrame) -> pd.DataFrame:
     """
     For each compound, performs the curve fitting based on CONCENTRATION column

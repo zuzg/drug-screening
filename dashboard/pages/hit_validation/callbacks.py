@@ -22,8 +22,17 @@ from dash import (
 )
 
 from dashboard.storage import FileStorage
+from dashboard.data.determination import (
+    perform_hit_determination,
+    four_param_logistic,
+    find_argument_four_param_logistic,
+)
+from dashboard.visualization.plots import plot_ic50
 from dashboard.data.determination import perform_hit_determination
 from dashboard.visualization.plots import plot_ic50, plot_smiles
+from dashboard.pages.hit_validation.report.generate_jinja_report import (
+    generate_jinja_report,
+)
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
@@ -230,7 +239,9 @@ def on_compound_button_click(n_clicks: int, compound_id: str) -> str:
 
 activity_icons = {
     "active": html.I(className="fas fa-check-circle text-success"),
+    True: html.I(className="fas fa-check-circle text-success"),
     "inactive": html.I(className="fas fa-times-circle text-danger"),
+    False: html.I(className="fas fa-times-circle text-danger"),
     "inconclusive": html.I(className="fas fa-question-circle text-warning"),
 }
 
@@ -294,6 +305,22 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
+    modulation_ic50 = four_param_logistic(
+        entry["ic50"],
+        entry["BOTTOM"],
+        entry["TOP"],
+        entry["ic50"],
+        entry["slope"],
+    )
+
+    concentration_50 = find_argument_four_param_logistic(
+        50,
+        entry["BOTTOM"],
+        entry["TOP"],
+        entry["ic50"],
+        entry["slope"],
+    )
+
     smiles_row = pd.read_parquet("dashboard/assets/ml/predictions.pq").loc[
         lambda df: df["EOS"] == selected_compound
     ]
@@ -306,15 +333,26 @@ def on_selected_compound_changed(
 
     result = {
         "id": entry["EOS"],
-        "min-modulation": round(entry["min_value"], 5),
-        "max-modulation": round(entry["max_value"], 5),
+        "min_modulation": round(entry["min_value"], 5),
+        "max_modulation": round(entry["max_value"], 5),
         "ic50": round(entry["ic50"], 5),
-        "curve-slope": round(entry["slope"], 5),
+        "modulation_ic50": round(modulation_ic50, 5),
+        "concentration_50": round(float(concentration_50), 5),
+        "curve_slope": round(entry["slope"], 5),
         "r2": round(entry["r2"] * 100, 5),
-        "is-active": html.Span(
+        "is_active": html.Span(
             children=[
                 activity_icons[entry["activity_final"]],
                 html.Span(entry["activity_final"].upper(), className="ms-1"),
+            ]
+        ),
+        "is_partially_active": html.Span(
+            children=[
+                activity_icons[entry["is_partially_active"]],
+                html.Span(
+                    "TRUE" if entry["is_partially_active"] else "FALSE",
+                    className="ms-1",
+                ),
             ]
         ),
         "graph": graph,
@@ -323,7 +361,23 @@ def on_selected_compound_changed(
         "smiles": smiles_html,
         "toxicity": round(float(toxicity), 5),
     }
-    return tuple(result.values())
+
+    report_data = result.copy()
+    report_data["html_graph"] = graph.to_html(full_html=False, include_plotlyjs="cdn")
+    report_data["html_smiles_graph"] = smiles_graph
+    report_data["is_active_html"] = entry["activity_final"]
+    report_data["is_partially_active_html"] = entry["is_partially_active"]
+
+    return tuple(list(result.values()) + [report_data])
+
+
+def on_save_individual_EOS_result_button_click(
+    n_clicks, report_data, file_storage: FileStorage
+):
+    eos = report_data["id"]
+    filename = f"{eos}_report_{datetime.now().strftime('%Y-%m-%d')}.html"
+    jinja_template = generate_jinja_report(report_data)
+    return dict(content=jinja_template, filename=filename)
 
 
 # === STAGE 3 ===
@@ -419,14 +473,18 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("min-modulation-value", "children"),
         Output("max-modulation-value", "children"),
         Output("ic50-value", "children"),
+        Output("ic50-y-value", "children"),
+        Output("concentration-50", "children"),
         Output("curve-slope-value", "children"),
         Output("r2-value", "children"),
         Output("is-active-value", "children"),
+        Output("is-partially-active-value", "children"),
         Output("hit-browser-plot", "figure"),
         Output("hit-browser-top", "value"),
         Output("hit-browser-bottom", "value"),
         Output("smiles", "children"),
         Output("toxicity", "children"),
+        Output("report-data-hit-validation-hit-browser", "data"),
         Input("selected-compound-store", "data"),
         Input("hit-browser-unstack-button", "n_clicks"),
         Input("hit-browser-apply-button", "n_clicks"),
@@ -434,6 +492,17 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("hit-browser-bottom", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_selected_compound_changed, file_storage=file_storage))
+
+    callback(
+        Output("download-EOS-individual-report", "data"),
+        Input("save-individual-EOS-result-button", "n_clicks"),
+        State("report-data-hit-validation-hit-browser", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_save_individual_EOS_result_button_click, file_storage=file_storage
+        )
+    )
 
     callback(
         Output("download-json-settings-hit-validation", "data"),
