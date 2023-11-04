@@ -11,7 +11,6 @@ from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
 
 # from umap import UMAP
-
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.utils import eos_to_ecbd_link
