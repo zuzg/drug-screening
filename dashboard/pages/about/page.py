@@ -56,16 +56,17 @@ ABOUT_CONTENT = html.Main(
                         ),
                     ]
                 ),
-            ],
-        ),
-        html.Div(
-            className="w-50",
-            children=[
                 html.Span("Developed in collaboration with"),
                 html.A(
                     " Polish Academy of Sciences, Institute of Bioorganic Chemistry",
                     href="https://portal.ichb.pl/homepage/",
                 ),
+            ],
+        ),
+        html.Div(
+            className="w-50",
+            children=[
+                html.Img(src="/assets/images/flow.svg", className="w-100"),
             ],
         ),
     ],
