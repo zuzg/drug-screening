@@ -1,14 +1,29 @@
 from dash import html, dcc
 
+
+FILE_PARAMS = [
+    {
+        "id": "upload-activity-data",
+        "title": "Active SMILES",
+        "msg": "Upload file with results from IC50 fitting (with column acitivity_final)",
+    },
+    {
+        "id": "upload-smiles-data",
+        "title": "New SMILES",
+        "msg": "Upload file with untested SMILES to check structural similarity",
+    },
+]
+
+
 FILE_INPUT_CONTAINER = html.Div(
     children=[
         html.Div(
             children=[
                 html.Div(
                     children=[
-                        html.H5("Active SMILES"),
+                        html.H5(param["title"]),
                         html.P(
-                            "Upload file with results from IC50 fitting (with column acitivity_final)",
+                            param["msg"],
                             className="text-justify",
                         ),
                     ],
@@ -16,7 +31,7 @@ FILE_INPUT_CONTAINER = html.Div(
                 html.Div(
                     children=[
                         dcc.Upload(
-                            id="upload-activity-data",
+                            id=param["id"],
                             accept=".csv",
                             children=html.Div(
                                 [
@@ -30,41 +45,11 @@ FILE_INPUT_CONTAINER = html.Div(
                     ],
                     className="upload-box",
                 ),
+                html.Br(),
             ],
             className="grid-2-1",
-        ),
-        html.Br(),
-        html.Div(
-            children=[
-                html.Div(
-                    children=[
-                        html.H5("New SMILES Upload"),
-                        html.P(
-                            "Upload file with untested SMILES to check structural similarity",
-                            className="text-justify",
-                        ),
-                    ],
-                ),
-                html.Div(
-                    children=[
-                        dcc.Upload(
-                            id="upload-smiles-data",
-                            accept=".csv",
-                            children=html.Div(
-                                [
-                                    "Drag and Drop or ",
-                                    html.A("Select File"),
-                                ]
-                            ),
-                            multiple=False,
-                            className="text-center",
-                        ),
-                    ],
-                    className="upload-box",
-                ),
-            ],
-            className="grid-2-1",
-        ),
+        )
+        for param in FILE_PARAMS
     ],
     className="mb-3",
 )

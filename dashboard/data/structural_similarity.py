@@ -13,6 +13,12 @@ from sklearn.decomposition import PCA
 
 
 def _compute_single_ecfp_descriptor(smiles: str) -> Optional[np.ndarray]:
+    """
+    Calculate ecfp descriptor for single smiles
+
+    :param smiles: smiles
+    :return: ecfp descriptor
+    """
     mol = Chem.MolFromSmiles(smiles)
     if mol:
         fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius=2, nBits=2048)
@@ -21,6 +27,12 @@ def _compute_single_ecfp_descriptor(smiles: str) -> Optional[np.ndarray]:
 
 
 def compute_ecfp_descriptors(smiles_list: List[str]) -> Tuple[np.ndarray, int]:
+    """
+    Calculate ecfp descriptor for list of smiles
+
+    :param smiles: list of smiles
+    :return: ecfp descriptors and indices of correct descriptors
+    """
     keep_idx = []
     descriptors = []
     for i, smiles in enumerate(smiles_list):
@@ -34,6 +46,14 @@ def compute_ecfp_descriptors(smiles_list: List[str]) -> Tuple[np.ndarray, int]:
 def merge_active_new(
     activity: pd.DataFrame, smiles_active: pd.DataFrame, smiles_new: pd.DataFrame
 ) -> pd.DataFrame:
+    """
+    Merge dataframes
+
+    :param activity: df with activity calculated
+    :param smiles_active: df with smiles of active compounds
+    :param smiles_new: new smiles to cluster
+    :return: merged df
+    """
     merged = smiles_active.merge(activity, on="EOS")
     smiles_new["activity_final"] = "not tested"
     smiles_new = smiles_new.rename(columns={"eos": "EOS"})
@@ -43,6 +63,12 @@ def merge_active_new(
 
 
 def calculate_umap(descriptors: np.ndarray) -> np.ndarray:
+    """
+    Calculate UMAP projection
+
+    :param descriptors: descriptors
+    :return: array with projection
+    """
     umap_model = umap.UMAP(
         metric="jaccard",
         n_neighbors=25,
@@ -55,12 +81,24 @@ def calculate_umap(descriptors: np.ndarray) -> np.ndarray:
 
 
 def calculate_pca(descriptors: np.ndarray) -> np.ndarray:
+    """
+    Calculate PCA projection
+
+    :param descriptors: descriptors
+    :return: array with projection
+    """
     pca_model = PCA(n_components=2)
     X_pca = pca_model.fit_transform(descriptors)
     return X_pca
 
 
 def calculate_clusters(x_projection: np.ndarray) -> np.ndarray:
+    """
+    Calculate hdbscan clusters
+
+    :param x_projection: array with projected data
+    :return: array with clusters
+    """
     hdbscan_model = hdbscan.HDBSCAN(
         min_cluster_size=20, min_samples=20, cluster_selection_method="eom"
     )
@@ -71,6 +109,14 @@ def calculate_clusters(x_projection: np.ndarray) -> np.ndarray:
 def prepare_cluster_viz(
     activity: pd.DataFrame, smiles_active: pd.DataFrame, smiles_new: pd.DataFrame
 ) -> pd.DataFrame:
+    """
+    Merge dataframes, calculate projections and clusters
+
+    :param activity: df with activity calculated
+    :param smiles_active: df with smiles of active compounds
+    :param smiles_new: new smiles to cluster
+    :return: df with everything calculated
+    """
     df = merge_active_new(activity, smiles_active, smiles_new)
     ecfp_descriptors, keep_idx = compute_ecfp_descriptors(df["smiles"])
     df = df.iloc[keep_idx]

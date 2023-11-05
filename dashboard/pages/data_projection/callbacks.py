@@ -3,7 +3,7 @@ import functools
 import io
 import uuid
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -46,7 +46,7 @@ def on_projection_files_upload(
     last_modified: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[html.Div, str]:
+) -> Tuple[html.Div, str]:
     """
     Callback for file upload. TBD
 
@@ -94,7 +94,7 @@ def on_projections_visualization_entry(
     current_stage: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
+) -> Tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
     """
     Callback for projections visualization stage entry.
     It loads the data from the storage, computes and visualizes the projections.
@@ -286,7 +286,7 @@ def on_smiles_files_upload(
     smiles_content: str | None,
     stored_uuid: str | None,
     file_storage: FileStorage,
-) -> tuple[html.Div, str]:
+) -> Tuple[html.Div, str]:
     """
     Callback for file upload.
 
@@ -330,7 +330,7 @@ def on_plot_smiles(
     current_stage: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
+) -> Tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
     """
     Callback for projections visualization stage entry.
     It loads the data from the storage, computes and visualizes the projections.
