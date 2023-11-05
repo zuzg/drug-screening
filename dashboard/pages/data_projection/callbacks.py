@@ -3,6 +3,7 @@ import functools
 import io
 import uuid
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 import plotly.graph_objects as go
@@ -14,6 +15,10 @@ from sklearn.decomposition import PCA
 
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
+from dashboard.data.structural_similarity import (
+    prepare_cluster_viz,
+    plot_clustered_smiles,
+)
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
@@ -245,6 +250,9 @@ def on_plot_selected_data(
     return eos_to_ecbd_link(df).to_dict("records")
 
 
+# === STAGE 3 ===
+
+
 def on_save_projections_click(
     n_clicks: int,
     stored_uuid: str,
@@ -266,6 +274,122 @@ def on_save_projections_click(
     )
 
     return dcc.send_data_frame(projections_df.to_csv, filename)
+
+
+# === STAGE 4 ===
+
+
+def on_smiles_files_upload(
+    contents: str | None,
+    filenames: List[str],
+    last_modified: int,
+    smiles_content: str | None,
+    stored_uuid: str | None,
+    file_storage: FileStorage,
+) -> tuple[html.Div, str]:
+    """
+    Callback for file upload.
+
+    :param content: base64 encoded file content
+    :param content: base64 encoded smiles content
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: icon indicating the status of the upload
+    :return: uuid of the stored data
+    """
+    if not contents or not smiles_content:
+        return no_update
+    if not stored_uuid:
+        stored_uuid = str(uuid.uuid4())
+
+    activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
+    activity = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
+
+    smiles_decoded = base64.b64decode(smiles_content.split(",")[1]).decode("utf-8")
+    smiles_new = pd.read_csv(io.StringIO(smiles_decoded), dtype="str")
+    smiles_active = pd.read_parquet("dashboard/assets/ml/predictions.pq")
+
+    df_merged = prepare_cluster_viz(activity, smiles_active, smiles_new)
+
+    saved_name = f"{stored_uuid}_smiles_merged.pq"
+    file_storage.save_file(saved_name, df_merged.reset_index().to_parquet())
+
+    return (
+        html.Div(
+            children=[
+                make_file_list_component([activity_decoded, smiles_decoded], [], 1),
+            ],
+        ),
+    )
+
+
+# === STAGE 5 ===
+
+
+def on_plot_smiles(
+    current_stage: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
+    """
+    Callback for projections visualization stage entry.
+    It loads the data from the storage, computes and visualizes the projections.
+
+    :param current_stage: index of the current stage
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figure with projections, table with projections, dropdown with projection methods
+    """
+    if current_stage != 4:
+        return no_update
+
+    # df = pd.read_parquet(
+    #     pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    # )
+    df = pd.read_parquet("/home/zuz-gaw/uni/drug-screening/notebooks/smiles_merged.pq")
+
+    fig = plot_clustered_smiles(df)
+    projections_df = eos_to_ecbd_link(df)[
+        ["EOS", "smiles", "activity_final", "cluster_PCA", "cluster_UMAP"]
+    ]
+    table = table_from_df(projections_df, "projection-table")
+
+    method_options = html.Div(
+        children=[
+            dcc.Dropdown(
+                id="smiles-projection-method-selection-box",
+                options=[
+                    {"label": "UMAP", "value": "UMAP"},
+                    {"label": "PCA", "value": "PCA"},
+                ],
+                value="PCA",
+                searchable=False,
+                clearable=False,
+                disabled=False,
+            ),
+        ]
+    )
+    return fig, table, method_options
+
+
+def on_smiles_dropdown_checkbox_change(
+    projection_type: str,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> go.Figure:
+    """
+    Callback for dropdown change. It loads the data from the storage and visualizes the projections.
+
+    :param projection_type: projection method
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figure with projections"""
+
+    # df = pd.read_parquet(
+    #     pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    # )
+    df = pd.read_parquet("/home/zuz-gaw/uni/drug-screening/notebooks/smiles_merged.pq")
+    return plot_clustered_smiles(df, projection=projection_type)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -310,3 +434,26 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("projection-method-selection-box", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_plot_selected_data, file_storage=file_storage))
+    callback(
+        Output("smiles-file-message", "children"),
+        Input("upload-activity-data", "contents"),
+        Input("upload-activity-data", "filename"),
+        Input("upload-activity-data", "last_modified"),
+        Input("upload-smiles-data", "contents"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_projection_files_upload, file_storage=file_storage))
+    callback(
+        Output("smiles-projection-plot", "figure", allow_duplicate=True),
+        Output("smiles-projection-table", "children"),
+        Output("smiles-projection-method-selection-box", "children"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_plot_smiles, file_storage=file_storage))
+    callback(
+        Output("smiles-projection-plot", "figure", allow_duplicate=True),
+        Input("smiles-projection-method-selection-box", "value"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_smiles_dropdown_checkbox_change, file_storage=file_storage))
