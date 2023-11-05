@@ -19,6 +19,9 @@ from dashboard.visualization.plots import (
     concentration_confirmatory_plot,
     concentration_plot,
 )
+from dashboard.pages.correlation.report.generate_jinja_report import (
+    generate_jinja_report,
+)
 
 # === STAGE 1 ===
 
@@ -131,11 +134,6 @@ def on_visualization_stage_entry(
     if current_stage != 1 or stored_uuid is None:
         return no_update, no_update
 
-    report_data_correlation_plots = {
-        "concentration_value": concentration_value,
-        "volume_value": volume_value,
-    }
-
     saved_name_1 = f"{stored_uuid}_{SUFFIX_CORR_FILE1}.pq"
     saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
 
@@ -154,6 +152,17 @@ def on_visualization_stage_entry(
     )
     concentration_fig = concentration_plot(df, "INHIBITION")
 
+    report_data_correlation_plots = {
+        "concentration_value": concentration_value,
+        "volume_value": volume_value,
+        "inhibition_fig": inhibition_fig.to_html(
+            full_html=False, include_plotlyjs="cdn"
+        ),
+        "concentration_fig": concentration_fig.to_html(
+            full_html=False, include_plotlyjs="cdn"
+        ),
+    }
+
     return inhibition_fig, concentration_fig, report_data_correlation_plots
 
 
@@ -170,6 +179,12 @@ def on_json_generate_button_click(
     )
     json_object = json.dumps(correlation_plots_report, indent=4)
     return dict(content=json_object, filename=filename)
+
+
+def on_save_report_button_click(n_clicks, report_data, file_storage: FileStorage):
+    filename = f"Correlation_report_{datetime.now().strftime('%Y-%m-%d')}.html"
+    jinja_template = generate_jinja_report(report_data)
+    return dict(content=jinja_template, filename=filename)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -219,3 +234,9 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("report-data-correlation-plots", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
+    callback(
+        Output("download-report-correlation", "data"),
+        Input("download-report-correlation-button", "n_clicks"),
+        State("report-data-correlation-plots", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_report_button_click, file_storage=file_storage))
