@@ -102,8 +102,9 @@ def calculate_clusters(x_projection: np.ndarray) -> np.ndarray:
     hdbscan_model = hdbscan.HDBSCAN(
         min_cluster_size=20, min_samples=20, cluster_selection_method="eom"
     )
-
-    return hdbscan_model.fit_predict(x_projection)
+    preds = hdbscan_model.fit_predict(x_projection)
+    clusters = [f"c{x}" if x != -1 else "outlier" for x in preds]
+    return clusters
 
 
 def prepare_cluster_viz(
@@ -146,28 +147,48 @@ def plot_clustered_smiles(
     projection_x = f"{projection.upper()}_0"
     projection_y = f"{projection.upper()}_1"
     clusters = f"cluster_{projection}"
+    labels = {
+        projection_x: "X",
+        projection_y: "Y",
+        "EOS": "EOS",
+        feature: "Activity",
+        clusters: "Cluster",
+    }
+    hover_data = {
+        "EOS": True,
+        projection_x: ":.3f",
+        projection_y: ":.3f",
+        feature: True,
+        clusters: True,
+    }
     fig = px.scatter(
-        df,
+        df[df[clusters] != "outlier"],
         x=projection_x,
         y=projection_y,
         color=feature,
-        color_discrete_sequence=["rgb(0,128,0)", "yellow", "rgb(31, 119, 180)"],
+        color_discrete_sequence=["#00CC96", "#FFA15A", "#636EFA"],
         symbol=clusters,
-        opacity=0.5,
-        labels={
-            projection_x: "X",
-            projection_y: "Y",
-            "EOS": "EOS",
-            feature: "activity",
-        },
+        opacity=0.7,
+        labels=labels,
         title=f"{projection.upper()} projection of SMILES with respect to activity",
-        hover_data={
-            "EOS": True,
-            projection_x: ":.3f",
-            projection_y: ":.3f",
-            feature: True,
-            clusters: ":.3d",
-        },
+        hover_data=hover_data,
+    )
+    fig.add_traces(
+        px.scatter(
+            df[df[clusters] == "outlier"],
+            x=projection_x,
+            y=projection_y,
+            labels=labels,
+            hover_data=hover_data,
+        )
+        .update_traces(
+            marker_color="gray",
+            marker_symbol="x",
+            opacity=0.3,
+            name="outliers",
+            showlegend=True,
+        )
+        .data
     )
 
     fig.update_yaxes(title_standoff=15, automargin=True)

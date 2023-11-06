@@ -281,9 +281,10 @@ def on_save_projections_click(
 
 def on_smiles_files_upload(
     contents: str | None,
-    filenames: List[str],
+    filename: str,
     last_modified: int,
     smiles_content: str | None,
+    smiles_filename: str,
     stored_uuid: str | None,
     file_storage: FileStorage,
 ) -> Tuple[html.Div, str]:
@@ -317,7 +318,7 @@ def on_smiles_files_upload(
     return (
         html.Div(
             children=[
-                make_file_list_component([filenames], [], 1),
+                make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
     )
@@ -349,7 +350,7 @@ def on_plot_smiles(
 
     fig = plot_clustered_smiles(df)
     projections_df = eos_to_ecbd_link(df)[
-        ["EOS", "smiles", "activity_final", "cluster_PCA", "cluster_UMAP"]
+        ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP"]
     ]
     table = table_from_df(projections_df, "projection-table")
 
@@ -438,6 +439,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("upload-activity-data", "filename"),
         Input("upload-activity-data", "last_modified"),
         Input("upload-smiles-data", "contents"),
+        Input("upload-smiles-data", "filename"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_smiles_files_upload, file_storage=file_storage))

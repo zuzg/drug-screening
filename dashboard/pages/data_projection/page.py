@@ -15,7 +15,7 @@ STAGE_NAMES = [
     "Visualization",
     "Save Results",
     "SMILES Input",
-    "Structural Similarity",
+    "Similarity",
 ]
 
 pb.add_stages(STAGES, STAGE_NAMES)
