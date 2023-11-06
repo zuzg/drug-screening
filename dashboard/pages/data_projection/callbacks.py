@@ -317,7 +317,7 @@ def on_smiles_files_upload(
     return (
         html.Div(
             children=[
-                make_file_list_component([activity_decoded, smiles_decoded], [], 1),
+                make_file_list_component([filenames], [], 1),
             ],
         ),
     )
@@ -343,10 +343,9 @@ def on_plot_smiles(
     if current_stage != 4:
         return no_update
 
-    # df = pd.read_parquet(
-    #     pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
-    # )
-    df = pd.read_parquet("/home/zuz-gaw/uni/drug-screening/notebooks/smiles_merged.pq")
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    )
 
     fig = plot_clustered_smiles(df)
     projections_df = eos_to_ecbd_link(df)[
@@ -385,10 +384,9 @@ def on_smiles_dropdown_checkbox_change(
     :param file_storage: file storage
     :return: figure with projections"""
 
-    # df = pd.read_parquet(
-    #     pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
-    # )
-    df = pd.read_parquet("/home/zuz-gaw/uni/drug-screening/notebooks/smiles_merged.pq")
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    )
     return plot_clustered_smiles(df, projection=projection_type)
 
 
@@ -442,7 +440,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("upload-smiles-data", "contents"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_projection_files_upload, file_storage=file_storage))
+    )(functools.partial(on_smiles_files_upload, file_storage=file_storage))
     callback(
         Output("smiles-projection-plot", "figure", allow_duplicate=True),
         Output("smiles-projection-table", "children"),

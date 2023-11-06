@@ -37,7 +37,7 @@ def compute_ecfp_descriptors(smiles_list: List[str]) -> Tuple[np.ndarray, int]:
     descriptors = []
     for i, smiles in enumerate(smiles_list):
         ecfp = _compute_single_ecfp_descriptor(smiles)
-        if ecfp:
+        if ecfp is not None:
             keep_idx.append(i)
             descriptors.append(ecfp)
     return np.vstack(descriptors), keep_idx
