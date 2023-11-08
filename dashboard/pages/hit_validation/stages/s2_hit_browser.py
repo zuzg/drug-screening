@@ -180,30 +180,32 @@ RIGHT_PANEL = html.Div(
                             className="mt-3 d-flex flex-column gap-3",
                             children=[
                                 html.Span(
+                                    className="d-flex flex-row gap-3 align-items-center",
                                     children=[
                                         html.Label(
-                                            "TOP Override:",
-                                            className="form-label",
+                                            "TOP:",
+                                            className="form-label fw-bold w-25",
                                         ),
                                         dcc.Input(
                                             id="hit-browser-top",
                                             type="number",
                                             placeholder="Top",
-                                            className="form-control",
+                                            className="form-control w-75",
                                         ),
                                     ],
                                 ),
                                 html.Span(
+                                    className="d-flex flex-row gap-3 align-items-center",
                                     children=[
                                         html.Label(
-                                            "BOTTOM Override:",
-                                            className="form-label",
+                                            "BOTTOM:",
+                                            className="form-label fw-bold w-25",
                                         ),
                                         dcc.Input(
                                             id="hit-browser-bottom",
                                             type="number",
                                             placeholder="Bottom",
-                                            className="form-control",
+                                            className="form-control w-75",
                                         ),
                                     ],
                                 ),
@@ -212,12 +214,12 @@ RIGHT_PANEL = html.Div(
                                     children=[
                                         html.Button(
                                             id="hit-browser-apply-button",
-                                            className="btn btn-primary flex-grow-1",
+                                            className="btn btn-primary w-50",
                                             children="Apply Stacking",
                                         ),
                                         html.Button(
                                             id="hit-browser-unstack-button",
-                                            className="btn btn-primary flex-grow-1",
+                                            className="btn btn-secondary w-50",
                                             children="Unstack",
                                         ),
                                     ],
