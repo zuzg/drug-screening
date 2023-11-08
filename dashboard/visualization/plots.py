@@ -623,7 +623,6 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         )
 
     return go.Figure(
-        layout_title_text="IC50",
         layout={
             "xaxis": {
                 "title": "Concentration [uM]",
@@ -636,6 +635,12 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
                 "visible": True,
                 "showticklabels": True,
             },
+            "margin": dict(
+                l=10,
+                r=10,
+                t=50,
+                b=10,
+            ),
         },
         data=data,
     )

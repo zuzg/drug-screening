@@ -1,4 +1,5 @@
 from dash import html, dcc
+import dash_bootstrap_components as dbc
 
 
 LEFT_PANEL = html.Div(
@@ -9,7 +10,7 @@ LEFT_PANEL = html.Div(
             id="compounds-list-container",
         ),
     ],
-    className="border-end border-2 px-3 d-flex flex-column h-100",
+    className="border-end border-2 px-3 d-flex flex-column h-100 min-w-150px",
 )
 
 PARAMS_DISPLAY_SPEC = [
@@ -59,15 +60,39 @@ PARAMS_DISPLAY_SPEC = [
         "units": "",
     },
 ]
-BOTTOM_PANEL = html.Section(
-    className="row",
+
+GRAPH_TAB = dbc.Tab(
+    label="Graph",
+    tab_id="graph-tab",
+    tabClassName="ms-auto",
     children=[
-        html.H5("Toxicity prediction based on SMILES"),
         html.Div(
-            className="row",
+            className="d-flex flex-column h-100",
+            children=[
+                dcc.Graph(
+                    id="hit-browser-plot",
+                    figure={},
+                    config={
+                        "displayModeBar": False,
+                        "scrollZoom": False,
+                    },
+                    responsive=True,
+                )
+            ],
+        ),
+    ],
+)
+
+SMILES_TAB = dbc.Tab(
+    label="SMILES",
+    tab_id="smiles-tab",
+    children=[
+        html.P("Compound Structure", className="fw-bold mt-3"),
+        html.Div(
             children=[
                 html.Div(
                     id="smiles",
+                    className="d-flex flex-row justify-content-center",
                 ),
                 html.Div(
                     children=[
@@ -98,28 +123,34 @@ BOTTOM_PANEL = html.Section(
 RIGHT_PANEL = html.Div(
     id="hit-browser-container",
     children=[
-        html.H5("Compound ID", className="fw-bold mb-3", id="compound-id"),
+        html.Header(
+            className="d-flex flex-row justify-content-between align-items-center",
+            children=[
+                html.H5("Compound ID", className="fw-bold mb-0", id="compound-id"),
+                html.Div(
+                    className="d-flex flex-row gap-3",
+                    children=[
+                        html.Button(
+                            id="save-individual-EOS-result-button",
+                            className="btn btn-primary",
+                            children="Save HTML Report",
+                        ),
+                        dcc.Download(id="download-EOS-individual-report"),
+                    ],
+                ),
+            ],
+        ),
         html.Div(
             className="d-flex flex-row justify-content-between h-100",
             children=[
                 html.Div(
-                    className="d-flex flex-column h-100",
-                    style={"width": "700px"},
-                    children=[
-                        dcc.Graph(
-                            id="hit-browser-plot",
-                            figure={},
-                            config={
-                                "displayModeBar": False,
-                                "scrollZoom": False,
-                            },
-                            style={"max-width": "700px"},
-                            responsive=True,
-                        )
-                    ],
+                    className="me-5 mt-n9 h-100 flex-grow-1",
+                    children=dbc.Tabs(
+                        [GRAPH_TAB, SMILES_TAB],
+                    ),
                 ),
                 html.Div(
-                    className="d-flex flex-column h-100 flex-grow-1",
+                    className="d-flex flex-column h-100 mt-3 min-w-300px",
                     children=[
                         html.Section(
                             children=[
@@ -146,7 +177,7 @@ RIGHT_PANEL = html.Div(
                             ]
                         ),
                         html.Section(
-                            className="mt-5 d-flex flex-column gap-3",
+                            className="mt-3 d-flex flex-column gap-3",
                             children=[
                                 html.Span(
                                     children=[
@@ -191,22 +222,8 @@ RIGHT_PANEL = html.Div(
                                         ),
                                     ],
                                 ),
-                                html.Span(
-                                    className="d-flex flex-row gap-3 w-100",
-                                    children=[
-                                        html.Button(
-                                            id="save-individual-EOS-result-button",
-                                            className="btn btn-primary flex-grow-1",
-                                            children="Save result",
-                                        ),
-                                        dcc.Download(
-                                            id="download-EOS-individual-report"
-                                        ),
-                                    ],
-                                ),
                             ],
                         ),
-                        BOTTOM_PANEL,
                     ],
                 ),
             ],
