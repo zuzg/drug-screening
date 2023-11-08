@@ -208,3 +208,15 @@
 .custom-nav-link.active {
     font-weight: bold;
 }
+
+@media (max-width: 1000px) {
+    main.grid-1-1-1-1 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    main.grid-1-1-1-1 {
+        grid-template-columns: repeat(1, 1fr);
+    }
+}
