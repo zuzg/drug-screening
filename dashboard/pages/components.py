@@ -56,11 +56,14 @@ def make_main_header(page_registry: dict):
                     html.Div(
                         className="d-flex flex-wrap align-items-center justify-content-between",
                         children=[
-                            html.Img(
-                                src="/assets/images/logo.svg",
-                                alt="Logo",
-                                className="d-inline-block align-text-top",
-                                height=50,
+                            dcc.Link(
+                                html.Img(
+                                    src="/assets/images/logo.svg",
+                                    alt="Logo",
+                                    className="d-inline-block align-text-top",
+                                    height=50,
+                                ),
+                                href="/",
                             ),
                             html.Nav(
                                 children=[nav_bar],
