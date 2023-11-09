@@ -353,10 +353,8 @@ def on_selected_compound_changed(
     return list(result.values()) + [report_data]
 
 
-def on_save_individual_EOS_result_button_click(
-    n_clicks, report_data, file_storage: FileStorage
-):
-    eos = report_data["id"]
+def on_save_individual_EOS_result_button_click(n_clicks, report_data, eos):
+    report_data["id"] = eos
     filename = f"{eos}_report_{datetime.now().strftime('%Y-%m-%d')}.html"
     jinja_template = generate_jinja_report(report_data)
     return dict(content=jinja_template, filename=filename)
@@ -471,12 +469,9 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("download-EOS-individual-report", "data"),
         Input("save-individual-EOS-result-button", "n_clicks"),
         State("report-data-hit-validation-hit-browser", "data"),
+        State("hit-browser-compound-dropdown", "value"),
         prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_save_individual_EOS_result_button_click, file_storage=file_storage
-        )
-    )
+    )(functools.partial(on_save_individual_EOS_result_button_click))
 
     callback(
         Output("download-json-settings-hit-validation", "data"),
