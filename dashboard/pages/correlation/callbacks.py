@@ -1,16 +1,15 @@
-import uuid
-import functools
 import base64
+import functools
 import io
-from datetime import datetime
 import json
+import uuid
+from datetime import datetime
 
 import pandas as pd
 import pyarrow as pa
-
-from plotly import graph_objects as go
-from plotly import express as px
 from dash import Input, Output, State, callback, html, no_update
+from plotly import express as px
+from plotly import graph_objects as go
 
 from dashboard.data import validation
 from dashboard.data.preprocess import calculate_concentration
@@ -48,9 +47,11 @@ def on_file_upload(
     :param file_storage: file storage
     :param store_suffix: suffix for the file name
     :return: icon indicating the status of the upload
+    :return: dummy element to trigger the loading component
+    :return: session uuid
     """
     if content is None:
-        return no_update, no_update
+        return no_update, no_update, no_update
 
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
@@ -66,7 +67,7 @@ def on_file_upload(
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, stored_uuid
+    return ICON_OK, no_update, stored_uuid
 
 
 def on_both_files_uploaded(
@@ -175,6 +176,7 @@ def on_json_generate_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("dummy-upload-file-1", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
         State("user-uuid", "data"),
@@ -187,6 +189,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("dummy-upload-file-2", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),

@@ -1,4 +1,4 @@
-from dash import html, dcc, dash_table
+from dash import dash_table, dcc, html
 
 _COMPOUNDS_DATATABLE = dash_table.DataTable(
     id="plates-table",
@@ -81,19 +81,24 @@ HEATMAP_SECTION = html.Div(
         html.Div(
             className="d-flex flex-column gap-3 h-100",
             children=[
-                html.Div(
-                    className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
+                dcc.Loading(
                     children=[
-                        dcc.Graph(
-                            id="plates-heatmap-graph",
-                            figure={},
-                            style={"height": "100%"},
-                            config={
-                                "displayModeBar": False,
-                                "scrollZoom": False,
-                            },
+                        html.Div(
+                            className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
+                            children=[
+                                dcc.Graph(
+                                    id="plates-heatmap-graph",
+                                    figure={},
+                                    style={"height": "100%"},
+                                    config={
+                                        "displayModeBar": False,
+                                        "scrollZoom": False,
+                                    },
+                                ),
+                            ],
                         ),
                     ],
+                    type="circle",
                 ),
             ],
         ),

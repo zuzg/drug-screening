@@ -1,6 +1,8 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
+from dashboard.visualization.text_tables import make_download_button_text
+
 REPORT_STAGE = html.Div(
     id="report_stage",
     className="container",
@@ -8,18 +10,19 @@ REPORT_STAGE = html.Div(
         html.Div(
             className="my-4",
             children=[
-                html.Div(className="row", children=[html.H5("Save results:")]),
                 html.Div(
                     className="row mt-2",
                     children=[
                         html.Div(
-                            className="col-lg-6",
+                            className="col",
                             children=[
                                 html.Div(
-                                    className="d-flex justify-content-between",
+                                    className="d-flex justify-content-center",
                                     children=[
                                         html.Button(
-                                            "Save screening results as CSV",
+                                            make_download_button_text(
+                                                "Save screening results as CSV"
+                                            ),
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="save-results-button",
                                         ),
@@ -34,13 +37,15 @@ REPORT_STAGE = html.Div(
                     className="row mt-2",
                     children=[
                         html.Div(
-                            className="col-lg-6",
+                            className="col",
                             children=[
                                 html.Div(
-                                    className="d-flex justify-content-between",
+                                    className="d-flex justify-content-center",
                                     children=[
                                         html.Button(
-                                            "Save exceptions as CSV",
+                                            make_download_button_text(
+                                                "Save exceptions as CSV"
+                                            ),
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="save-exceptions-button",
                                         ),
@@ -55,13 +60,15 @@ REPORT_STAGE = html.Div(
                     className="row mt-2",
                     children=[
                         html.Div(
-                            className="col-lg-6",
+                            className="col",
                             children=[
                                 html.Div(
-                                    className="d-flex justify-content-between",
+                                    className="d-flex justify-content-center",
                                     children=[
                                         html.Button(
-                                            "Generate HTML report",
+                                            make_download_button_text(
+                                                "Generate HTML report"
+                                            ),
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="generate-report-button",
                                         ),
@@ -76,13 +83,15 @@ REPORT_STAGE = html.Div(
                     className="row mt-2",
                     children=[
                         html.Div(
-                            className="col-lg-6",
+                            className="col",
                             children=[
                                 html.Div(
-                                    className="d-flex justify-content-between",
+                                    className="d-flex justify-content-center",
                                     children=[
                                         html.Button(
-                                            "Save program settings",
+                                            make_download_button_text(
+                                                "Save program settings"
+                                            ),
                                             className="btn btn-primary btn-lg btn-block btn-report",
                                             id="generate-json-button",
                                         ),

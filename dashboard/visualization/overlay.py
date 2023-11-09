@@ -38,7 +38,7 @@ def projection_plot_overlay_controls(
             text=group["EOS"].str.split(";"),
             hovertemplate="<b> %{text[0]}</b><br>"
             + "<b>%{text[1]}</b><br>"
-            + "X: %{x:.4f}<br>Y: %{y:.4f}<br>"
+            + "X: %{x:.2f}<br>Y: %{y:.2f}<br>"
             + "<extra></extra>",
         )
 

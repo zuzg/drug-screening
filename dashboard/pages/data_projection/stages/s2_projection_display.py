@@ -57,7 +57,6 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                 html.Div(
                     children=[
                         dcc.Loading(
-                            id="loading-projection-table",
                             children=[html.Div(id="projection-table", children=[])],
                             type="circle",
                         ),
@@ -67,7 +66,6 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                 html.Div(
                     children=[
                         dcc.Loading(
-                            id="loading-projection-plot",
                             children=[
                                 dcc.Graph(id="projection-plot", figure={}),
                             ],

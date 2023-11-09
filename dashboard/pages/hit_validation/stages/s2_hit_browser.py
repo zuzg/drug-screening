@@ -1,5 +1,4 @@
-from dash import html, dcc
-
+from dash import dcc, html
 
 LEFT_PANEL = html.Div(
     children=[
@@ -106,16 +105,21 @@ RIGHT_PANEL = html.Div(
                     className="d-flex flex-column h-100",
                     style={"width": "700px"},
                     children=[
-                        dcc.Graph(
-                            id="hit-browser-plot",
-                            figure={},
-                            config={
-                                "displayModeBar": False,
-                                "scrollZoom": False,
-                            },
-                            style={"max-width": "700px"},
-                            responsive=True,
-                        )
+                        dcc.Loading(
+                            children=[
+                                dcc.Graph(
+                                    id="hit-browser-plot",
+                                    config={
+                                        "displayModeBar": False,
+                                        "scrollZoom": False,
+                                    },
+                                    style={"max-width": "700px"},
+                                    responsive=True,
+                                )
+                            ],
+                            type="circle",
+                            loading_state={"is_loading": True},
+                        ),
                     ],
                 ),
                 html.Div(

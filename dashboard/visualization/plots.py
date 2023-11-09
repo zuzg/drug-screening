@@ -91,9 +91,9 @@ def plot_projection_2d(
         # height=height,
         hover_data={
             "EOS": True,
-            projection_x: ":.3f",
-            projection_y: ":.3f",
-            feature: ":.3f",
+            projection_x: ":.2f",
+            projection_y: ":.2f",
+            feature: ":.2f",
         },
     )
 
@@ -636,6 +636,7 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
                 "visible": True,
                 "showticklabels": True,
             },
+            "template": PLOTLY_TEMPLATE,
         },
         data=data,
     )

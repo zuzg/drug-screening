@@ -1,38 +1,35 @@
 import base64
-import dash_dangerously_set_inner_html as dhtml
-import io
-import uuid
 import functools
+import io
 import json
-import pandas as pd
-import pyarrow as pa
-
+import uuid
 from datetime import datetime
 
+import dash_dangerously_set_inner_html as dhtml
+import pandas as pd
+import pyarrow as pa
 from dash import (
+    ALL,
     Input,
     Output,
     State,
     callback,
-    html,
-    no_update,
-    ALL,
     callback_context,
     dcc,
+    html,
+    no_update,
 )
 
-from dashboard.storage import FileStorage
 from dashboard.data.determination import (
-    perform_hit_determination,
-    four_param_logistic,
     find_argument_four_param_logistic,
+    four_param_logistic,
+    perform_hit_determination,
 )
-from dashboard.visualization.plots import plot_ic50
-from dashboard.data.determination import perform_hit_determination
-from dashboard.visualization.plots import plot_ic50, plot_smiles
 from dashboard.pages.hit_validation.report.generate_jinja_report import (
     generate_jinja_report,
 )
+from dashboard.storage import FileStorage
+from dashboard.visualization.plots import plot_ic50, plot_smiles
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
@@ -60,9 +57,11 @@ def on_file_upload(
     :param top_upper_bound: top upper bound
     :param file_storage: file storage
     :return: icon indicating the status of the upload
+    :return: dummy upload element for loading component
+    :return: session uuid
     """
     if content is None:
-        return no_update, no_update
+        return no_update, no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -107,6 +106,7 @@ def on_file_upload(
                 ],
                 className="text-danger",
             ),
+            no_update,
             stored_uuid,
         )
 
@@ -160,7 +160,7 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, stored_uuid
+    return result_msg, None, stored_uuid
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -429,6 +429,7 @@ def on_download_summary_csv_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
+        Output("dummy-upload-screening-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),

@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 PARAMS_CONTAINER = html.Div(
     children=[
@@ -109,22 +109,28 @@ FILE_INPUT_CONTAINER = html.Div(
                         ),
                     ],
                 ),
-                html.Div(
+                dcc.Loading(
                     children=[
-                        dcc.Upload(
-                            id="upload-screening-data",
-                            accept=".csv",
-                            children=html.Div(
-                                [
-                                    "Drag and Drop or ",
-                                    html.A("Select File"),
-                                ]
-                            ),
-                            multiple=False,
-                            className="text-center",
+                        html.Div(
+                            children=[
+                                dcc.Upload(
+                                    id="upload-screening-data",
+                                    accept=".csv",
+                                    children=html.Div(
+                                        [
+                                            "Drag and Drop or ",
+                                            html.A("Select File"),
+                                        ]
+                                    ),
+                                    multiple=False,
+                                    className="text-center",
+                                ),
+                                html.Div(id="dummy-upload-screening-data"),
+                            ],
+                            className="upload-box",
                         ),
                     ],
-                    className="upload-box",
+                    type="circle",
                 ),
             ],
             className="grid-1-1",

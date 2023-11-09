@@ -6,6 +6,21 @@ from sklearn.decomposition import PCA
 PRECISION = 5
 
 
+def make_download_button_text(text: str) -> html.Span:
+    """
+    Creates a download button with text.
+
+    :param text: text to be displayed on the button
+    :return: download button with text
+    """
+    return html.Span(
+        [
+            html.Span(text, style={"margin-right": "8px"}),
+            html.I(className=f"fa-solid fa-download"),
+        ]
+    )
+
+
 def make_filter_radio_options(key: str):
     """
     Creates the options for the filter radio buttons.

@@ -4,7 +4,6 @@ import io
 import json
 import uuid
 from datetime import datetime
-import json
 
 import numpy as np
 import pandas as pd
@@ -16,10 +15,10 @@ from dash import (
     State,
     callback,
     callback_context,
+    dash_table,
     dcc,
     html,
     no_update,
-    dash_table,
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -51,7 +50,7 @@ from dashboard.visualization.text_tables import (
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
-        return no_update
+        return no_update, no_update, no_update
 
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
@@ -76,6 +75,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
 
     return (
         make_file_list_component(names, [], 2),
+        no_update,
         stored_uuid,
     )
 
@@ -263,7 +263,7 @@ def upload_echo_data(
     contents, names, last_modified, eos_contents, stored_uuid, file_storage
 ):
     if contents is None or eos_contents is None:
-        return no_update
+        return no_update, no_update, no_update
 
     eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
     eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
@@ -287,8 +287,12 @@ def upload_echo_data(
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
-    return make_file_list_component(
-        names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+    return (
+        make_file_list_component(
+            names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+        ),
+        no_update,
+        no_update,
     )
 
 
@@ -416,8 +420,12 @@ def on_summary_entry(
         fig_feature,
         -3,  # z_score_min,
         3,  # z_score_max,
+        False,
+        False,
         feature_min,
         feature_max,
+        False,
+        False,
         f"number of compounds: {len(compounds_df)}",
         f"{screening_options['feature_column']} range:",
         radio_options,
@@ -513,7 +521,7 @@ def on_range_update(
 
     mask = (compounds_df[key] >= min_value) & (compounds_df[key] <= max_value)
     outside_range_df = compounds_df[~mask].copy()
-    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+    outside_range_df = outside_range_df[[key, WELL, PLATE, "EOS"]].merge(
         cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
@@ -638,6 +646,7 @@ def register_callbacks(elements, file_storage):
     callback(
         [
             Output("bmg-filenames", "children"),
+            Output("dummy-upload-bmg-data", "children"),
             Output("user-uuid", "data"),
         ],
         Input("upload-bmg-data", "contents"),
@@ -685,6 +694,8 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("echo-filenames", "children"),
+        Output("dummy-upload-echo-data", "children"),
+        Output("dummy-upload-eos-mapping", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
@@ -705,8 +716,12 @@ def register_callbacks(elements, file_storage):
         Output("feature-plot", "figure"),
         Output("z-score-min-input", "value"),
         Output("z-score-max-input", "value"),
+        Output("z-score-min-input", "disabled"),
+        Output("z-score-max-input", "disabled"),
         Output("feature-min-input", "value"),
         Output("feature-max-input", "value"),
+        Output("feature-min-input", "disabled"),
+        Output("feature-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
         Output("tab-feature-header", "children"),
         Output("filter-radio", "options"),

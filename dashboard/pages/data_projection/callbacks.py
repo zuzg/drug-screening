@@ -42,7 +42,7 @@ def on_projection_files_upload(
     file_storage: FileStorage,
 ) -> tuple[html.Div, str]:
     """
-    Callback for file upload. TBD
+    Callback for file upload.
 
     :param content: base64 encoded file content
     :param stored_uuid: session uuid
