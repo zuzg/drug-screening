@@ -62,6 +62,10 @@
     min-width: 150px;
 }
 
+.min-w-200px {
+    min-width: 150px;
+}
+
 .min-w-300px {
     min-width: 300px;
 }

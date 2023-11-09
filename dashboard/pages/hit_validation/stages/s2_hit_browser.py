@@ -2,17 +2,6 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 
 
-LEFT_PANEL = html.Div(
-    children=[
-        html.P("All Compounds", className="fw-bold mb-3"),
-        html.Div(
-            className="h-100 d-flex flex-column panel-restricted",
-            id="compounds-list-container",
-        ),
-    ],
-    className="border-end border-2 px-3 d-flex flex-column h-100 min-w-150px",
-)
-
 PARAMS_DISPLAY_SPEC = [
     {
         "label": "Min Modulation",
@@ -120,14 +109,26 @@ SMILES_TAB = dbc.Tab(
     ],
 )
 
-RIGHT_PANEL = html.Div(
+MAIN_PANEL = html.Div(
     id="hit-browser-container",
     children=[
         html.Header(
             className="d-flex flex-row justify-content-between align-items-center",
             children=[
-                html.H5("Compound ID", className="fw-bold mb-0", id="compound-id"),
-                html.Div(
+                html.Span(
+                    className="d-flex flex-row gap-3 align-items-center",
+                    children=[
+                        html.H5("Compound:", className="mb-0"),
+                        dcc.Dropdown(
+                            id="hit-browser-compound-dropdown",
+                            placeholder="Select Compound",
+                            clearable=False,
+                            searchable=True,
+                            className="fw-bold min-w-200px",
+                        ),
+                    ],
+                ),
+                html.Span(
                     className="d-flex flex-row gap-3",
                     children=[
                         html.Button(
@@ -236,9 +237,7 @@ RIGHT_PANEL = html.Div(
 
 HIT_BROWSER_STAGE = html.Div(
     children=[
-        LEFT_PANEL,
-        RIGHT_PANEL,
-        dcc.Store(id="selected-compound-store", data=None),
+        MAIN_PANEL,
     ],
     className="d-flex flex-row gap-3 h-100",
 )

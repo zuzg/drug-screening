@@ -217,24 +217,7 @@ def on_hit_browser_stage_entry(
     )
 
     compounds_list = sorted(hit_determination_df["EOS"].unique().tolist())
-    return [
-        html.Button(
-            compound,
-            className="text-center font-monospace fw-semibold mb-1 btn btn-primary btn-sm",
-            id={"type": "compound-button", "index": compound},
-        )
-        for compound in compounds_list
-    ], compounds_list[0]
-
-
-def on_compound_button_click(n_clicks: int, compound_id: str) -> str:
-    """
-    Callback for compound button click. It returns the compound name.
-
-    :param compound: compound name
-    :return: compound name
-    """
-    return callback_context.triggered_id["index"]
+    return compounds_list, compounds_list[0]
 
 
 activity_icons = {
@@ -332,7 +315,6 @@ def on_selected_compound_changed(
     smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
 
     result = {
-        "id": entry["EOS"],
         "min_modulation": round(entry["min_value"], 5),
         "max_modulation": round(entry["max_value"], 5),
         "ic50": round(entry["ic50"], 5),
@@ -368,7 +350,7 @@ def on_selected_compound_changed(
     report_data["is_active_html"] = entry["activity_final"]
     report_data["is_partially_active_html"] = entry["is_partially_active"]
 
-    return tuple(list(result.values()) + [report_data])
+    return list(result.values()) + [report_data]
 
 
 def on_save_individual_EOS_result_button_click(
@@ -455,21 +437,13 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(on_bounds_change)
 
     callback(
-        Output("compounds-list-container", "children"),
-        Output("selected-compound-store", "data"),
+        Output("hit-browser-compound-dropdown", "options"),
+        Output("hit-browser-compound-dropdown", "value"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_hit_browser_stage_entry, file_storage=file_storage))
 
     callback(
-        Output("selected-compound-store", "data", allow_duplicate=True),
-        Input({"type": "compound-button", "index": ALL}, "n_clicks"),
-        State({"type": "compound-button", "index": ALL}, "id"),
-        prevent_initial_call=True,
-    )(on_compound_button_click)
-
-    callback(
-        Output("compound-id", "children"),
         Output("min-modulation-value", "children"),
         Output("max-modulation-value", "children"),
         Output("ic50-value", "children"),
@@ -485,7 +459,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("smiles", "children"),
         Output("toxicity", "children"),
         Output("report-data-hit-validation-hit-browser", "data"),
-        Input("selected-compound-store", "data"),
+        Input("hit-browser-compound-dropdown", "value"),
         Input("hit-browser-unstack-button", "n_clicks"),
         Input("hit-browser-apply-button", "n_clicks"),
         State("hit-browser-top", "value"),
