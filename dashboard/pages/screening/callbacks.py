@@ -19,7 +19,6 @@ from dash import (
     dcc,
     html,
     no_update,
-    ALL,
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -268,14 +267,9 @@ def on_plates_stats_stage_entry(
 # === STAGE 4 ===
 
 
-def upload_echo_data(
-    contents, names, last_modified, eos_contents, stored_uuid, file_storage
-):
-    if contents is None or eos_contents is None:
-        return no_update, no_update, no_update, no_update
-
-    eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
-    eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
+def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
+    if contents is None:
+        return no_update
 
     echo_files = []
     for content, filename in zip(contents, names):
@@ -287,8 +281,7 @@ def upload_echo_data(
     if echo_files:
         echo_parser = EchoFilesParser()
         echo_parser.parse_files(tuple(echo_files))
-        no_eos_num = echo_parser.merge_eos(eos_df)
-        echo_parser.retain_key_columns()
+        echo_parser.retain_key_columns(eos=False, exceptions=True)
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
         file_storage.save_file(f"{stored_uuid}_echo_df.pq", echo_df.to_parquet())
@@ -296,12 +289,44 @@ def upload_echo_data(
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
+    return None  # dummy upload echo return
+
+
+def on_upload_eos_data(contents, stored_uuid, file_storage):
+    if contents is None:
+        return no_update
+
+    eos_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
+    eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
+    file_storage.save_file(f"{stored_uuid}_eos_df.pq", eos_df.to_parquet())
+    return None  # dummy upload eos return
+
+
+def on_upload_echo_eos_data(echo_upload, names, eos_upload, stored_uuid, file_storage):
+    echo_df_file_path = f"{stored_uuid}_echo_df.pq"
+    eos_df_file_path = f"{stored_uuid}_eos_df.pq"
+
+    if not file_storage.file_exists(echo_df_file_path) or not file_storage.file_exists(
+        eos_df_file_path
+    ):
+        return no_update
+
+    echo_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(echo_df_file_path))
+    )
+    eos_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(eos_df_file_path)))
+    echo_parser = EchoFilesParser()
+    echo_parser.set_echo_df(echo_df)
+    echo_parser.retain_key_columns(eos=False)
+
+    no_eos_num = echo_parser.merge_eos(eos_df)
+    echo_df = echo_parser.retain_key_columns().get_processed_echo_df()
+    file_storage.save_file(f"{stored_uuid}_echo_df.pq", echo_df.to_parquet())
+
     return (
         make_file_list_component(
             names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
         ),
-        no_update,
-        no_update,
         False,
     )
 
@@ -712,16 +737,30 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
 
     callback(
-        Output("echo-filenames", "children"),
         Output("dummy-upload-echo-data", "children"),
-        Output("dummy-upload-eos-mapping", "children"),
-        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_echo_data, file_storage=file_storage))
+
+    callback(
+        Output("dummy-upload-eos-mapping", "children"),
         Input("upload-eos-mapping", "contents"),
         State("user-uuid", "data"),
-    )(functools.partial(upload_echo_data, file_storage=file_storage))
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_eos_data, file_storage=file_storage))
+
+    callback(
+        Output("echo-filenames", "children"),
+        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
+        Input("dummy-upload-echo-data", "children"),
+        Input("upload-echo-data", "filename"),
+        Input("dummy-upload-eos-mapping", "children"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_echo_eos_data, file_storage=file_storage))
 
     callback(
         Output("activation-inhibition-screening-options", "data"),
