@@ -144,26 +144,26 @@ def on_visualization_stage_entry(
     df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
     df = calculate_concentration(df_merged, concentration_value, volume_value)
 
-    inhibition_fig = concentration_confirmatory_plot(
-        df["% INHIBITION_x"],
-        df["% INHIBITION_y"],
+    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+    concentration_fig = concentration_plot(df, feature[2:])
+
+    feature_fig = concentration_confirmatory_plot(
+        df[f"{feature}_x"],
+        df[f"{feature}_y"],
         df["Concentration"],
-        "INHIBITION",
+        f"{feature[2:]}",
     )
-    concentration_fig = concentration_plot(df, "INHIBITION")
 
     report_data_correlation_plots = {
         "concentration_value": concentration_value,
         "volume_value": volume_value,
-        "inhibition_fig": inhibition_fig.to_html(
-            full_html=False, include_plotlyjs="cdn"
-        ),
+        "feature_fig": feature_fig.to_html(full_html=False, include_plotlyjs="cdn"),
         "concentration_fig": concentration_fig.to_html(
             full_html=False, include_plotlyjs="cdn"
         ),
     }
 
-    return inhibition_fig, concentration_fig, report_data_correlation_plots
+    return feature_fig, concentration_fig, report_data_correlation_plots
 
 
 # === STAGE 3 ===
