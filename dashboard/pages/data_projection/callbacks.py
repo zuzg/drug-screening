@@ -15,14 +15,15 @@ from sklearn.decomposition import PCA
 
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
-from dashboard.data.structural_similarity import (
-    prepare_cluster_viz,
-    plot_clustered_smiles,
-)
+from dashboard.data.structural_similarity import prepare_cluster_viz
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
+from dashboard.visualization.plots import (
+    make_projection_plot,
+    plot_projection_2d,
+    plot_clustered_smiles,
+)
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
@@ -42,7 +43,7 @@ PROJECTION_SETUP = [
 
 def on_projection_files_upload(
     content: str | None,
-    filenames: list[str],
+    filenames: List[str],
     last_modified: int,
     stored_uuid: str,
     file_storage: FileStorage,
@@ -197,7 +198,7 @@ def on_projections_visualization_entry(
 def on_dropdown_checkbox_change(
     projection_type: str,
     attribute: str,
-    controls: list[str],
+    controls: List[str],
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> go.Figure:
