@@ -40,7 +40,7 @@ def on_projection_files_upload(
     last_modified: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[html.Div, str]:
+) -> tuple[html.Div, str, html.Div, bool]:
     """
     Callback for file upload.
 
@@ -78,6 +78,8 @@ def on_projection_files_upload(
             ],
         ),
         stored_uuid,
+        no_update,
+        False,
     )
 
 
@@ -185,7 +187,15 @@ def on_projections_visualization_entry(
     pca = PROJECTION_SETUP[0][0]
     projection_info = pca_summary(pca, projection_columns)
 
-    return (fig, table, attribute_options, method_options, projection_info, checkbox)
+    return (
+        fig,
+        table,
+        attribute_options,
+        method_options,
+        projection_info,
+        checkbox,
+        False,
+    )
 
 
 def on_dropdown_checkbox_change(
@@ -271,6 +281,8 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
+        Output("dummy-upload-projection-data", "children"),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-projection-data", "contents"),
         Input("upload-projection-data", "filename"),
         Input("upload-projection-data", "last_modified"),
@@ -284,6 +296,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("projection-method-selection-box", "children"),
         Output("pca-info", "children"),
         Output("control-checkbox", "children"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,

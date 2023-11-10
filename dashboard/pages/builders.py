@@ -90,7 +90,7 @@ class ProcessPageBuilder(PageBuilder):
 
     def make_stage_blocker(self) -> dash.dcc.Store:
         return dash.dcc.Store(
-            id={"type": self.stage_blocker_id, "index": len(self.stages)}, data=False
+            id={"type": self.stage_blocker_id, "index": len(self.stages)}, data=True
         )
 
     def add_stage(self, stage: dash.html.Div, name: str) -> None:
@@ -125,6 +125,7 @@ class ProcessPageBuilder(PageBuilder):
             [
                 dash.Output(self.stages_container_id, "children"),
                 dash.Output(self.stages_store_id, "data"),
+                dash.Output(self.next_stage_btn_id, "disabled", allow_duplicate=True),
             ],
             [
                 dash.Input(self.next_stage_btn_id, "n_clicks"),
@@ -133,25 +134,29 @@ class ProcessPageBuilder(PageBuilder):
             [
                 dash.State(self.stages_store_id, "data"),
             ],
+            prevent_initial_call="initial_call",
         )
         def update_stages(next_clicks, previous_clicks, current_stage):
             ctx = dash.callback_context
             triggered = ctx.triggered[0]["prop_id"].split(".")[0]
+            disable_next_stage_btn = dash.no_update
             if triggered == self.next_stage_btn_id:
                 current_stage = min(current_stage + 1, len(self.stages) - 1)
+                disable_next_stage_btn = True
             elif triggered == self.previous_stage_btn_id:
                 current_stage = max(current_stage - 1, 0)
-            return self.stages[current_stage], current_stage
+            return self.stages[current_stage], current_stage, disable_next_stage_btn
 
         @dash.callback(
             [
                 dash.Output(self.previous_stage_btn_id, "disabled"),
-                dash.Output(self.next_stage_btn_id, "disabled"),
+                dash.Output(self.next_stage_btn_id, "disabled", allow_duplicate=True),
             ],
             [
                 dash.Input(self.stages_store_id, "data"),
                 dash.Input({"type": self.stage_blocker_id, "index": dash.ALL}, "data"),
             ],
+            prevent_initial_call=True,
         )
         def update_buttons(current_stage, values):
             blocker = values[0]

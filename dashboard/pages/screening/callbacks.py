@@ -19,6 +19,7 @@ from dash import (
     dcc,
     html,
     no_update,
+    ALL,
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -45,12 +46,17 @@ from dashboard.visualization.text_tables import (
     make_summary_stage_datatable,
 )
 
+
+def on_next_button_click(n_clicks):
+    return True
+
+
 # === STAGE 1 ===
 
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
 
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
@@ -77,6 +83,7 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         make_file_list_component(names, [], 2),
         no_update,
         stored_uuid,
+        False,
     )
 
 
@@ -200,6 +207,7 @@ def on_outlier_purge_stage_entry(
         compounds_count,
         outliers_count,
         final_vis_df.to_dict("records"),
+        False,
     )
 
 
@@ -253,6 +261,7 @@ def on_plates_stats_stage_entry(
         f"Number of deleted plates: {num_removed}/{bmg_df.shape[0]}",
         report_data,
         z_slider_data,
+        False,
     )
 
 
@@ -263,7 +272,7 @@ def upload_echo_data(
     contents, names, last_modified, eos_contents, stored_uuid, file_storage
 ):
     if contents is None or eos_contents is None:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
 
     eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
     eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
@@ -293,6 +302,7 @@ def upload_echo_data(
         ),
         no_update,
         no_update,
+        False,
     )
 
 
@@ -420,16 +430,17 @@ def on_summary_entry(
         fig_feature,
         -3,  # z_score_min,
         3,  # z_score_max,
-        False,
-        False,
+        False,  # min input disabled
+        False,  # max input disabled
         feature_min,
         feature_max,
-        False,
-        False,
+        False,  # min input disabled
+        False,  # max input disabled
         f"number of compounds: {len(compounds_df)}",
         f"{screening_options['feature_column']} range:",
         radio_options,
         report_data,
+        False,  # next button disabled
     )
 
 
@@ -643,11 +654,17 @@ def on_json_generate_button_click(
 
 
 def register_callbacks(elements, file_storage):
+    # callback(
+    #     Output(elements["NEXT_BTN"], "disabled", allow_duplicate=True),
+    #     Input(elements["NEXT_BTN"], "n_clicks"),
+    #     prevent_initial_call=True,
+    # )(on_next_button_click)
     callback(
         [
             Output("bmg-filenames", "children"),
             Output("dummy-upload-bmg-data", "children"),
             Output("user-uuid", "data"),
+            Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         ],
         Input("upload-bmg-data", "contents"),
         Input("upload-bmg-data", "filename"),
@@ -674,6 +691,7 @@ def register_callbacks(elements, file_storage):
         Output("total-compounds", "children"),
         Output("total-outliers", "children"),
         Output("plates-table", "data"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("heatmap-start-index", "data"),
         Input("heatmap-outliers-checklist", "value"),
@@ -687,6 +705,7 @@ def register_callbacks(elements, file_storage):
         Output("plates-removed", "children"),
         Output("report-data-third-stage", "data"),
         Output("z-slider-value", "data"),
+        Output({"type": elements["BLOCKER"], "index": 2}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
         State("user-uuid", "data"),
@@ -696,6 +715,7 @@ def register_callbacks(elements, file_storage):
         Output("echo-filenames", "children"),
         Output("dummy-upload-echo-data", "children"),
         Output("dummy-upload-eos-mapping", "children"),
+        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
@@ -726,6 +746,7 @@ def register_callbacks(elements, file_storage):
         Output("tab-feature-header", "children"),
         Output("filter-radio", "options"),
         Output("report-data-screening-summary-plots", "data"),
+        Output({"type": elements["BLOCKER"], "index": 4}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         State("z-slider-value", "data"),

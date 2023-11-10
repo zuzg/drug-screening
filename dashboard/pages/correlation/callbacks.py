@@ -103,9 +103,9 @@ def on_both_files_uploaded(
         )
         validation.validate_correlation_dfs_compatible(corr_df_1, corr_df_2)
     except Exception as e:
-        return ICON_ERROR
+        return ICON_ERROR, True
 
-    return ICON_OK
+    return ICON_OK, False
 
 
 # === STAGE 2 ===
@@ -155,7 +155,7 @@ def on_visualization_stage_entry(
     )
     concentration_fig = concentration_plot(df, "INHIBITION")
 
-    return inhibition_fig, concentration_fig, report_data_correlation_plots
+    return inhibition_fig, concentration_fig, report_data_correlation_plots, False
 
 
 # === STAGE 3 ===
@@ -202,6 +202,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("compatibility-status", "children"),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-file-1", "contents"),
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),
@@ -211,6 +212,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("concentration-slider", "value"),
         Input("volume-slider", "value"),

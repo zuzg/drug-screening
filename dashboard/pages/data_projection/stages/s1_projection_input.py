@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 PROJECTION_DESC = """
 Upload the screening data file from the screening process for data projection.
@@ -15,22 +15,28 @@ FILE_INPUT_CONTAINER = html.Div(
                         html.P(PROJECTION_DESC, className="text-justify"),
                     ],
                 ),
-                html.Div(
+                dcc.Loading(
                     children=[
-                        dcc.Upload(
-                            id="upload-projection-data",
-                            accept=".csv",
-                            children=html.Div(
-                                [
-                                    "Drag and Drop or ",
-                                    html.A("Select File"),
-                                ]
-                            ),
-                            multiple=True,
-                            className="text-center",
+                        html.Div(
+                            children=[
+                                dcc.Upload(
+                                    id="upload-projection-data",
+                                    accept=".csv",
+                                    children=html.Div(
+                                        [
+                                            "Drag and Drop or ",
+                                            html.A("Select File"),
+                                        ]
+                                    ),
+                                    multiple=True,
+                                    className="text-center",
+                                ),
+                                html.Div(id="dummy-upload-projection-data"),
+                            ],
+                            className="upload-box",
                         ),
                     ],
-                    className="upload-box",
+                    type="circle",
                 ),
             ],
             className="grid-2-1",

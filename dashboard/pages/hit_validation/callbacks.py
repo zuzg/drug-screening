@@ -61,7 +61,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -160,7 +160,7 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, None, stored_uuid
+    return result_msg, None, stored_uuid, False
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -217,14 +217,18 @@ def on_hit_browser_stage_entry(
     )
 
     compounds_list = sorted(hit_determination_df["EOS"].unique().tolist())
-    return [
-        html.Button(
-            compound,
-            className="text-center font-monospace fw-semibold mb-1 btn btn-primary btn-sm",
-            id={"type": "compound-button", "index": compound},
-        )
-        for compound in compounds_list
-    ], compounds_list[0]
+    return (
+        [
+            html.Button(
+                compound,
+                className="text-center font-monospace fw-semibold mb-1 btn btn-primary btn-sm",
+                id={"type": "compound-button", "index": compound},
+            )
+            for compound in compounds_list
+        ],
+        compounds_list[0],
+        False,
+    )
 
 
 def on_compound_button_click(n_clicks: int, compound_id: str) -> str:
@@ -431,6 +435,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("screening-file-message", "children"),
         Output("dummy-upload-screening-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
@@ -458,6 +463,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("compounds-list-container", "children"),
         Output("selected-compound-store", "data"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_hit_browser_stage_entry, file_storage=file_storage))
