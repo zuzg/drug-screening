@@ -16,9 +16,9 @@ REPORT_STAGE = html.Div(
                                 html.Button(
                                     "Download Report",
                                     className="btn btn-primary btn-lg btn-block btn-report",
-                                    id="download-report-correlation",
+                                    id="download-report-correlation-button",
                                 ),
-                                dcc.Download(id="download-json-settings-correlation"),
+                                dcc.Download(id="download-report-correlation"),
                             ],
                         ),
                     ],

@@ -19,6 +19,9 @@ from dashboard.visualization.plots import (
     concentration_confirmatory_plot,
     concentration_plot,
 )
+from dashboard.pages.correlation.report.generate_jinja_report import (
+    generate_jinja_report,
+)
 
 # === STAGE 1 ===
 
@@ -131,11 +134,6 @@ def on_visualization_stage_entry(
     if current_stage != 1 or stored_uuid is None:
         return no_update, no_update
 
-    report_data_correlation_plots = {
-        "concentration_value": concentration_value,
-        "volume_value": volume_value,
-    }
-
     saved_name_1 = f"{stored_uuid}_{SUFFIX_CORR_FILE1}.pq"
     saved_name_2 = f"{stored_uuid}_{SUFFIX_CORR_FILE2}.pq"
 
@@ -146,30 +144,53 @@ def on_visualization_stage_entry(
     df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
     df = calculate_concentration(df_merged, concentration_value, volume_value)
 
-    inhibition_fig = concentration_confirmatory_plot(
-        df["% INHIBITION_x"],
-        df["% INHIBITION_y"],
-        df["Concentration"],
-        "INHIBITION",
-    )
-    concentration_fig = concentration_plot(df, "INHIBITION")
+    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+    concentration_fig = concentration_plot(df, feature[2:])
 
-    return inhibition_fig, concentration_fig, report_data_correlation_plots
+    feature_fig = concentration_confirmatory_plot(
+        df[f"{feature}_x"],
+        df[f"{feature}_y"],
+        df["Concentration"],
+        f"{feature[2:]}",
+    )
+
+    report_data_correlation_plots = {
+        "concentration_value": concentration_value,
+        "volume_value": volume_value,
+        "feature_fig": feature_fig.to_html(full_html=False, include_plotlyjs="cdn"),
+        "concentration_fig": concentration_fig.to_html(
+            full_html=False, include_plotlyjs="cdn"
+        ),
+    }
+
+    return feature_fig, concentration_fig, report_data_correlation_plots
 
 
 # === STAGE 3 ===
 
 
 def on_json_generate_button_click(
-    n_clicks,
-    correlation_plots_report,
-    file_storage: FileStorage,
+    n_clicks: int,
+    correlation_plots_report: dict,
 ):
     filename = (
         f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     )
     json_object = json.dumps(correlation_plots_report, indent=4)
     return dict(content=json_object, filename=filename)
+
+
+def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
+    """
+    Callback for click on button save report which generate and download report.
+
+    :param n_clicks: number of clicks
+    :param report_data: dictionary storing data needed to generate report
+    :return: dict
+    """
+    filename = f"Correlation_report_{datetime.now().strftime('%Y-%m-%d')}.html"
+    jinja_template = generate_jinja_report(report_data)
+    return dict(content=jinja_template, filename=filename)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -218,4 +239,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("generate-json-button", "n_clicks"),
         State("report-data-correlation-plots", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
+    )(functools.partial(on_json_generate_button_click))
+    callback(
+        Output("download-report-correlation", "data"),
+        Input("download-report-correlation-button", "n_clicks"),
+        State("report-data-correlation-plots", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_report_button_click))
