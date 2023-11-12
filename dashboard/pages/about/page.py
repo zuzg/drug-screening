@@ -26,10 +26,10 @@ Finally, by employing the same dataset and parameters, you can consistently achi
 ]
 
 ABOUT_CONTENT = html.Main(
-    className="container-xl h-100 d-flex flex-row mx-5 px-5 mt-5 gap-5",
+    className="container-xl d-block h-100 flex-row mx-5 px-5 mt-5 gap-5 d-lg-flex d-xl-flex d-xxl-flex",
     children=[
         html.Div(
-            className="w-50",
+            className="w-100 w-lg-50 w-xl-50 w-xxl-50",
             children=[
                 html.H2(
                     ABOUT_HEADING,
@@ -64,7 +64,7 @@ ABOUT_CONTENT = html.Main(
             ],
         ),
         html.Div(
-            className="w-50",
+            className="w-100 w-lg-50 w-xl-50 w-xxl-50",
             children=[
                 html.Img(src="/assets/images/flow.svg", className="w-100"),
             ],
