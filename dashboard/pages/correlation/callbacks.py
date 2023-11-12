@@ -170,9 +170,8 @@ def on_visualization_stage_entry(
 
 
 def on_json_generate_button_click(
-    n_clicks,
-    correlation_plots_report,
-    file_storage: FileStorage,
+    n_clicks: int,
+    correlation_plots_report: dict,
 ):
     filename = (
         f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
@@ -181,7 +180,14 @@ def on_json_generate_button_click(
     return dict(content=json_object, filename=filename)
 
 
-def on_save_report_button_click(n_clicks, report_data, file_storage: FileStorage):
+def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
+    """
+    Callback for click on button save report which generate and download report.
+
+    :param n_clicks: number of clicks
+    :param report_data: dictionary storing data needed to generate report
+    :return: dict
+    """
     filename = f"Correlation_report_{datetime.now().strftime('%Y-%m-%d')}.html"
     jinja_template = generate_jinja_report(report_data)
     return dict(content=jinja_template, filename=filename)
@@ -233,10 +239,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("generate-json-button", "n_clicks"),
         State("report-data-correlation-plots", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_json_generate_button_click, file_storage=file_storage))
+    )(functools.partial(on_json_generate_button_click))
     callback(
         Output("download-report-correlation", "data"),
         Input("download-report-correlation-button", "n_clicks"),
         State("report-data-correlation-plots", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_save_report_button_click, file_storage=file_storage))
+    )(functools.partial(on_save_report_button_click))
