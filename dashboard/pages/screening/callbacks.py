@@ -679,11 +679,6 @@ def on_json_generate_button_click(
 
 
 def register_callbacks(elements, file_storage):
-    # callback(
-    #     Output(elements["NEXT_BTN"], "disabled", allow_duplicate=True),
-    #     Input(elements["NEXT_BTN"], "n_clicks"),
-    #     prevent_initial_call=True,
-    # )(on_next_button_click)
     callback(
         [
             Output("bmg-filenames", "children"),
