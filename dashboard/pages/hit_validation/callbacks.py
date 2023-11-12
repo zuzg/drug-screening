@@ -332,7 +332,7 @@ def on_selected_compound_changed(
     smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
 
     if type(concentration_50) == complex:
-        concentration_50 = "Not founded"
+        concentration_50 = "Not found"
     else:
         concentration_50 = f"{round(concentration_50, 5)} µM"
 
