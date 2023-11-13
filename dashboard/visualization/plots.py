@@ -691,7 +691,7 @@ def plot_clustered_smiles(
         x=projection_x,
         y=projection_y,
         color=feature,
-        color_discrete_sequence=["#00CC96", "#FFA15A", "#636EFA"],
+        color_discrete_sequence=["#009E73", "#F0E442", "#56B4E9"],
         symbol=clusters,
         opacity=0.7,
         labels=labels,
