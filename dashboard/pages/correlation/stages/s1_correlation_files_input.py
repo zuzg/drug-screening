@@ -27,7 +27,7 @@ FILE_INPUT_COMPONENT = html.Div(
                             children=html.Div(
                                 [
                                     "Drag and Drop or ",
-                                    html.A("Select File"),
+                                    html.A("Select File", className="select-file"),
                                 ]
                             ),
                             multiple=False,
@@ -51,7 +51,7 @@ FILE_INPUT_COMPONENT = html.Div(
                             children=html.Div(
                                 [
                                     "Drag and Drop or ",
-                                    html.A("Select File"),
+                                    html.A("Select File", className="select-file"),
                                 ]
                             ),
                             multiple=False,

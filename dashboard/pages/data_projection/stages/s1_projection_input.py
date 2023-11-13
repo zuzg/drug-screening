@@ -25,7 +25,9 @@ FILE_INPUT_CONTAINER = html.Div(
                                     children=html.Div(
                                         [
                                             "Drag and Drop or ",
-                                            html.A("Select File"),
+                                            html.A(
+                                                "Select File", className="select-file"
+                                            ),
                                         ]
                                     ),
                                     multiple=True,

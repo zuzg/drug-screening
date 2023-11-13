@@ -31,7 +31,9 @@ ECHO_INPUT_STAGE = html.Div(
                                     children=html.Div(
                                         [
                                             "Drag and Drop or ",
-                                            html.A("Select Files"),
+                                            html.A(
+                                                "Select Files", className="select-file"
+                                            ),
                                         ]
                                     ),
                                     multiple=True,
@@ -64,7 +66,7 @@ ECHO_INPUT_STAGE = html.Div(
                             children=html.Div(
                                 [
                                     "Drag and Drop or ",
-                                    html.A("Select File"),
+                                    html.A("Select File", className="select-file"),
                                 ]
                             ),
                             multiple=False,

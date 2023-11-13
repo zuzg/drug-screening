@@ -208,3 +208,7 @@
 .custom-nav-link.active {
     font-weight: bold;
 }
+
+#select-file {
+    color: (84, 153, 255);
+}
