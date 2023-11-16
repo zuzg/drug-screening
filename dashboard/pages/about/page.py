@@ -56,9 +56,10 @@ ABOUT_CONTENT = html.Main(
                         ),
                     ]
                 ),
-                html.Span("Developed in collaboration with"),
+                html.Span("Developed in collaboration with "),
+                html.Br(),
                 html.A(
-                    " Polish Academy of Sciences, Institute of Bioorganic Chemistry",
+                    "Polish Academy of Sciences, Institute of Bioorganic Chemistry",
                     href="https://portal.ichb.pl/homepage/",
                 ),
             ],

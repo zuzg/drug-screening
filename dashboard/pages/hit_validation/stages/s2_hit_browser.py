@@ -1,6 +1,5 @@
-from dash import html, dcc
 import dash_bootstrap_components as dbc
-
+from dash import dcc, html
 
 PARAMS_DISPLAY_SPEC = [
     {
@@ -58,15 +57,20 @@ GRAPH_TAB = dbc.Tab(
         html.Div(
             className="d-flex flex-column h-100",
             children=[
-                dcc.Graph(
-                    id="hit-browser-plot",
-                    figure={},
-                    config={
-                        "displayModeBar": False,
-                        "scrollZoom": False,
-                    },
-                    responsive=True,
-                )
+                dcc.Loading(
+                    children=[
+                        dcc.Graph(
+                            id="hit-browser-plot",
+                            figure={},
+                            config={
+                                "displayModeBar": False,
+                                "scrollZoom": False,
+                            },
+                            responsive=True,
+                        )
+                    ],
+                    type="circle",
+                ),
             ],
         ),
     ],
@@ -79,9 +83,14 @@ SMILES_TAB = dbc.Tab(
         html.P("Compound Structure", className="fw-bold mt-3"),
         html.Div(
             children=[
-                html.Div(
-                    id="smiles",
-                    className="d-flex flex-row justify-content-center",
+                dcc.Loading(
+                    children=[
+                        html.Div(
+                            id="smiles",
+                            className="d-flex flex-row justify-content-center",
+                        ),
+                    ],
+                    type="circle",
                 ),
                 html.Div(
                     children=[
@@ -145,25 +154,6 @@ MAIN_PANEL = html.Div(
             className="d-flex flex-row justify-content-between h-100",
             children=[
                 html.Div(
-                    # className="d-flex flex-column h-100",
-                    # style={"width": "700px"},
-                    # children=[
-                    #     dcc.Loading(
-                    #         children=[
-                    #             dcc.Graph(
-                    #                 id="hit-browser-plot",
-                    #                 config={
-                    #                     "displayModeBar": False,
-                    #                     "scrollZoom": False,
-                    #                 },
-                    #                 style={"max-width": "700px"},
-                    #                 responsive=True,
-                    #             )
-                    #         ],
-                    #         type="circle",
-                    #         loading_state={"is_loading": True},
-                    #     ),
-                    # ],
                     className="me-5 mt-n9 h-100 flex-grow-1",
                     children=dbc.Tabs(
                         [GRAPH_TAB, SMILES_TAB],

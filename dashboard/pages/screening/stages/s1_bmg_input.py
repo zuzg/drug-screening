@@ -21,7 +21,8 @@ BMG_INPUT_STAGE = html.Div(
                             children=html.Div(
                                 [
                                     "Drag and Drop or ",
-                                    html.A("Select Files", className="select-file"),
+                                    html.A("Select", className="select-file"),
+                                    " BMG files",
                                 ]
                             ),
                             multiple=True,

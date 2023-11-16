@@ -31,9 +31,8 @@ ECHO_INPUT_STAGE = html.Div(
                                     children=html.Div(
                                         [
                                             "Drag and Drop or ",
-                                            html.A(
-                                                "Select Files", className="select-file"
-                                            ),
+                                            html.A("Select", className="select-file"),
+                                            " ECHO files",
                                         ]
                                     ),
                                     multiple=True,
@@ -66,7 +65,8 @@ ECHO_INPUT_STAGE = html.Div(
                             children=html.Div(
                                 [
                                     "Drag and Drop or ",
-                                    html.A("Select File", className="select-file"),
+                                    html.A("Select", className="select-file"),
+                                    " EOS mapping file",
                                 ]
                             ),
                             multiple=False,

@@ -20,8 +20,8 @@ from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     make_projection_plot,
-    plot_projection_2d,
     plot_clustered_smiles,
+    plot_projection_2d,
 )
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
@@ -263,6 +263,12 @@ def on_plot_selected_data(
 # === STAGE 3 ===
 
 
+def on_save_results_entry(current_stage: int):
+    if current_stage != 2:
+        return no_update
+    return False
+
+
 def on_save_projections_click(
     n_clicks: int,
     stored_uuid: str,
@@ -305,8 +311,8 @@ def on_smiles_files_upload(
     :param content: base64 encoded smiles content
     :param stored_uuid: session uuid
     :param file_storage: file storage
-    :return: icon indicating the status of the upload
-    :return: uuid of the stored data
+    :return: list of loaded and not loaded files
+    :return: next stage button disabled status
     """
     if not contents or not smiles_content:
         return no_update
@@ -331,6 +337,7 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
+        False,
     )
 
 
@@ -434,6 +441,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         prevent_initial_call=True,
     )(functools.partial(on_dropdown_checkbox_change, file_storage=file_storage))
     callback(
+        Output({"type": elements["BLOCKER"], "index": 2}, "data"),
+        Input(elements["STAGES_STORE"], "data"),
+    )(on_save_results_entry)
+    callback(
         Output("download-projections-csv", "data"),
         Input("save-projections-button", "n_clicks"),
         State("user-uuid", "data"),
@@ -448,6 +459,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_plot_selected_data, file_storage=file_storage))
     callback(
         Output("smiles-file-message", "children"),
+        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
         Input("upload-activity-data", "contents"),
         Input("upload-activity-data", "filename"),
         Input("upload-activity-data", "last_modified"),

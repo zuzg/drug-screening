@@ -217,7 +217,7 @@ def on_hit_browser_stage_entry(
     )
 
     compounds_list = sorted(hit_determination_df["EOS"].unique().tolist())
-    return compounds_list, compounds_list[0]
+    return compounds_list, compounds_list[0], False
 
 
 activity_icons = {
@@ -447,6 +447,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         # Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Output("hit-browser-compound-dropdown", "options"),
         Output("hit-browser-compound-dropdown", "value"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_hit_browser_stage_entry, file_storage=file_storage))
