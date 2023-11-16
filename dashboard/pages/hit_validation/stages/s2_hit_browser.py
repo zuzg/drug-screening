@@ -1,6 +1,8 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
+from dashboard.visualization.text_tables import make_info_icon
+
 PARAMS_DISPLAY_SPEC = [
     {
         "label": "Min Modulation",
@@ -118,6 +120,12 @@ SMILES_TAB = dbc.Tab(
     ],
 )
 
+info_icon_text = """
+Browse the dropdown to select a compound.
+The graph will display the compound's dose-response curve.
+The SMILES tab will display the compound's structure.
+"""
+
 MAIN_PANEL = html.Div(
     id="hit-browser-container",
     children=[
@@ -127,6 +135,7 @@ MAIN_PANEL = html.Div(
                 html.Span(
                     className="d-flex flex-row gap-3 align-items-center",
                     children=[
+                        make_info_icon(info_icon_text, "hit-browser-info-icon"),
                         html.H5("Compound:", className="mb-0"),
                         dcc.Dropdown(
                             id="hit-browser-compound-dropdown",

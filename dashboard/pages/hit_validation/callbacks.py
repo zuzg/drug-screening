@@ -442,9 +442,6 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(on_bounds_change)
 
     callback(
-        # Output("compounds-list-container", "children"),
-        # Output("selected-compound-store", "data"),
-        # Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Output("hit-browser-compound-dropdown", "options"),
         Output("hit-browser-compound-dropdown", "value"),
         Output({"type": elements["BLOCKER"], "index": 1}, "data"),

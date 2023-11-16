@@ -1,4 +1,5 @@
 import pandas as pd
+import dash_bootstrap_components as dbc
 from dash import dash_table, html
 from dash.dash_table.Format import Format, Scheme
 from sklearn.decomposition import PCA
@@ -217,3 +218,34 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     )
 
     return projection_info
+
+
+def make_info_icon(text: str, id: str):
+    """
+    Make an info icon with a tooltip.
+
+    :param text: text to be displayed in the tooltip
+    :param id: id of the icon
+    :return: html Div element containing the icon and tooltip
+    """
+    return html.Div(
+        [
+            html.Div(
+                children=[
+                    html.I(
+                        id=id,
+                        className="fas fa-info-circle fa-2x d-flex m-auto",
+                        style={"color": "rgb(84, 153, 255)"},
+                    ),
+                ],
+                className="p-2 d-flex justify-content-center align-items-center",
+                style={
+                    "width": "10px",
+                },
+            ),
+            dbc.Tooltip(
+                text,
+                target=id,
+            ),
+        ]
+    )
