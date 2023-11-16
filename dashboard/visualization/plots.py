@@ -1,11 +1,9 @@
 from itertools import product
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.tools as tls
 from plotly.subplots import make_subplots
 from rdkit import Chem
 from rdkit.Chem import Draw
@@ -87,8 +85,6 @@ def plot_projection_2d(
             feature: feature_processed,
         },
         title=f"{projection.upper()} projection with respect to {feature_processed}",
-        # width=width,
-        # height=height,
         hover_data={
             "EOS": True,
             projection_x: ":.2f",
@@ -623,7 +619,6 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
         )
 
     return go.Figure(
-        layout_title_text="IC50",
         layout={
             "xaxis": {
                 "title": "Concentration [uM]",
@@ -637,6 +632,12 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
                 "showticklabels": True,
             },
             "template": PLOTLY_TEMPLATE,
+            "margin": dict(
+                l=10,
+                r=10,
+                t=50,
+                b=10,
+            ),
         },
         data=data,
     )
@@ -658,3 +659,75 @@ def plot_smiles(smiles_string: str) -> str:
     drawer.FinishDrawing()
     svg = drawer.GetDrawingText().replace("svg:", "")
     return svg
+
+
+def plot_clustered_smiles(
+    df: pd.DataFrame,
+    feature: str = "activity_final",
+    projection: str = "PCA",
+) -> go.Figure:
+    """
+    Plot selected projection and colour points with respect to selected feature.
+
+    :param df: DataFrame to be visualized
+    :param feature: name of the column with respect to which the plot will be coloured
+    :param projection: name of projection to be visualized
+
+    :return: plotly express scatter plot
+    """
+    projection_x = f"{projection.upper()}_0"
+    projection_y = f"{projection.upper()}_1"
+    clusters = f"cluster_{projection}"
+    labels = {
+        projection_x: "X",
+        projection_y: "Y",
+        "EOS": "EOS",
+        feature: "Activity",
+        clusters: "Cluster",
+    }
+    hover_data = {
+        "EOS": True,
+        projection_x: ":.3f",
+        projection_y: ":.3f",
+        feature: True,
+        clusters: True,
+    }
+    fig = px.scatter(
+        df[df[clusters] != "outlier"],
+        x=projection_x,
+        y=projection_y,
+        color=feature,
+        color_discrete_sequence=["#009E73", "#F0E442", "#56B4E9"],
+        symbol=clusters,
+        opacity=0.7,
+        labels=labels,
+        title=f"{projection.upper()} projection of SMILES with respect to activity",
+        hover_data=hover_data,
+    )
+    fig.add_traces(
+        px.scatter(
+            df[df[clusters] == "outlier"],
+            x=projection_x,
+            y=projection_y,
+            labels=labels,
+            hover_data=hover_data,
+        )
+        .update_traces(
+            marker_color="gray",
+            marker_symbol="x",
+            opacity=0.3,
+            name="outliers",
+            showlegend=True,
+        )
+        .data
+    )
+
+    fig.update_yaxes(title_standoff=15, automargin=True)
+    fig.update_xaxes(title_standoff=30, automargin=True)
+    fig.update_layout(
+        modebar=dict(orientation="v"),
+        margin=dict(r=35, l=15, b=0),
+        title_x=0.5,
+        template=PLOTLY_TEMPLATE,
+    )
+    return fig
