@@ -80,10 +80,12 @@ HEATMAP_SECTION = html.Div(
     children=[
         html.Div(
             className="d-flex flex-column gap-3 h-100",
+            id="plates-heatmap-container",
             children=[
                 dcc.Loading(
                     children=[
                         html.Div(
+                            id="plates-heatmap-subcontainer",
                             className="overflow-auto mx-2 border border-3 rounded shadow bg-body-tertiary bg-primary flex-grow-1",
                             children=[
                                 dcc.Graph(

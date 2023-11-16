@@ -152,7 +152,8 @@ def on_outlier_purge_stage_entry(
     :param outliers_only_checklist: list selected values in the outliers only checklist
     :param stored_uuid: uuid of the stored data
     :param file_storage: storage object
-    :return: heatmap plot, max index, index numerator text, plates count, compounds count, outliers count
+    :return: report data, heatmap plot, max index, index numerator text,
+    plates count, compounds count, outliers count, next button disabled
     """
     show_only_with_outliers = bool(outliers_only_checklist)
     if current_stage != 1:
@@ -262,6 +263,13 @@ def on_plates_stats_stage_entry(
         z_slider_data,
         False,
     )
+
+
+def hide_heatmap_loading(trigger, children):
+    """
+    Hide the heatmap loading component after the heatmap is loaded
+    """
+    return html.Div(id="plates-heatmap-graph", children=children)
 
 
 # === STAGE 4 ===
@@ -717,6 +725,12 @@ def register_callbacks(elements, file_storage):
         Input("heatmap-outliers-checklist", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("plates-heatmap-container", "children"),
+        Input("plates-table", "data"),
+        State("plates-heatmap-subcontainer", "children"),
+    )(hide_heatmap_loading)
 
     callback(
         Output("control-values", "figure"),
