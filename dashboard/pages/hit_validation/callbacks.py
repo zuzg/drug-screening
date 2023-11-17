@@ -1,38 +1,36 @@
 import base64
-import dash_dangerously_set_inner_html as dhtml
-import io
-import uuid
 import functools
+import io
 import json
-import pandas as pd
-import pyarrow as pa
-
+import uuid
 from datetime import datetime
 
+import dash_dangerously_set_inner_html as dhtml
+import pandas as pd
+import pyarrow as pa
 from dash import (
+    ALL,
     Input,
     Output,
     State,
     callback,
-    html,
-    no_update,
-    ALL,
     callback_context,
     dcc,
+    html,
+    no_update,
 )
 
-from dashboard.storage import FileStorage
 from dashboard.data.determination import (
-    perform_hit_determination,
-    four_param_logistic,
     find_argument_four_param_logistic,
+    four_param_logistic,
+    perform_hit_determination,
 )
-from dashboard.visualization.plots import plot_ic50
-from dashboard.data.determination import perform_hit_determination
-from dashboard.visualization.plots import plot_ic50, plot_smiles
-from dashboard.pages.hit_validation.report.generate_jinja_report import (
+from dashboard.pages.hit_validation.report.generate_report import (
+    generate_hit_valildation_report,
     generate_jinja_report,
 )
+from dashboard.storage import FileStorage
+from dashboard.visualization.plots import plot_ic50, plot_smiles
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
@@ -411,6 +409,31 @@ def on_download_summary_csv_button_click(
     return dcc.send_data_frame(hit_df.to_csv, filename)
 
 
+def on_download_report_button_click(
+    n_clicks, stored_uuid: str, file_storage: FileStorage
+) -> dict:
+    """
+    Callback for download report button click. It loads the data from the storage
+    and returns the data for the compound.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: hit determination data in xlsx format
+    """
+
+    screening_load_name = SCREENING_FILENAME.format(stored_uuid)
+    screening_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(screening_load_name))
+    )
+
+    hit_load_name = HIT_FILENAME.format(stored_uuid)
+    hit_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(hit_load_name)))
+    filename = f"hit_validation_report_{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+
+    return generate_hit_valildation_report(filename, screening_df, hit_df)
+
+
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
@@ -498,3 +521,10 @@ def register_callbacks(elements, file_storage: FileStorage):
             on_download_summary_csv_button_click, file_storage=file_storage
         )
     )
+
+    callback(
+        Output("download-report-hit-validation", "data"),
+        Input("download-report-hit-validation-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_download_report_button_click, file_storage=file_storage))

@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 REPORT_STAGE = html.Div(
     id="report_stage",
@@ -13,12 +13,19 @@ REPORT_STAGE = html.Div(
                         html.Div(
                             className="d-flex justify-content-between",
                             children=[
-                                html.Button(
-                                    "Download Report",
-                                    className="btn btn-primary btn-lg btn-block btn-report",
-                                    id="download-report-hit-validation-button",
-                                ),
-                                dcc.Download(id="download-report-hit-validation"),
+                                dcc.Loading(
+                                    children=[
+                                        html.Button(
+                                            "Download Report XLSX",
+                                            className="btn btn-primary btn-lg btn-block btn-report",
+                                            id="download-report-hit-validation-button",
+                                        ),
+                                        dcc.Download(
+                                            id="download-report-hit-validation"
+                                        ),
+                                    ],
+                                    type="circle",
+                                )
                             ],
                         ),
                     ],
