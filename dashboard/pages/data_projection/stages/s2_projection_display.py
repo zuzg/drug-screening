@@ -20,9 +20,21 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                                             id="projection-method-selection-box",
                                             children=[
                                                 dcc.Dropdown(
-                                                    options={},
-                                                    placeholder="Select a method",
-                                                    disabled=True,
+                                                    id="projection-method-selection-box",
+                                                    options=[
+                                                        {
+                                                            "label": "UMAP",
+                                                            "value": "UMAP",
+                                                        },
+                                                        {
+                                                            "label": "PCA",
+                                                            "value": "PCA",
+                                                        },
+                                                    ],
+                                                    value="PCA",
+                                                    searchable=False,
+                                                    clearable=False,
+                                                    disabled=False,
                                                 ),
                                             ],
                                         )
@@ -88,7 +100,48 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                     className="col-md-6",
                 ),
                 html.Div(
-                    children=[html.Div(id="control-checkbox", children=[])],
+                    children=[
+                        html.Div(
+                            className="d-flex flex-row justify-content-between",
+                            children=[
+                                html.Span(
+                                    className="d-flex flex-row align-items-center gap-3",
+                                    children=[
+                                        dcc.Checklist(
+                                            options=[
+                                                {
+                                                    "label": "  Show control values",
+                                                    "value": "controls",
+                                                }
+                                            ],
+                                            value=[],
+                                            id="control-checkbox",
+                                        ),
+                                        dcc.Checklist(
+                                            options=[
+                                                {
+                                                    "label": "  Plot 3D",
+                                                    "value": "3d",
+                                                }
+                                            ],
+                                            value=[],
+                                            id="3d-checkbox",
+                                        ),
+                                    ],
+                                ),
+                                html.Button(
+                                    children=[
+                                        "Download Selected",
+                                        dcc.Download(
+                                            id="projection-download-selection-csv"
+                                        ),
+                                    ],
+                                    id="projection-download-selection-button",
+                                    className="btn btn-primary",
+                                ),
+                            ],
+                        )
+                    ],
                     className="col-md-6",
                 ),
             ],
