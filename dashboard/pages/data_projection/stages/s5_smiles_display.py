@@ -4,6 +4,14 @@ CONTROLS = (
     html.Div(
         className="d-flex flex-row gap-3 align-items-center w-100",
         children=[
+            html.Button(
+                children=[
+                    "Download Selected",
+                    dcc.Download(id="smiles-download-selection-csv"),
+                ],
+                id="smiles-download-selection-button",
+                className="btn btn-primary",
+            ),
             dcc.Dropdown(
                 className="min-w-150px",
                 id="smiles-projection-method-selection-box",

@@ -396,6 +396,33 @@ def on_smiles_dropdown_checkbox_change(
     )
 
 
+def on_smiles_download_selection_button_click(
+    n_clicks: int,
+    selection: dict,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> dict:
+    """
+    Callback for the download selected button click. Downloads lasso/box selected datapoints
+    to a csv file.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: session uuid
+    :param file_storage: storage object
+    """
+    if not selection:
+        return no_update
+
+    datapoints = [point["pointIndex"] for point in selection["points"]]
+
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    )
+    selected_subset_df = df.iloc[datapoints]
+    filename = f"smiles_data_{datetime.now().strftime('%Y-%m-%d')}-selection-{selected_subset_df.shape[0]}.csv"
+    return dcc.send_data_frame(selected_subset_df.to_csv, filename)
+
+
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
@@ -472,3 +499,14 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_smiles_dropdown_checkbox_change, file_storage=file_storage))
+    callback(
+        Output("smiles-download-selection-csv", "data"),
+        Input("smiles-download-selection-button", "n_clicks"),
+        State("smiles-projection-plot", "selectedData"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_smiles_download_selection_button_click, file_storage=file_storage
+        )
+    )
