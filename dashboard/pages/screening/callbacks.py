@@ -182,7 +182,8 @@ def on_outlier_purge_stage_entry(
         vis_bmg_df.set_index("barcode").applymap(lambda x: f"{x:.3f}").reset_index()
     )
 
-    max_index = filtered_plates_count - filtered_plates_count % DISPLAYED_PLATES
+    last_page_size = (filtered_plates_count % DISPLAYED_PLATES) or DISPLAYED_PLATES
+    max_index = filtered_plates_count - last_page_size
 
     report_data = {
         "plates_count": plates_count,
