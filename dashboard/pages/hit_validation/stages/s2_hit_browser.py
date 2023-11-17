@@ -135,8 +135,11 @@ MAIN_PANEL = html.Div(
                 html.Span(
                     className="d-flex flex-row gap-3 align-items-center",
                     children=[
-                        make_info_icon(info_icon_text, "hit-browser-info-icon"),
-                        html.H5("Compound:", className="mb-0"),
+                        make_info_icon(
+                            info_icon_text,
+                            "hit-browser-info-icon",
+                            html.H5("Compound:", className="mb-0"),
+                        ),
                         dcc.Dropdown(
                             id="hit-browser-compound-dropdown",
                             placeholder="Select Compound",
