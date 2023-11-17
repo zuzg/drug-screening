@@ -40,6 +40,16 @@ def get_eos_img(eos: str, screening_df: pd.DataFrame, hit_df: pd.DataFrame) -> I
     entry = hit_df[hit_df["EOS"] == eos].iloc[0].to_dict()
     fig = plot_ic50(entry, concentrations, values, showlegend=False)
 
+    fig.update_layout(
+        width=IMG_WIDTH,
+        height=IMG_HEIGHT,
+        margin=dict(l=1, r=1, t=1, b=1),
+        xaxis=dict(tickfont=dict(size=8)),
+        yaxis=dict(tickfont=dict(size=8)),
+        xaxis_title_font=dict(size=10),
+        yaxis_title_font=dict(size=10),
+    )
+
     image_bytes = fig.to_image(format="png")
     img_resized = Image.open(io.BytesIO(image_bytes)).resize((IMG_WIDTH, IMG_HEIGHT))
     return img_resized
