@@ -20,5 +20,6 @@ dependencies:
   - umap-learn
   - pre-commit
   - pip
+  - xlsxwriter
   - pip:
     - dash_dangerously_set_inner_html

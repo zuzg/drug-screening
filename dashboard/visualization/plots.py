@@ -9,7 +9,6 @@ from rdkit import Chem
 from rdkit.Chem import Draw
 from rdkit.Chem.Draw import rdDepictor
 
-
 from dashboard.data.determination import four_param_logistic
 from dashboard.visualization.overlay import projection_plot_overlay_controls
 
@@ -571,7 +570,9 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
     return fig
 
 
-def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
+def plot_ic50(
+    entry: dict, x: np.ndarray, y: np.ndarray, showlegend: bool = True
+) -> go.Figure:
     data = [
         go.Scatter(
             x=x,
@@ -631,6 +632,7 @@ def plot_ic50(entry: dict, x: np.ndarray, y: np.ndarray) -> go.Figure:
                 "visible": True,
                 "showticklabels": True,
             },
+            "showlegend": showlegend,
             "margin": dict(
                 l=10,
                 r=10,
