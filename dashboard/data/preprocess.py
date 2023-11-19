@@ -122,9 +122,9 @@ class MergedAssaysPreprocessor:
         X_controls = self.controls_df[self.columns_for_projection].to_numpy()
         X_projected_controls = projector.transform(X_controls)
 
-        suffixes = ["X", "Y"]
+        suffixes = ["X", "Y", "Z"]
 
-        if X_projected.shape[1] > 2:
+        if X_projected.shape[1] > len(suffixes):
             # if more than 2 projected dimensions, use numbers as suffixes
             suffixes = range(X_projected.shape[0])
 

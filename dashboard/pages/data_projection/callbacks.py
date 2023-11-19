@@ -11,7 +11,7 @@ import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
 
-# from umap import UMAP
+from umap import UMAP
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.structural_similarity import prepare_cluster_viz
@@ -26,15 +26,23 @@ from dashboard.visualization.plots import (
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
-    (PCA(n_components=2), "PCA"),
-    # (
-    #     UMAP(
-    #         n_components=2,
-    #         n_neighbors=10,
-    #         min_dist=0.1,
-    #     ),
-    #     "UMAP",
-    # ),
+    (PCA(n_components=3), "PCA"),
+    (
+        UMAP(
+            n_components=2,
+            n_neighbors=10,
+            min_dist=0.1,
+        ),
+        "UMAP",
+    ),
+    (
+        UMAP(
+            n_components=3,
+            n_neighbors=10,
+            min_dist=0.1,
+        ),
+        "UMAP3D",
+    ),
 ]
 
 # === STAGE 1 ===
@@ -161,53 +169,17 @@ def on_projections_visualization_entry(
         ]
     )
 
-    method_options = html.Div(
-        children=[
-            dcc.Dropdown(
-                id="projection-method-selection-box",
-                options=[
-                    # {"label": "UMAP", "value": "UMAP"},
-                    {"label": "PCA", "value": "PCA"},
-                ],
-                value="PCA",
-                searchable=False,
-                clearable=False,
-                disabled=False,
-            ),
-        ]
-    )
-
-    checkbox = html.Div(
-        dcc.Checklist(
-            options=[
-                {
-                    "label": "  Show control values",
-                    "value": "controls",
-                }
-            ],
-            value=[],
-            id="control-checkbox",
-        )
-    )
-
     pca = PROJECTION_SETUP[0][0]
     projection_info = pca_summary(pca, projection_columns)
 
-    return (
-        fig,
-        table,
-        attribute_options,
-        method_options,
-        projection_info,
-        checkbox,
-        False,
-    )
+    return fig, table, attribute_options, projection_info, False
 
 
-def on_dropdown_checkbox_change(
+def on_checkbox_change(
     projection_type: str,
     attribute: str,
     controls: List[str],
+    plot_3d: List[str],
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> go.Figure:
@@ -216,9 +188,12 @@ def on_dropdown_checkbox_change(
 
     :param method: projection method
     :param attribute: projection attribute
+    :param controls: controls checkbox
+    :param plot_3d: 3d checkbox
     :param stored_uuid: session uuid
     :param file_storage: file storage
-    :return: figure with projections"""
+    :return: figure with projections
+    """
     compounds_df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq"))
     )
@@ -231,11 +206,12 @@ def on_dropdown_checkbox_change(
         controls_df,
         attribute,
         projection_type,
-        controls,
+        bool(controls),
+        bool(plot_3d),
     )
 
 
-def on_plot_selected_data(
+def on_plot_zommed_in(
     relayout_data: dict,
     stored_uuid: str,
     projection_type: str,
@@ -244,9 +220,14 @@ def on_plot_selected_data(
     if not relayout_data:
         return no_update
 
-    df = pd.read_parquet(
-        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq")),
-    )
+    try:
+        df = pd.read_parquet(
+            pa.BufferReader(
+                file_storage.read_file(f"{stored_uuid}_assays_projection.pq")
+            ),
+        )
+    except FileNotFoundError:
+        return no_update
 
     if "xaxis.range[0]" in relayout_data:
         x_min = relayout_data["xaxis.range[0]"]
@@ -258,6 +239,44 @@ def on_plot_selected_data(
         df = df[df[f"{projection_type}_Y"].between(y_min, y_max)]
 
     return eos_to_ecbd_link(df).to_dict("records")
+
+
+def on_projection_download_selection_button_click(
+    n_clicks: int,
+    selection: dict,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> dict:
+    """
+    Callback for the download selected button click. Downloads lasso/box selected datapoints
+    to a csv file.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: session uuid
+    :param file_storage: storage object
+    """
+    if not selection:
+        return no_update
+
+    datapoints = [point["pointIndex"] for point in selection["points"]]
+
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_assays_projection.pq")),
+    )
+    selected_subset_df = df.iloc[datapoints]
+    filename = f"projection_data_{datetime.now().strftime('%Y-%m-%d')}-selection-{selected_subset_df.shape[0]}.csv"
+    return dcc.send_data_frame(selected_subset_df.to_csv, filename)
+
+
+def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
+    """
+    Callback for the 3d checkbox change. Disables the download selection button if 3d is selected.
+
+
+    :param plot_3d: 3d checkbox selection
+    :return: boolean indicating if the button should be disabled
+    """
+    return bool(plot_3d)
 
 
 # === STAGE 3 ===
@@ -273,7 +292,7 @@ def on_save_projections_click(
     n_clicks: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> None:
+) -> dict:
     """
     Callback for the save projections button
 
@@ -367,30 +386,16 @@ def on_plot_smiles(
 
     fig = plot_clustered_smiles(df)
     projections_df = eos_to_ecbd_link(df)[
-        ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP"]
+        ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP", "cluster_UMAP3D"]
     ]
     table = table_from_df(projections_df, "projection-table")
 
-    method_options = html.Div(
-        children=[
-            dcc.Dropdown(
-                id="smiles-projection-method-selection-box",
-                options=[
-                    {"label": "UMAP", "value": "UMAP"},
-                    {"label": "PCA", "value": "PCA"},
-                ],
-                value="PCA",
-                searchable=False,
-                clearable=False,
-                disabled=False,
-            ),
-        ]
-    )
-    return fig, table, method_options
+    return fig, table
 
 
 def on_smiles_dropdown_checkbox_change(
     projection_type: str,
+    plot_3d_checkbox: List[str],
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> go.Figure:
@@ -398,6 +403,7 @@ def on_smiles_dropdown_checkbox_change(
     Callback for dropdown change. It loads the data from the storage and visualizes the projections.
 
     :param projection_type: projection method
+    :param plot_3d_checkbox: 3d checkbox selection
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: figure with projections"""
@@ -405,7 +411,36 @@ def on_smiles_dropdown_checkbox_change(
     df = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
     )
-    return plot_clustered_smiles(df, projection=projection_type)
+    return plot_clustered_smiles(
+        df, projection=projection_type, plot_3d=bool(plot_3d_checkbox)
+    )
+
+
+def on_smiles_download_selection_button_click(
+    n_clicks: int,
+    selection: dict,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> dict:
+    """
+    Callback for the download selected button click. Downloads lasso/box selected datapoints
+    to a csv file.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: session uuid
+    :param file_storage: storage object
+    """
+    if not selection:
+        return no_update
+
+    datapoints = [point["pointIndex"] for point in selection["points"]]
+
+    df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
+    )
+    selected_subset_df = df.iloc[datapoints]
+    filename = f"smiles_data_{datetime.now().strftime('%Y-%m-%d')}-selection-{selected_subset_df.shape[0]}.csv"
+    return dcc.send_data_frame(selected_subset_df.to_csv, filename)
 
 
 def register_callbacks(elements, file_storage: FileStorage):
@@ -424,9 +459,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("projection-plot", "figure", allow_duplicate=True),
         Output("projection-table", "children"),
         Output("projection-attribute-selection-box", "children"),
-        Output("projection-method-selection-box", "children"),
         Output("pca-info", "children"),
-        Output("control-checkbox", "children"),
         Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
@@ -437,9 +470,25 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("projection-method-selection-box", "value"),
         Input("projection-attribute-selection-box", "value"),
         Input("control-checkbox", "value"),
+        Input("3d-checkbox", "value"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
-    )(functools.partial(on_dropdown_checkbox_change, file_storage=file_storage))
+    )(functools.partial(on_checkbox_change, file_storage=file_storage))
+    callback(
+        Output("projection-download-selection-csv", "data"),
+        Input("projection-download-selection-button", "n_clicks"),
+        State("projection-plot", "selectedData"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_projection_download_selection_button_click, file_storage=file_storage
+        )
+    )
+    callback(
+        Output("projection-download-selection-button", "disabled"),
+        Input("3d-checkbox", "value"),
+    )(on_3d_checkbox_change)
     callback(
         Output({"type": elements["BLOCKER"], "index": 2}, "data"),
         Input(elements["STAGES_STORE"], "data"),
@@ -456,7 +505,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         State("projection-method-selection-box", "value"),
         prevent_initial_call=True,
-    )(functools.partial(on_plot_selected_data, file_storage=file_storage))
+    )(functools.partial(on_plot_zommed_in, file_storage=file_storage))
     callback(
         Output("smiles-file-message", "children"),
         Output({"type": elements["BLOCKER"], "index": 3}, "data"),
@@ -471,7 +520,6 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("smiles-projection-plot", "figure", allow_duplicate=True),
         Output("smiles-projection-table", "children"),
-        Output("smiles-projection-method-selection-box", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
@@ -479,6 +527,22 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("smiles-projection-plot", "figure", allow_duplicate=True),
         Input("smiles-projection-method-selection-box", "value"),
+        Input("3d-checkbox-smiles", "value"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_smiles_dropdown_checkbox_change, file_storage=file_storage))
+    callback(
+        Output("smiles-download-selection-csv", "data"),
+        Input("smiles-download-selection-button", "n_clicks"),
+        State("smiles-projection-plot", "selectedData"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(
+        functools.partial(
+            on_smiles_download_selection_button_click, file_storage=file_storage
+        )
+    )
+    callback(
+        Output("smiles-download-selection-button", "disabled"),
+        Input("3d-checkbox-smiles", "value"),
+    )(on_3d_checkbox_change)

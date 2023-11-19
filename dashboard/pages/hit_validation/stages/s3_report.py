@@ -15,8 +15,38 @@ REPORT_STAGE = html.Div(
                         html.Div(
                             className="d-flex justify-content-center",
                             children=[
+                                dcc.Loading(
+                                    children=[
+                                        html.Button(
+                                            make_download_button_text(
+                                                "Download Report XLSX"
+                                            ),
+                                            className="btn btn-primary btn-lg btn-block btn-report",
+                                            id="download-report-hit-validation-button",
+                                        ),
+                                        dcc.Download(
+                                            id="download-report-hit-validation"
+                                        ),
+                                    ],
+                                    type="circle",
+                                )
+                            ],
+                        ),
+                    ],
+                ),
+            ],
+        ),
+        html.Div(
+            className="row mt-2",
+            children=[
+                html.Div(
+                    className="col",
+                    children=[
+                        html.Div(
+                            className="d-flex justify-content-center",
+                            children=[
                                 html.Button(
-                                    make_download_button_text("Download CSV Report"),
+                                    make_download_button_text("Download Report CSV"),
                                     className="btn btn-primary btn-lg btn-block btn-report",
                                     id="download-csv-summary-hit-validation-button",
                                 ),
