@@ -136,9 +136,10 @@ MAIN_PANEL = html.Div(
                     className="d-flex flex-row gap-3 align-items-center",
                     children=[
                         make_info_icon(
+                            html.H5("Compound:", className="mb-0"),
                             info_icon_text,
                             "hit-browser-info-icon",
-                            html.H5("Compound:", className="mb-0"),
+                            (None, -19, -15, None),
                         ),
                         dcc.Dropdown(
                             id="hit-browser-compound-dropdown",
