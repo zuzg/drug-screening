@@ -266,6 +266,17 @@ def on_projection_download_selection_button_click(
     return dcc.send_data_frame(selected_subset_df.to_csv, filename)
 
 
+def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
+    """
+    Callback for the 3d checkbox change. Disables the download selection button if 3d is selected.
+
+
+    :param plot_3d: 3d checkbox selection
+    :return: boolean indicating if the button should be disabled
+    """
+    return bool(plot_3d)
+
+
 # === STAGE 3 ===
 
 
@@ -463,6 +474,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         )
     )
     callback(
+        Output("projection-download-selection-button", "disabled"),
+        Input("3d-checkbox", "value"),
+    )(on_3d_checkbox_change)
+    callback(
         Output("download-projections-csv", "data"),
         Input("save-projections-button", "n_clicks"),
         State("user-uuid", "data"),
@@ -510,3 +525,7 @@ def register_callbacks(elements, file_storage: FileStorage):
             on_smiles_download_selection_button_click, file_storage=file_storage
         )
     )
+    callback(
+        Output("smiles-download-selection-button", "disabled"),
+        Input("3d-checkbox-smiles", "value"),
+    )(on_3d_checkbox_change)
