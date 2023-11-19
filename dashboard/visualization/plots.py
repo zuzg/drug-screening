@@ -15,44 +15,6 @@ from dashboard.visualization.overlay import projection_plot_overlay_controls
 PLOTLY_TEMPLATE = "plotly_white"
 
 
-def make_projection_plot(
-    projection_df: pd.DataFrame,
-    controls_df: pd.DataFrame,
-    colormap_feature: str,
-    projection_type: str,
-    checkbox_values: list[str],
-) -> go.Figure:
-    """
-    Construct a scatterplot from a dataframe.
-
-    :param projection_df: dataframe to construct plot from
-    :param colormap_feature: feature to use for coloring
-    :param projection_type: projection type
-    :param checkbox_values: list of checkbox values
-    :return: dcc Graph element containing the plot
-    """
-    figure = plot_projection_2d(
-        projection_df,
-        colormap_feature,
-        projection=projection_type,
-    )
-    if checkbox_values and "controls" in checkbox_values:
-        default_style = {
-            "ALL NEGATIVE": ["#de425b", 12],
-            "ALL POSITIVE": ["#488f31", 12],
-            "ALL BUT ONE NEGATIVE": ["#eb7a52", 10],
-            "ALL BUT ONE POSITIVE": ["#8aac49", 10],
-        }
-
-        figure = projection_plot_overlay_controls(
-            figure,
-            controls_df,
-            default_style,
-            projection=projection_type,
-        )
-    return figure
-
-
 def plot_projection_2d(
     df: pd.DataFrame,
     feature: str,
@@ -103,6 +65,113 @@ def plot_projection_2d(
         template=PLOTLY_TEMPLATE,
     )
     return fig
+
+
+def plot_projection_3d(
+    df: pd.DataFrame,
+    feature: str,
+    projection: str = "pca",
+) -> go.Figure:
+    """
+    Plot selected projection and colour points with respect to selected feature in 3D.
+    Expects dataframe has projection features X, Y and Z.
+
+    :param df: DataFrame to be visualized
+    :param feature: name of the column with respect to which the plot will be coloured
+    :param projection: type of the projection, defaults to "pca"
+    :return: plotly express 3d scatter plot
+    """
+    projection_x = f"{projection.upper()}_X"
+    projection_y = f"{projection.upper()}_Y"
+    projection_z = f"{projection.upper()}_Z"
+    feature_processed = feature.replace("_", " ").upper()
+    fig = px.scatter_3d(
+        df,
+        x=projection_x,
+        y=projection_y,
+        z=projection_z,
+        color=df[feature],
+        range_color=[0, df[feature].max()],
+        labels={
+            projection_x: "X",
+            projection_y: "Y",
+            projection_z: "Z",
+            "EOS": "ID",
+            feature: feature_processed,
+        },
+        title=f"{projection.upper()} projection with respect to {feature_processed}",
+        hover_data={
+            "EOS": True,
+            projection_x: ":.3f",
+            projection_y: ":.3f",
+            projection_z: ":.3f",
+            feature: ":.3f",
+        },
+    )
+
+    fig.update_traces(marker={"size": 8})
+    fig.update_yaxes(title_standoff=15, automargin=True)
+    fig.update_xaxes(title_standoff=30, automargin=True)
+    fig.update_layout(
+        modebar=dict(orientation="v"),
+        margin=dict(r=35, l=15, b=0),
+        title_x=0.5,
+        coloraxis_colorbar=dict(orientation="h", thickness=15),
+        template=PLOTLY_TEMPLATE,
+    )
+    return fig
+
+
+def make_projection_plot(
+    projection_df: pd.DataFrame,
+    controls_df: pd.DataFrame,
+    colormap_feature: str,
+    projection_type: str,
+    show_controls: bool = False,
+    plot_3d: bool = False,
+) -> go.Figure:
+    """
+    Construct a scatterplot from a dataframe.
+
+    :param projection_df: dataframe to construct plot from
+    :param colormap_feature: feature to use for coloring
+    :param projection_type: projection type
+    :param show_controls: whether to show controls
+    :param plot_3d: whether to plot in 3d
+    :return: dcc Graph element containing the plot
+    """
+    if projection_type.lower() not in ["pca", "umap"]:
+        raise ValueError(
+            f"Projection type {projection_type} not supported. "
+            f"Supported types: 'pca', 'umap'."
+        )
+
+    if projection_type.lower() == "umap" and plot_3d:
+        projection_type = "umap3d"
+
+    plotting_function = plot_projection_3d if plot_3d else plot_projection_2d
+    figure = plotting_function(
+        projection_df,
+        colormap_feature,
+        projection=projection_type,
+    )
+
+    if show_controls:
+        default_style = {
+            "ALL NEGATIVE": ["#de425b", 12],
+            "ALL POSITIVE": ["#488f31", 12],
+            "ALL BUT ONE NEGATIVE": ["#eb7a52", 10],
+            "ALL BUT ONE POSITIVE": ["#8aac49", 10],
+        }
+
+        figure = projection_plot_overlay_controls(
+            figure,
+            controls_df,
+            default_style,
+            projection=projection_type,
+            plot_3d=plot_3d,
+        )
+    return figure
 
 
 def visualize_multiple_plates(
@@ -666,6 +735,7 @@ def plot_clustered_smiles(
     df: pd.DataFrame,
     feature: str = "activity_final",
     projection: str = "PCA",
+    plot_3d: bool = False,
 ) -> go.Figure:
     """
     Plot selected projection and colour points with respect to selected feature.
@@ -673,12 +743,22 @@ def plot_clustered_smiles(
     :param df: DataFrame to be visualized
     :param feature: name of the column with respect to which the plot will be coloured
     :param projection: name of projection to be visualized
+    :param plot_3d: if True, plot 3D projection
 
     :return: plotly express scatter plot
     """
-    projection_x = f"{projection.upper()}_0"
-    projection_y = f"{projection.upper()}_1"
-    clusters = f"cluster_{projection}"
+    if projection.lower() not in ["pca", "umap"]:
+        raise ValueError(
+            f"Projection type {projection} not supported. "
+            f"Supported types: 'pca', 'umap'."
+        )
+
+    if projection.lower() == "umap" and plot_3d:
+        projection = "umap3d"
+
+    projection_x = f"{projection.upper()}_X"
+    projection_y = f"{projection.upper()}_Y"
+    clusters = f"cluster_{projection.upper()}"
     labels = {
         projection_x: "X",
         projection_y: "Y",
@@ -693,7 +773,16 @@ def plot_clustered_smiles(
         feature: True,
         clusters: True,
     }
-    fig = px.scatter(
+    extra_args = {}
+    plot_func = px.scatter
+    if plot_3d:
+        projection_z = f"{projection.upper()}_Z"
+        labels[projection_z] = "Z"
+        hover_data[projection_z] = ":.3f"
+        extra_args["z"] = projection_z
+        plot_func = px.scatter_3d
+
+    fig = plot_func(
         df[df[clusters] != "outlier"],
         x=projection_x,
         y=projection_y,
@@ -704,14 +793,16 @@ def plot_clustered_smiles(
         labels=labels,
         title=f"{projection.upper()} projection of SMILES with respect to activity",
         hover_data=hover_data,
+        **extra_args,
     )
     fig.add_traces(
-        px.scatter(
+        plot_func(
             df[df[clusters] == "outlier"],
             x=projection_x,
             y=projection_y,
             labels=labels,
             hover_data=hover_data,
+            **extra_args,
         )
         .update_traces(
             marker_color="gray",

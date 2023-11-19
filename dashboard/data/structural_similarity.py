@@ -60,17 +60,18 @@ def merge_active_new(
     return merged
 
 
-def calculate_umap(descriptors: np.ndarray) -> np.ndarray:
+def calculate_umap(descriptors: np.ndarray, n_components: int = 2) -> np.ndarray:
     """
     Calculate UMAP projection
 
     :param descriptors: descriptors
+    :param n_components: number of components to project to
     :return: array with projection
     """
     umap_model = umap.UMAP(
         metric="jaccard",
         n_neighbors=25,
-        n_components=2,
+        n_components=n_components,
         low_memory=False,
         min_dist=0.001,
     )
@@ -78,14 +79,15 @@ def calculate_umap(descriptors: np.ndarray) -> np.ndarray:
     return X_umap
 
 
-def calculate_pca(descriptors: np.ndarray) -> np.ndarray:
+def calculate_pca(descriptors: np.ndarray, n_components: int = 2) -> np.ndarray:
     """
     Calculate PCA projection
 
     :param descriptors: descriptors
+    :param n_components: number of components to project to
     :return: array with projection
     """
-    pca_model = PCA(n_components=2)
+    pca_model = PCA(n_components=n_components)
     X_pca = pca_model.fit_transform(descriptors)
     return X_pca
 
@@ -120,9 +122,18 @@ def prepare_cluster_viz(
     ecfp_descriptors, keep_idx = compute_ecfp_descriptors(df["smiles"])
     df = df.iloc[keep_idx]
     X_umap = calculate_umap(ecfp_descriptors)
-    df["UMAP_0"], df["UMAP_1"] = X_umap[:, 0], X_umap[:, 1]
+    df["UMAP_X"], df["UMAP_Y"] = X_umap[:, 0], X_umap[:, 1]
     df["cluster_UMAP"] = calculate_clusters(X_umap)
-    X_pca = calculate_pca(ecfp_descriptors)
-    df["PCA_0"], df["PCA_1"] = X_pca[:, 0], X_pca[:, 1]
+
+    X_umap_3d = calculate_umap(ecfp_descriptors, n_components=3)
+    df["UMAP3D_X"], df["UMAP3D_Y"], df["UMAP3D_Z"] = (
+        X_umap_3d[:, 0],
+        X_umap_3d[:, 1],
+        X_umap_3d[:, 2],
+    )
+    df["cluster_UMAP3D"] = calculate_clusters(X_umap_3d)
+
+    X_pca = calculate_pca(ecfp_descriptors, 3)
+    df["PCA_X"], df["PCA_Y"], df["PCA_Z"] = X_pca[:, 0], X_pca[:, 1], X_pca[:, 2]
     df["cluster_PCA"] = calculate_clusters(X_pca)
     return df
