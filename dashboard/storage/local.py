@@ -29,3 +29,8 @@ class LocalFileStorage(FileStorage):
             raise ValueError("data_folder is not set")
         with open(self.data_folder / name, "wb") as f:
             f.write(content)
+
+    def file_exists(self, name) -> bool:
+        if not hasattr(self, "data_folder"):
+            raise ValueError("data_folder is not set")
+        return (self.data_folder / name).exists()

@@ -98,6 +98,7 @@
     border-style: dashed;
     border-radius: 5px;
     text-align: center;
+    cursor: pointer;
 }
 
 .fixed-width-100 {
@@ -199,6 +200,10 @@
 .panel-restricted {
     max-height: calc(100vh - 400px);
     overflow-y: auto;
+}
+
+#select-file {
+    color: (84, 153, 255);
 }
 
 #echo-bmg-combined td.column-0 p {

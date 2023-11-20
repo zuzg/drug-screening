@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 BMG_DESC = """BMG files in ".txt" format should be in the form of two columns,
 where the first column contains the well unique to the plate, e.g. A02, M13, P24, etc.
@@ -13,17 +13,24 @@ BMG_INPUT_STAGE = html.Div(
         html.Div(
             children=[
                 html.P(BMG_DESC, className="text-justify"),
-                dcc.Upload(
-                    id="upload-bmg-data",
-                    accept=".txt",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A("Select Files"),
-                        ]
-                    ),
-                    multiple=True,
-                    className="text-center upload-box",
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-bmg-data",
+                            accept=".txt",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " BMG files",
+                                ]
+                            ),
+                            multiple=True,
+                            className="text-center upload-box",
+                        ),
+                        html.Div(id="dummy-upload-bmg-data"),
+                    ],
+                    type="circle",
                 ),
             ],
             className="grid-2-1",

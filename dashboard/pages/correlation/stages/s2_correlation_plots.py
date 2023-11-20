@@ -2,13 +2,27 @@ from dash import html, dcc
 
 GRAPHS = html.Div(
     id="graphs",
-    className="d-flex flex-row",
+    className="row",
     children=[
-        dcc.Graph(
-            id="inhibition-graph", className="six columns", style={"width": "50%"}
+        html.Div(
+            className="col",
+            children=[
+                dcc.Loading(
+                    id="loading-inhibition-graph",
+                    children=[dcc.Graph(id="inhibition-graph")],
+                    type="circle",
+                )
+            ],
         ),
-        dcc.Graph(
-            id="concentration-graph", className="six columns", style={"width": "50%"}
+        html.Div(
+            className="col",
+            children=[
+                dcc.Loading(
+                    id="loading-concentration-graph",
+                    children=[dcc.Graph(id="concentration-graph")],
+                    type="circle",
+                )
+            ],
         ),
     ],
 )

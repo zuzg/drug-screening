@@ -20,8 +20,8 @@ from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
     make_projection_plot,
-    plot_projection_2d,
     plot_clustered_smiles,
+    plot_projection_2d,
 )
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
@@ -54,9 +54,9 @@ def on_projection_files_upload(
     last_modified: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> Tuple[html.Div, str]:
+) -> tuple[html.Div, str, html.Div, bool]:
     """
-    Callback for file upload. TBD
+    Callback for file upload.
 
     :param content: base64 encoded file content
     :param stored_uuid: session uuid
@@ -92,6 +92,8 @@ def on_projection_files_upload(
             ],
         ),
         stored_uuid,
+        no_update,
+        False,
     )
 
 
@@ -170,7 +172,7 @@ def on_projections_visualization_entry(
     pca = PROJECTION_SETUP[0][0]
     projection_info = pca_summary(pca, projection_columns)
 
-    return fig, table, attribute_options, projection_info
+    return fig, table, attribute_options, projection_info, False
 
 
 def on_checkbox_change(
@@ -280,6 +282,12 @@ def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
 # === STAGE 3 ===
 
 
+def on_save_results_entry(current_stage: int):
+    if current_stage != 2:
+        return no_update
+    return False
+
+
 def on_save_projections_click(
     n_clicks: int,
     stored_uuid: str,
@@ -322,8 +330,8 @@ def on_smiles_files_upload(
     :param content: base64 encoded smiles content
     :param stored_uuid: session uuid
     :param file_storage: file storage
-    :return: icon indicating the status of the upload
-    :return: uuid of the stored data
+    :return: list of loaded and not loaded files
+    :return: next stage button disabled status
     """
     if not contents or not smiles_content:
         return no_update
@@ -348,6 +356,7 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
+        False,
     )
 
 
@@ -438,6 +447,8 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
+        Output("dummy-upload-projection-data", "children"),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-projection-data", "contents"),
         Input("upload-projection-data", "filename"),
         Input("upload-projection-data", "last_modified"),
@@ -449,6 +460,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("projection-table", "children"),
         Output("projection-attribute-selection-box", "children"),
         Output("pca-info", "children"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
@@ -478,6 +490,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("3d-checkbox", "value"),
     )(on_3d_checkbox_change)
     callback(
+        Output({"type": elements["BLOCKER"], "index": 2}, "data"),
+        Input(elements["STAGES_STORE"], "data"),
+    )(on_save_results_entry)
+    callback(
         Output("download-projections-csv", "data"),
         Input("save-projections-button", "n_clicks"),
         State("user-uuid", "data"),
@@ -492,6 +508,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_plot_zommed_in, file_storage=file_storage))
     callback(
         Output("smiles-file-message", "children"),
+        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
         Input("upload-activity-data", "contents"),
         Input("upload-activity-data", "filename"),
         Input("upload-activity-data", "last_modified"),

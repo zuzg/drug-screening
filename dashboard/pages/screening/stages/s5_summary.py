@@ -32,37 +32,49 @@ SUMMARY_STAGE = html.Div(
                             children=[
                                 html.H5("Z-Score range:"),
                                 html.Div(
-                                    className="row mb-3",
+                                    className="col-md-6 mt-1",
                                     children=[
                                         html.Div(
-                                            className="col mt-1",
+                                            className="row",
                                             children=[
-                                                html.Label("minimum value:"),
-                                                dcc.Input(
-                                                    placeholder="min value",
-                                                    type="number",
-                                                    id="z-score-min-input",
-                                                    className="stats-input",
+                                                html.Div(
+                                                    className="col",
+                                                    children=[
+                                                        html.Label("minimum value:"),
+                                                        dcc.Input(
+                                                            placeholder="min value",
+                                                            type="number",
+                                                            id="z-score-min-input",
+                                                            className="stats-input",
+                                                            disabled=True,
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Div(
+                                                    className="col",
+                                                    children=[
+                                                        html.Label("maximum value:"),
+                                                        dcc.Input(
+                                                            placeholder="max value",
+                                                            type="number",
+                                                            id="z-score-max-input",
+                                                            className="stats-input",
+                                                            disabled=True,
+                                                        ),
+                                                    ],
                                                 ),
                                             ],
-                                        ),
-                                        html.Div(
-                                            className="col mt-1",
-                                            children=[
-                                                html.Label("maximum value:"),
-                                                dcc.Input(
-                                                    placeholder="max value",
-                                                    type="number",
-                                                    id="z-score-max-input",
-                                                    className="stats-input",
-                                                ),
-                                            ],
-                                        ),
+                                        )
                                     ],
                                 ),
-                                dcc.Graph(
-                                    id="z-score-plot",
-                                    figure={},
+                                dcc.Loading(
+                                    children=[
+                                        dcc.Graph(
+                                            id="z-score-plot",
+                                            figure={},
+                                        ),
+                                    ],
+                                    type="circle",
                                 ),
                             ],
                         ),
@@ -79,37 +91,49 @@ SUMMARY_STAGE = html.Div(
                                     id="tab-feature-header",
                                 ),
                                 html.Div(
-                                    className="row mb-3",
+                                    className="col-md-6 mt-1",
                                     children=[
                                         html.Div(
-                                            className="col mt-1",
+                                            className="row",
                                             children=[
-                                                html.Label("minimum value:"),
-                                                dcc.Input(
-                                                    placeholder="min value",
-                                                    type="number",
-                                                    id="feature-min-input",
-                                                    className="stats-input",
+                                                html.Div(
+                                                    className="col",
+                                                    children=[
+                                                        html.Label("minimum value:"),
+                                                        dcc.Input(
+                                                            placeholder="min value",
+                                                            type="number",
+                                                            id="feature-min-input",
+                                                            className="stats-input",
+                                                            disabled=True,
+                                                        ),
+                                                    ],
+                                                ),
+                                                html.Div(
+                                                    className="col",
+                                                    children=[
+                                                        html.Label("maximum value:"),
+                                                        dcc.Input(
+                                                            placeholder="max value",
+                                                            type="number",
+                                                            id="feature-max-input",
+                                                            className="stats-input",
+                                                            disabled=True,
+                                                        ),
+                                                    ],
                                                 ),
                                             ],
-                                        ),
-                                        html.Div(
-                                            className="col mt-1",
-                                            children=[
-                                                html.Label("maximum value:"),
-                                                dcc.Input(
-                                                    placeholder="max value",
-                                                    type="number",
-                                                    id="feature-max-input",
-                                                    className="stats-input",
-                                                ),
-                                            ],
-                                        ),
+                                        )
                                     ],
                                 ),
-                                dcc.Graph(
-                                    id="feature-plot",
-                                    figure={},
+                                dcc.Loading(
+                                    children=[
+                                        dcc.Graph(
+                                            id="feature-plot",
+                                            figure={},
+                                        ),
+                                    ],
+                                    type="circle",
                                 ),
                             ],
                         ),

@@ -1,6 +1,7 @@
-from dash import html, dcc
 import dash_bootstrap_components as dbc
+from dash import dcc, html
 
+from dashboard.visualization.text_tables import make_info_icon
 
 PARAMS_DISPLAY_SPEC = [
     {
@@ -58,15 +59,20 @@ GRAPH_TAB = dbc.Tab(
         html.Div(
             className="d-flex flex-column h-100",
             children=[
-                dcc.Graph(
-                    id="hit-browser-plot",
-                    figure={},
-                    config={
-                        "displayModeBar": False,
-                        "scrollZoom": False,
-                    },
-                    responsive=True,
-                )
+                dcc.Loading(
+                    children=[
+                        dcc.Graph(
+                            id="hit-browser-plot",
+                            figure={},
+                            config={
+                                "displayModeBar": False,
+                                "scrollZoom": False,
+                            },
+                            responsive=True,
+                        )
+                    ],
+                    type="circle",
+                ),
             ],
         ),
     ],
@@ -79,9 +85,14 @@ SMILES_TAB = dbc.Tab(
         html.P("Compound Structure", className="fw-bold mt-3"),
         html.Div(
             children=[
-                html.Div(
-                    id="smiles",
-                    className="d-flex flex-row justify-content-center",
+                dcc.Loading(
+                    children=[
+                        html.Div(
+                            id="smiles",
+                            className="d-flex flex-row justify-content-center",
+                        ),
+                    ],
+                    type="circle",
                 ),
                 html.Div(
                     children=[
@@ -109,6 +120,12 @@ SMILES_TAB = dbc.Tab(
     ],
 )
 
+info_icon_text = """
+Browse the dropdown to select a compound.
+The graph will display the compound's dose-response curve.
+The SMILES tab will display the compound's structure.
+"""
+
 MAIN_PANEL = html.Div(
     id="hit-browser-container",
     children=[
@@ -118,7 +135,12 @@ MAIN_PANEL = html.Div(
                 html.Span(
                     className="d-flex flex-row gap-3 align-items-center",
                     children=[
-                        html.H5("Compound:", className="mb-0"),
+                        make_info_icon(
+                            html.H5("Compound:", className="mb-0"),
+                            info_icon_text,
+                            "hit-browser-info-icon",
+                            (None, -19, -15, None),
+                        ),
                         dcc.Dropdown(
                             id="hit-browser-compound-dropdown",
                             placeholder="Select Compound",

@@ -48,9 +48,9 @@ def plot_projection_2d(
         title=f"{projection.upper()} projection with respect to {feature_processed}",
         hover_data={
             "EOS": True,
-            projection_x: ":.3f",
-            projection_y: ":.3f",
-            feature: ":.3f",
+            projection_x: ":.2f",
+            projection_y: ":.2f",
+            feature: ":.2f",
         },
     )
 
@@ -701,6 +701,7 @@ def plot_ic50(
                 "visible": True,
                 "showticklabels": True,
             },
+            "template": PLOTLY_TEMPLATE,
             "showlegend": showlegend,
             "margin": dict(
                 l=10,
