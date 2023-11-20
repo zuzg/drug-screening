@@ -25,21 +25,47 @@ GRAPHS = html.Div(
                 html.Div(
                     className="row",
                     children=[
-                        html.Span(
+                        html.Div(
+                            className="col",
                             children=[
-                                html.Label(
-                                    children="Set activation/inhibition threshold",
-                                    className="form-label",
-                                ),
-                                dcc.Input(
-                                    id="activity-threshold-input",
-                                    type="number",
-                                    value=0,
-                                    min=0,
-                                    className="form-control",
+                                html.Span(
+                                    children=[
+                                        html.Label(
+                                            children="Set act/inh bottom threshold",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="activity-threshold-bottom-input",
+                                            type="number",
+                                            value=-10,
+                                            min=-50,
+                                            className="form-control",
+                                        ),
+                                    ],
+                                    className="flex-grow-1",
                                 ),
                             ],
-                            className="flex-grow-1",
+                        ),
+                        html.Div(
+                            className="col",
+                            children=[
+                                html.Span(
+                                    children=[
+                                        html.Label(
+                                            children="Set act/inh upper threshold",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="activity-threshold-top-input",
+                                            type="number",
+                                            value=100,
+                                            min=0,
+                                            className="form-control",
+                                        ),
+                                    ],
+                                    className="flex-grow-1",
+                                ),
+                            ],
                         ),
                     ],
                 ),

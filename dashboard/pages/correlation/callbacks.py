@@ -117,7 +117,8 @@ def on_visualization_stage_entry(
     current_stage: int,
     concentration_value: int,
     volume_value: int,
-    activity_threshold: float,
+    activity_threshold_bottom: float,
+    activity_threshold_top: float,
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> tuple[go.Figure, go.Figure]:
@@ -148,7 +149,12 @@ def on_visualization_stage_entry(
 
     feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
     concentration_fig = concentration_plot(
-        df[df[f"{feature}_x"] >= activity_threshold], feature[2:]
+        df[
+            df[f"{feature}_x"].between(
+                activity_threshold_bottom, activity_threshold_top
+            )
+        ],
+        feature[2:],
     )
 
     feature_fig = concentration_confirmatory_plot(
@@ -236,7 +242,8 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input(elements["STAGES_STORE"], "data"),
         Input("concentration-slider", "value"),
         Input("volume-slider", "value"),
-        Input("activity-threshold-input", "value"),
+        Input("activity-threshold-bottom-input", "value"),
+        Input("activity-threshold-top-input", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
     callback(
