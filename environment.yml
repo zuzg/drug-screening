@@ -21,5 +21,6 @@ dependencies:
   - pre-commit
   - pip
   - xlsxwriter
+  - kaleido
   - pip:
-    - dash_dangerously_set_inner_html
+      - dash_dangerously_set_inner_html
