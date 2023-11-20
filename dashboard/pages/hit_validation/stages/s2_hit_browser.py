@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
-from dashboard.visualization.text_tables import annotate_with_tooltip
+from dashboard.pages.components import annotate_with_tooltip
 
 PARAMS_DISPLAY_SPEC = [
     {

@@ -2,7 +2,9 @@
 Contains common elements for the pages.
 """
 
+import uuid
 from dash import html, dcc
+import dash_bootstrap_components as dbc
 
 
 # Extra elements that are not part of the main layout
@@ -249,3 +251,45 @@ def make_file_list_component(
             ),
         ],
     )
+
+
+def annotate_with_tooltip(
+    element: html.Div,
+    text: str,
+    extra_style: dict = None,
+):
+    """
+    Make an info icon with a tooltip positioned in the upper right corner of the element.
+
+    :param element: element where the icon will be positioned
+    :param text: text to be displayed in the tooltip
+    :param extra_style: extra style to be applied to the tooltip
+    :return: html Div element containing the icon and tooltip
+    """
+    if not hasattr(element, "className"):
+        setattr(element, "className", "")
+
+    color = "primary"
+    if color in element.className:
+        color = "secondary"
+
+    tooltip_id = str(uuid.uuid4())
+    tooltip = html.Span(
+        children=[
+            dbc.Tooltip(
+                text,
+                target=tooltip_id,
+            ),
+            html.I(
+                id=tooltip_id,
+                className=f"fa-solid fa-info-circle fa-xs text-primary d-flex m-auto tooltip-icon",
+            ),
+        ],
+        className="position-absolute top-0 end-0 tooltip-holder",
+        style=extra_style or {},
+    )
+    element.className += " position-relative"
+    if type(element.children) is not list:
+        element.children = [element.children]
+    element.children.insert(0, tooltip)
+    return element

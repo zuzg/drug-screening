@@ -1,6 +1,6 @@
 from dash import dcc, html
 
-from dashboard.visualization.text_tables import annotate_with_tooltip
+from dashboard.pages.components import annotate_with_tooltip
 
 ACTIVY_DETERMINATION_PARAMS_DESC = """
 Specify parameters used for activity classification.

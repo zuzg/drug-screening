@@ -1,5 +1,7 @@
 from dash import dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
 FILTERED_PLATES_STATS_STAGE = html.Div(
     id="filtered_plates_stats_stage",
     className="container",
