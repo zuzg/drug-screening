@@ -1,5 +1,8 @@
+import uuid
+
 import dash_bootstrap_components as dbc
 import pandas as pd
+
 from dash import dash_table, html
 from dash.dash_table.Format import Format, Scheme
 from sklearn.decomposition import PCA
@@ -220,60 +223,37 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     return projection_info
 
 
-def make_info_icon(
-    element: html.Div(),
+def annotate_with_tooltip(
+    element: html.Div,
     text: str,
-    id: str,
-    position: tuple[int],
-    placement: str = "right",
 ):
     """
     Make an info icon with a tooltip positioned in the upper right corner of the element.
 
     :param element: element where the icon will be positioned
     :param text: text to be displayed in the tooltip
-    :param id: id of the icon
-    :param position: position of the icon relative to the element (left, right, top, bottom)
-    :param placement: placement of the tooltip
     :return: html Div element containing the icon and tooltip
     """
-    left, right, top, bottom = position
+    color = "primary"
+    if color in element.className:
+        color = "secondary"
 
-    style = {
-        pos_name: f"{pos_value}px"
-        for pos_name, pos_value in [
-            ("left", left),
-            ("right", right),
-            ("top", top),
-            ("bottom", bottom),
-        ]
-        if pos_value is not None
-    }
-    style["position"] = "absolute"
-
-    icon_div = html.Div(
-        [
+    tooltip_id = str(uuid.uuid4())
+    tooltip = html.Span(
+        children=[
             dbc.Tooltip(
                 text,
-                target=id,
+                target=tooltip_id,
             ),
-            html.Div(
-                children=[
-                    html.I(
-                        id=id,
-                        className="fas fa-info-circle fa d-flex m-auto",
-                        style={"color": "rgb(84, 153, 255)"},
-                    ),
-                ],
-                className="p-2 d-flex justify-content-center align-items-center",
+            html.I(
+                id=tooltip_id,
+                className=f"fa-solid fa-info-circle fa-xs text-primary d-flex m-auto tooltip-icon",
             ),
         ],
-        style=style,
+        className="position-absolute top-0 end-0 tooltip-holder",
     )
-    return html.Div(
-        [
-            element,
-            html.Div(icon_div),
-        ],
-        style={"position": "relative"},
-    )
+    element.className += " position-relative"
+    if type(element.children) is not list:
+        element.children = [element.children]
+    element.children.insert(0, tooltip)
+    return element

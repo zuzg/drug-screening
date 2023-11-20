@@ -223,6 +223,21 @@
     overflow-y: auto;
 }
 
+
+.tooltip-holder {
+    height: 16px;
+    width: 16px;
+    border-radius: 100%;
+    margin: -10px;
+    background-color: white;
+}
+
+.tooltip-icon {
+    cursor: pointer;
+    font-size: 0.9rem;
+    transform: translate(0.4px, 8px);
+}
+
 #select-file {
     color: (84, 153, 255);
 }

@@ -1,7 +1,7 @@
 import dash_bootstrap_components as dbc
 from dash import dcc, html
 
-from dashboard.visualization.text_tables import make_info_icon
+from dashboard.visualization.text_tables import annotate_with_tooltip
 
 PARAMS_DISPLAY_SPEC = [
     {
@@ -120,11 +120,17 @@ SMILES_TAB = dbc.Tab(
     ],
 )
 
-info_icon_text = """
+COMPOUND_SELECT_TOOLTIP = """
 Browse the dropdown to select a compound.
 The graph will display the compound's dose-response curve.
 The SMILES tab will display the compound's structure.
 """
+
+APPLY_STACKING_TOOLTIP = """
+Adjusts the curve fit range to the specified TOP and BOTTOM values.
+Return to the original curve fit range by clicking the 'Unstack' button.
+"""
+
 
 MAIN_PANEL = html.Div(
     id="hit-browser-container",
@@ -135,11 +141,9 @@ MAIN_PANEL = html.Div(
                 html.Span(
                     className="d-flex flex-row gap-3 align-items-center",
                     children=[
-                        make_info_icon(
+                        annotate_with_tooltip(
                             html.H5("Compound:", className="mb-0"),
-                            info_icon_text,
-                            "hit-browser-info-icon",
-                            (None, -19, -15, None),
+                            COMPOUND_SELECT_TOOLTIP,
                         ),
                         dcc.Dropdown(
                             id="hit-browser-compound-dropdown",
@@ -235,10 +239,13 @@ MAIN_PANEL = html.Div(
                                 html.Span(
                                     className="d-flex flex-row gap-3 w-100",
                                     children=[
-                                        html.Button(
-                                            id="hit-browser-apply-button",
-                                            className="btn btn-primary w-50",
-                                            children="Apply Stacking",
+                                        annotate_with_tooltip(
+                                            html.Button(
+                                                id="hit-browser-apply-button",
+                                                className="btn btn-primary w-50",
+                                                children="Apply Stacking",
+                                            ),
+                                            APPLY_STACKING_TOOLTIP,
                                         ),
                                         html.Button(
                                             id="hit-browser-unstack-button",
