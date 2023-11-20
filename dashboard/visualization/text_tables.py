@@ -226,14 +226,19 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
 def annotate_with_tooltip(
     element: html.Div,
     text: str,
+    extra_style: dict = None,
 ):
     """
     Make an info icon with a tooltip positioned in the upper right corner of the element.
 
     :param element: element where the icon will be positioned
     :param text: text to be displayed in the tooltip
+    :param extra_style: extra style to be applied to the tooltip
     :return: html Div element containing the icon and tooltip
     """
+    if not hasattr(element, "className"):
+        setattr(element, "className", "")
+
     color = "primary"
     if color in element.className:
         color = "secondary"
@@ -251,6 +256,7 @@ def annotate_with_tooltip(
             ),
         ],
         className="position-absolute top-0 end-0 tooltip-holder",
+        style=extra_style or {},
     )
     element.className += " position-relative"
     if type(element.children) is not list:
