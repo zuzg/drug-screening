@@ -268,28 +268,27 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
         },
     )
     fig.add_trace(
-        go.Scatter(
+        go.Bar(
             name="CTRL NEG",
             x=df.barcode,
             y=df.mean_neg,
             error_y=dict(
                 type="data", array=df.std_neg, color="gray", thickness=0.5, width=2
             ),
-            mode="markers",
+            # mode="markers",
             marker_color="#d73027",
-            marker_symbol="circle",
             opacity=0.75,
         )
     )
     fig.add_trace(
-        go.Scatter(
+        go.Bar(
             name="CTRL POS",
             x=df.barcode,
             y=df.mean_pos,
             error_y=dict(
                 type="data", array=df.std_pos, color="gray", thickness=0.5, width=2
             ),
-            mode="markers",
+            # mode="markers",
             marker_color="#1a9850",
             opacity=0.75,
         )
@@ -330,14 +329,12 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
         ticks = [*range(1, means.shape[0] + 1)]
         ticks_all.append(ticks)
         fig.add_trace(
-            go.Scatter(
+            go.Bar(
                 x=ticks,
                 y=means,
                 error_y=dict(
                     type="data", array=stds, color="gray", thickness=0.5, width=2
                 ),
-                mode="markers",
-                marker_color="blue",
             ),
             row=1,
             col=axis,
@@ -403,10 +400,9 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
         },
     )
     fig.add_trace(
-        go.Scatter(
+        go.Bar(
             x=barcode,
             y=z_factor,
-            mode="markers",
         )
     )
     fig.update_layout(
