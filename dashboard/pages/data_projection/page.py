@@ -10,23 +10,23 @@ CARDS_DATA = [
     {
         "title": "Screening Data Projections",
         "description": [
-            "BLABLA Screening Data Projections.",
+            "Preview data projections for the same set of compounds tested in different experiments.",
             html.Br(),
             html.Br(),
             "Requires a set of csv files (screening process outputs) with overlapping set of compounds.",
         ],
-        "icon": "fa-magnifying-glass",
+        "icon": "fa-vial-circle-check",
         "link": "/data-projection-screening",
     },
     {
         "title": "SMILES Data Projections",
         "description": [
-            "BLABLA SMILES Data Projections.",
+            "Examine structural similarity between compounds tested in an experiment and new SMILES.",
             html.Br(),
             html.Br(),
-            "Requires SMILES Data Projections TODO.",
+            "Requires results from Hit Validation along with a file with not tested SMILES.",
         ],
-        "icon": "fa-circle-nodes",
+        "icon": "fa-atom",
         "link": "/data-projection-smiles",
     },
 ]

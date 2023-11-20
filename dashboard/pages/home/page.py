@@ -44,10 +44,10 @@ CARDS_DATA = [
     {
         "title": "Data Projections",
         "description": [
-            "Preview data projections for same set of compounds tested in different experiments.",
+            "Preview data projections a set of compounds tested in different experiments, examine structural similarity between compounds.",
             html.Br(),
             html.Br(),
-            "Requires a set of csv files (screening process outputs) with overlapping set of compounds.",
+            "Requires a set of csv files with overlapping set of compounds or Hit Validation output files along with new SMILES to project.",
         ],
         "icon": "fa-circle-nodes",
         "link": "/data-projection",

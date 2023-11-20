@@ -60,10 +60,31 @@ def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
 # === STAGE 1 ===
 
 
+def on_hit_validation_upload(
+    contents: str, stored_uuid: str, file_storage: FileStorage
+) -> Tuple[str, None]:
+    """
+    Callback for activity file upload.
+
+    :param contents: base64 encoded file content
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: session uuid, dummy activity upload return
+    """
+    if not stored_uuid:
+        stored_uuid = str(uuid.uuid4())
+    if contents is None:
+        return no_update
+
+    activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
+    activity_df = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
+    file_storage.save_file(f"{stored_uuid}_activity_df.pq", activity_df.to_parquet())
+    return stored_uuid, None  # dummy activity upload return
+
+
 def on_smiles_files_upload(
-    contents: str | None,
+    dummy_activity_upload: str,
     filename: str,
-    last_modified: int,
     smiles_content: str | None,
     smiles_filename: str,
     stored_uuid: str | None,
@@ -73,25 +94,31 @@ def on_smiles_files_upload(
     Callback for file upload.
 
     :param content: base64 encoded file content
-    :param content: base64 encoded smiles content
+    :param filename: file name
+    :param last_modified: last modified timestamp
+    :param smiles_content: base64 encoded smiles content
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: list of loaded and not loaded files
     :return: next stage button disabled status
     """
-    if not contents or not smiles_content:
-        return no_update
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
 
-    activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
-    activity = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
+    activity_path = f"{stored_uuid}_activity_df.pq"
+
+    if not file_storage.file_exists(activity_path) or not smiles_content:
+        return no_update
+
+    activity_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(activity_path))
+    )
 
     smiles_decoded = base64.b64decode(smiles_content.split(",")[1]).decode("utf-8")
     smiles_new = pd.read_csv(io.StringIO(smiles_decoded), dtype="str")
     smiles_active = pd.read_parquet("dashboard/assets/ml/predictions.pq")
 
-    df_merged = prepare_cluster_viz(activity, smiles_active, smiles_new)
+    df_merged = prepare_cluster_viz(activity_df, smiles_active, smiles_new)
 
     saved_name = f"{stored_uuid}_smiles_merged.pq"
     file_storage.save_file(saved_name, df_merged.reset_index().to_parquet())
@@ -102,7 +129,9 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
-        False,
+        False,  # next stage button disabled status
+        stored_uuid,
+        None,  # dummy smiles upload return
     )
 
 
@@ -191,11 +220,19 @@ def on_smiles_download_selection_button_click(
 
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
+        Output("user-uuid", "data", allow_duplicate=True),
+        Output("dummy-upload-activity-data", "children"),
+        Input("upload-activity-data", "contents"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_hit_validation_upload, file_storage=file_storage))
+    callback(
         Output("smiles-file-message", "children"),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
-        Input("upload-activity-data", "contents"),
+        Output("user-uuid", "data", allow_duplicate=True),
+        Output("dummy-upload-smiles-data", "children"),
+        Input("dummy-upload-activity-data", "children"),
         Input("upload-activity-data", "filename"),
-        Input("upload-activity-data", "last_modified"),
         Input("upload-smiles-data", "contents"),
         Input("upload-smiles-data", "filename"),
         State("user-uuid", "data"),

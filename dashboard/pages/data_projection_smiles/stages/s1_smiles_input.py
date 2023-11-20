@@ -1,11 +1,10 @@
 from dash import dcc, html
 
-# TODO: DUMMY UPLOADS
 FILE_PARAMS = [
     {
         "id": "upload-activity-data",
         "title": "Active SMILES",
-        "msg": "Upload file with results from IC50 fitting (with column acitivity_final)",
+        "msg": "Upload file with results from IC50 fitting (with column acitivity_final).",
         "upload_text": [
             "Drag and Drop or ",
             html.A("Select", className="select-file"),
@@ -16,7 +15,7 @@ FILE_PARAMS = [
     {
         "id": "upload-smiles-data",
         "title": "New SMILES",
-        "msg": "Upload file with untested SMILES to check structural similarity",
+        "msg": "Upload file with untested SMILES and their EOS to check structural similarity.",
         "upload_text": [
             "Drag and Drop or ",
             html.A("Select", className="select-file"),
