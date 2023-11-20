@@ -30,7 +30,7 @@ app.layout = html.Div(
             children=[
                 page_container,
             ],
-            className="container-xxl p-3 flex-grow-1",
+            className="container-xxl px-3 flex-grow-1",
             id="main-container",
         ),
         components.make_footer(VERSION),

@@ -140,7 +140,10 @@ def make_card_component(
 
 
 def make_page_controls_rich_widget(
-    previous_stage_btn_id: str, next_stage_btn_id: str, stage_names: list[str]
+    previous_stage_btn_id: str,
+    next_stage_btn_id: str,
+    stage_names: list[str],
+    process_name: str,
 ) -> html.Div:
     controls_content = html.Ul(
         className="controls__content",
@@ -168,7 +171,13 @@ def make_page_controls_rich_widget(
                     html.I(className="fa-solid fa-arrow-left"),
                 ],
             ),
-            controls_content,
+            html.Div(
+                className="controls__wrapper",
+                children=[
+                    html.H2(f"{process_name} Process", className="controls__title"),
+                    controls_content,
+                ],
+            ),
             html.Button(
                 id=next_stage_btn_id,
                 className="btn btn-primary btn--round",

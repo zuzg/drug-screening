@@ -187,6 +187,7 @@ class ProcessPageBuilder(PageBuilder):
                 previous_stage_btn_id=self.previous_stage_btn_id,
                 next_stage_btn_id=self.next_stage_btn_id,
                 stage_names=self.stage_names,
+                process_name=self.page_name.title().replace("_", " "),
             ),
         )
         return super().build()
