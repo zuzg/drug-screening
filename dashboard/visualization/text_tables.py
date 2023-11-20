@@ -132,7 +132,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
             "id": x,
             "name": x,
             "type": "numeric",
-            "format": Format(precision=3, scheme=Scheme.fixed),
+            "format": Format(precision=PRECISION, scheme=Scheme.fixed),
         }
         for x in df.columns
     ]
