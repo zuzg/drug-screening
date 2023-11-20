@@ -55,5 +55,26 @@ CORRELATION_PLOTS_STAGE = html.Div(
             ],
         ),
         GRAPHS,
+        html.Div(
+            className="row",
+            children=[
+                html.Span(
+                    children=[
+                        html.Label(
+                            children="Set activation/inhibition threshold",
+                            className="form-label",
+                        ),
+                        dcc.Input(
+                            id="activity-threshold-input",
+                            type="number",
+                            value=0,
+                            min=0,
+                            className="form-control",
+                        ),
+                    ],
+                    className="flex-grow-1",
+                ),
+            ],
+        ),
     ],
 )
