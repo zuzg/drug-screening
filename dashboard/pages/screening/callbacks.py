@@ -186,10 +186,10 @@ def on_outlier_purge_stage_entry(
     index_text = f"{heatmap_start_index + 1} - {heatmap_start_index + DISPLAYED_PLATES} / {bmg_vals.shape[0]}"
 
     final_vis_df = (
-        vis_bmg_df.set_index("barcode").applymap(lambda x: f"{x:.5f}").reset_index()
+        vis_bmg_df.set_index("barcode").applymap(lambda x: f"{x:,.5f}").reset_index()
     )
     final_vis_df["z_factor"] = final_vis_df["z_factor"].apply(
-        lambda x: f"{float(x):.3f}"
+        lambda x: f"{float(x.replace(',', '')):,.3f}"
     )
 
     last_page_size = (filtered_plates_count % DISPLAYED_PLATES) or DISPLAYED_PLATES

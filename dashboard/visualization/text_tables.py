@@ -66,7 +66,7 @@ def make_summary_stage_datatable(df: pd.DataFrame, feature: str):
         id=feature,
         name=feature,
         type="numeric",
-        format=Format(precision=PRECISION, scheme=Scheme.fixed),
+        format=Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
     )
 
     ACT_INH_DATATABLE = dash_table.DataTable(
@@ -81,7 +81,7 @@ def make_summary_stage_datatable(df: pd.DataFrame, feature: str):
                 id="Z-SCORE",
                 name=" Z-SCORE",
                 type="numeric",
-                format=Format(precision=PRECISION, scheme=Scheme.fixed),
+                format=Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
             ),
         ],
         style_table={"overflowX": "auto", "overflowY": "auto"},
@@ -132,7 +132,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
             "id": x,
             "name": x,
             "type": "numeric",
-            "format": Format(precision=PRECISION, scheme=Scheme.fixed),
+            "format": Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
         }
         for x in df.columns
     ]
@@ -191,14 +191,14 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     total_explained_variance = pca.explained_variance_ratio_.sum()
     projection_text.append(
         html.Li(
-            html.Strong(f"Total Explained Variance: {total_explained_variance:.5f}")
+            html.Strong(f"Total Explained Variance: {total_explained_variance:,.5f}")
         )
     )
 
     explained_variance_list = []
     for i, ev in enumerate(explained_variance):
         explained_variance_list.append(
-            html.Li(f"Explained Variance for PC{i + 1}: {ev:.5f}")
+            html.Li(f"Explained Variance for PC{i + 1}: {ev:,.5f}")
         )
 
     projection_text.append(html.Ul(explained_variance_list))
@@ -207,7 +207,7 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
         projection_text.append(html.Li(html.Strong(f"Coefficients for PC{i + 1}:")))
         sublist = []
         for j, feature in enumerate(coefficient):
-            sublist.append(html.Li(f"{activation_columns[j]}: {feature:.5f}"))
+            sublist.append(html.Li(f"{activation_columns[j]}: {feature:,.5f}"))
         projection_text.append(html.Ul(sublist))
 
     projection_info = html.Details(

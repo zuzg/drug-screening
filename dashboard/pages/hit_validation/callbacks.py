@@ -317,16 +317,16 @@ def on_selected_compound_changed(
 
     text_concentration_50 = "NaN"
     if type(concentration_50) != complex:
-        text_concentration_50 = f"{round(concentration_50, 5)}"
+        text_concentration_50 = f"{concentration_50:,.5f}"
 
     result = {
-        "min_modulation": round(entry["min_value"], 5),
-        "max_modulation": round(entry["max_value"], 5),
-        "ic50": round(entry["ic50"], 5),
-        "modulation_ic50": round(modulation_ic50, 5),
+        "min_modulation": f"{entry['min_value']:,.5f}",
+        "max_modulation": f"{entry['max_value']:,.5f}",
+        "ic50": f"{entry['ic50']:,.5f}",
+        "modulation_ic50": f"{modulation_ic50:,.5f}",
         "concentration_50": text_concentration_50,
-        "curve_slope": round(entry["slope"], 5),
-        "r2": round(entry["r2"] * 100, 5),
+        "curve_slope": f"{entry['slope']:,.5f}",
+        "r2": f"{entry['r2'] * 100:,.5f}",
         "is_active": html.Span(
             children=[
                 activity_icons[entry["activity_final"]],
@@ -346,7 +346,7 @@ def on_selected_compound_changed(
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
         "smiles": smiles_html,
-        "toxicity": round(float(toxicity), 5),
+        "toxicity": f"{float(toxicity):,.5f}",
     }
 
     report_data = result.copy()
