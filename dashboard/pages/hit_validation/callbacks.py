@@ -315,17 +315,16 @@ def on_selected_compound_changed(
     smiles_graph = plot_smiles(smiles)
     smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
 
-    if type(concentration_50) == complex:
-        concentration_50 = "Not found"
-    else:
-        concentration_50 = f"{round(concentration_50, 5)} µM"
+    text_concentration_50 = "NaN"
+    if type(concentration_50) != complex:
+        text_concentration_50 = f"{round(concentration_50, 5)}"
 
     result = {
         "min_modulation": round(entry["min_value"], 5),
         "max_modulation": round(entry["max_value"], 5),
         "ic50": round(entry["ic50"], 5),
         "modulation_ic50": round(modulation_ic50, 5),
-        "concentration_50": concentration_50,
+        "concentration_50": text_concentration_50,
         "curve_slope": round(entry["slope"], 5),
         "r2": round(entry["r2"] * 100, 5),
         "is_active": html.Span(
