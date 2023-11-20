@@ -1,5 +1,6 @@
 from dash import dcc, html
 
+# TODO: DUMMY UPLOADS
 FILE_PARAMS = [
     {
         "id": "upload-activity-data",
@@ -10,6 +11,7 @@ FILE_PARAMS = [
             html.A("Select", className="select-file"),
             " Hit Validation file",
         ],
+        "dummy_id": "dummy-upload-activity-data",
     },
     {
         "id": "upload-smiles-data",
@@ -20,6 +22,7 @@ FILE_PARAMS = [
             html.A("Select", className="select-file"),
             " SMILES file",
         ],
+        "dummy_id": "dummy-upload-smiles-data",
     },
 ]
 
@@ -36,19 +39,25 @@ FILE_INPUT_CONTAINER_CHILDREN = [
                     ),
                 ],
             ),
-            html.Div(
+            dcc.Loading(
                 children=[
-                    dcc.Upload(
-                        id=param["id"],
-                        accept=".csv",
-                        children=html.Div(
-                            param["upload_text"],
-                        ),
-                        multiple=False,
-                        className="text-center",
+                    html.Div(
+                        children=[
+                            dcc.Upload(
+                                id=param["id"],
+                                accept=".csv",
+                                children=html.Div(
+                                    param["upload_text"],
+                                ),
+                                multiple=False,
+                                className="text-center",
+                            ),
+                            html.Div(id=param["dummy_id"]),
+                        ],
+                        className="upload-box",
                     ),
                 ],
-                className="upload-box",
+                type="circle",
             ),
             html.Br(),
         ],
