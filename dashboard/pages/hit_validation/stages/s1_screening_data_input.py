@@ -1,9 +1,24 @@
 from dash import dcc, html
 
+from dashboard.visualization.text_tables import annotate_with_tooltip
+
+ACTIVY_DETERMINATION_PARAMS_DESC = """
+Specify parameters used for activity classification.
+Concentration bounds are used to determine the allowable range of concentrations for IC50.
+Top bounds are used to determine the allowable range of TOP value of the fitted curve.
+"""
+
 PARAMS_CONTAINER = html.Div(
     children=[
         html.H5(
-            children="Activity Determination Parameters",
+            children=annotate_with_tooltip(
+                html.Span(
+                    "Activity Determination Parameters",
+                    className="pe-2",
+                ),
+                ACTIVY_DETERMINATION_PARAMS_DESC,
+                extra_style={"transform": "translateY(10px)"},
+            )
         ),
         html.Div(
             children=[
