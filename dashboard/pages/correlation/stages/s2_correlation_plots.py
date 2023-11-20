@@ -4,11 +4,46 @@ GRAPHS = html.Div(
     id="graphs",
     className="d-flex flex-row",
     children=[
-        dcc.Graph(
-            id="inhibition-graph", className="six columns", style={"width": "50%"}
+        html.Div(
+            className="col",
+            children=[
+                dcc.Graph(
+                    id="inhibition-graph",
+                    className="six columns",
+                    style={"width": "100%"},
+                ),
+            ],
         ),
-        dcc.Graph(
-            id="concentration-graph", className="six columns", style={"width": "50%"}
+        html.Div(
+            className="col",
+            children=[
+                dcc.Graph(
+                    id="concentration-graph",
+                    className="six columns",
+                    style={"width": "100%"},
+                ),
+                html.Div(
+                    className="row",
+                    children=[
+                        html.Span(
+                            children=[
+                                html.Label(
+                                    children="Set activation/inhibition threshold",
+                                    className="form-label",
+                                ),
+                                dcc.Input(
+                                    id="activity-threshold-input",
+                                    type="number",
+                                    value=0,
+                                    min=0,
+                                    className="form-control",
+                                ),
+                            ],
+                            className="flex-grow-1",
+                        ),
+                    ],
+                ),
+            ],
         ),
     ],
 )
@@ -55,26 +90,5 @@ CORRELATION_PLOTS_STAGE = html.Div(
             ],
         ),
         GRAPHS,
-        html.Div(
-            className="row",
-            children=[
-                html.Span(
-                    children=[
-                        html.Label(
-                            children="Set activation/inhibition threshold",
-                            className="form-label",
-                        ),
-                        dcc.Input(
-                            id="activity-threshold-input",
-                            type="number",
-                            value=0,
-                            min=0,
-                            className="form-control",
-                        ),
-                    ],
-                    className="flex-grow-1",
-                ),
-            ],
-        ),
     ],
 )
