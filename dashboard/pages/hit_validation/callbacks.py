@@ -58,9 +58,11 @@ def on_file_upload(
     :param top_upper_bound: top upper bound
     :param file_storage: file storage
     :return: icon indicating the status of the upload
+    :return: dummy upload element for loading component
+    :return: session uuid
     """
     if content is None:
-        return no_update, no_update
+        return no_update, no_update, no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -105,6 +107,7 @@ def on_file_upload(
                 ],
                 className="text-danger",
             ),
+            no_update,
             stored_uuid,
         )
 
@@ -158,7 +161,7 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, stored_uuid
+    return result_msg, None, stored_uuid, False
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -215,7 +218,7 @@ def on_hit_browser_stage_entry(
     )
 
     compounds_list = sorted(hit_determination_df["EOS"].unique().tolist())
-    return compounds_list, compounds_list[0]
+    return compounds_list, compounds_list[0], False
 
 
 activity_icons = {
@@ -437,7 +440,9 @@ def on_download_report_button_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
+        Output("dummy-upload-screening-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-screening-data", "contents"),
         State("user-uuid", "data"),
         State("concentration-lower-bound-store", "data"),
@@ -465,6 +470,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("hit-browser-compound-dropdown", "options"),
         Output("hit-browser-compound-dropdown", "value"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
     )(functools.partial(on_hit_browser_stage_entry, file_storage=file_storage))

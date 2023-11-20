@@ -4,7 +4,6 @@ import io
 import json
 import uuid
 from datetime import datetime
-import json
 
 import numpy as np
 import pandas as pd
@@ -16,10 +15,10 @@ from dash import (
     State,
     callback,
     callback_context,
+    dash_table,
     dcc,
     html,
     no_update,
-    dash_table,
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
@@ -46,12 +45,17 @@ from dashboard.visualization.text_tables import (
     make_summary_stage_datatable,
 )
 
+
+def on_next_button_click(n_clicks):
+    return True
+
+
 # === STAGE 1 ===
 
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
-        return no_update
+        return no_update, no_update, no_update, no_update
 
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
@@ -76,7 +80,9 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
 
     return (
         make_file_list_component(names, [], 2),
+        no_update,
         stored_uuid,
+        False,
     )
 
 
@@ -146,7 +152,8 @@ def on_outlier_purge_stage_entry(
     :param outliers_only_checklist: list selected values in the outliers only checklist
     :param stored_uuid: uuid of the stored data
     :param file_storage: storage object
-    :return: heatmap plot, max index, index numerator text, plates count, compounds count, outliers count
+    :return: report data, heatmap plot, max index, index numerator text,
+    plates count, compounds count, outliers count, next button disabled
     """
     show_only_with_outliers = bool(outliers_only_checklist)
     if current_stage != 1:
@@ -201,6 +208,7 @@ def on_outlier_purge_stage_entry(
         compounds_count,
         outliers_count,
         final_vis_df.to_dict("records"),
+        False,
     )
 
 
@@ -254,20 +262,23 @@ def on_plates_stats_stage_entry(
         f"Number of deleted plates: {num_removed}/{bmg_df.shape[0]}",
         report_data,
         z_slider_data,
+        False,
     )
+
+
+def hide_heatmap_loading(trigger, children):
+    """
+    Hide the heatmap loading component after the heatmap is loaded
+    """
+    return html.Div(id="plates-heatmap-graph", children=children)
 
 
 # === STAGE 4 ===
 
 
-def upload_echo_data(
-    contents, names, last_modified, eos_contents, stored_uuid, file_storage
-):
-    if contents is None or eos_contents is None:
+def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storage):
+    if contents is None:
         return no_update
-
-    eos_decoded = base64.b64decode(eos_contents.split(",")[1]).decode("utf-8")
-    eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
 
     echo_files = []
     for content, filename in zip(contents, names):
@@ -279,8 +290,7 @@ def upload_echo_data(
     if echo_files:
         echo_parser = EchoFilesParser()
         echo_parser.parse_files(tuple(echo_files))
-        no_eos_num = echo_parser.merge_eos(eos_df)
-        echo_parser.retain_key_columns()
+        echo_parser.retain_key_columns(eos=False, exceptions=True)
         echo_df = echo_parser.get_processed_echo_df()
         exceptions_df = echo_parser.get_processed_exception_df()
         file_storage.save_file(f"{stored_uuid}_echo_df.pq", echo_df.to_parquet())
@@ -288,8 +298,45 @@ def upload_echo_data(
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
-    return make_file_list_component(
-        names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+    return None  # dummy upload echo return
+
+
+def on_upload_eos_data(contents, stored_uuid, file_storage):
+    if contents is None:
+        return no_update
+
+    eos_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
+    eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
+    file_storage.save_file(f"{stored_uuid}_eos_df.pq", eos_df.to_parquet())
+    return None  # dummy upload eos return
+
+
+def on_upload_echo_eos_data(echo_upload, names, eos_upload, stored_uuid, file_storage):
+    echo_df_file_path = f"{stored_uuid}_echo_df.pq"
+    eos_df_file_path = f"{stored_uuid}_eos_df.pq"
+
+    if not file_storage.file_exists(echo_df_file_path) or not file_storage.file_exists(
+        eos_df_file_path
+    ):
+        return no_update
+
+    echo_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(echo_df_file_path))
+    )
+    eos_df = pd.read_parquet(pa.BufferReader(file_storage.read_file(eos_df_file_path)))
+    echo_parser = EchoFilesParser()
+    echo_parser.set_echo_df(echo_df)
+    echo_parser.retain_key_columns(eos=False)
+
+    no_eos_num = echo_parser.merge_eos(eos_df)
+    echo_df = echo_parser.retain_key_columns().get_processed_echo_df()
+    file_storage.save_file(f"{stored_uuid}_echo_df.pq", echo_df.to_parquet())
+
+    return (
+        make_file_list_component(
+            names, [f"There are {no_eos_num} rows without EOS - skipping."], 1
+        ),
+        False,
     )
 
 
@@ -417,12 +464,17 @@ def on_summary_entry(
         fig_feature,
         -3,  # z_score_min,
         3,  # z_score_max,
+        False,  # min input disabled
+        False,  # max input disabled
         feature_min,
         feature_max,
+        False,  # min input disabled
+        False,  # max input disabled
         f"number of compounds: {len(compounds_df)}",
         f"{screening_options['feature_column']} range:",
         radio_options,
         report_data,
+        False,  # next button disabled
     )
 
 
@@ -514,7 +566,7 @@ def on_range_update(
 
     mask = (compounds_df[key] >= min_value) & (compounds_df[key] <= max_value)
     outside_range_df = compounds_df[~mask].copy()
-    outside_range_df = outside_range_df[[key, WELL, PLATE]].merge(
+    outside_range_df = outside_range_df[[key, WELL, PLATE, "EOS"]].merge(
         cmpd_stats_df[[f"{key}_x", PLATE]], on=PLATE
     )
 
@@ -639,7 +691,9 @@ def register_callbacks(elements, file_storage):
     callback(
         [
             Output("bmg-filenames", "children"),
+            Output("dummy-upload-bmg-data", "children"),
             Output("user-uuid", "data"),
+            Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         ],
         Input("upload-bmg-data", "contents"),
         Input("upload-bmg-data", "filename"),
@@ -666,11 +720,18 @@ def register_callbacks(elements, file_storage):
         Output("total-compounds", "children"),
         Output("total-outliers", "children"),
         Output("plates-table", "data"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("heatmap-start-index", "data"),
         Input("heatmap-outliers-checklist", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("plates-heatmap-container", "children"),
+        Input("plates-table", "data"),
+        State("plates-heatmap-subcontainer", "children"),
+    )(hide_heatmap_loading)
 
     callback(
         Output("control-values", "figure"),
@@ -679,19 +740,37 @@ def register_callbacks(elements, file_storage):
         Output("plates-removed", "children"),
         Output("report-data-third-stage", "data"),
         Output("z-slider-value", "data"),
+        Output({"type": elements["BLOCKER"], "index": 2}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("z-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
 
     callback(
-        Output("echo-filenames", "children"),
+        Output("dummy-upload-echo-data", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_echo_data, file_storage=file_storage))
+
+    callback(
+        Output("dummy-upload-eos-mapping", "children"),
         Input("upload-eos-mapping", "contents"),
         State("user-uuid", "data"),
-    )(functools.partial(upload_echo_data, file_storage=file_storage))
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_eos_data, file_storage=file_storage))
+
+    callback(
+        Output("echo-filenames", "children"),
+        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
+        Input("dummy-upload-echo-data", "children"),
+        Input("upload-echo-data", "filename"),
+        Input("dummy-upload-eos-mapping", "children"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_upload_echo_eos_data, file_storage=file_storage))
 
     callback(
         Output("activation-inhibition-screening-options", "data"),
@@ -706,12 +785,17 @@ def register_callbacks(elements, file_storage):
         Output("feature-plot", "figure"),
         Output("z-score-min-input", "value"),
         Output("z-score-max-input", "value"),
+        Output("z-score-min-input", "disabled"),
+        Output("z-score-max-input", "disabled"),
         Output("feature-min-input", "value"),
         Output("feature-max-input", "value"),
+        Output("feature-min-input", "disabled"),
+        Output("feature-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
         Output("tab-feature-header", "children"),
         Output("filter-radio", "options"),
         Output("report-data-screening-summary-plots", "data"),
+        Output({"type": elements["BLOCKER"], "index": 4}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         State("z-slider-value", "data"),

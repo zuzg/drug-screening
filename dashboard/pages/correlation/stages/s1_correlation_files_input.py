@@ -1,4 +1,4 @@
-from dash import html, dcc
+from dash import dcc, html
 
 DESC = [
     html.Span(
@@ -19,17 +19,24 @@ FILE_INPUT_COMPONENT = html.Div(
             className="flex-grow-1",
             children=[
                 html.H5("First File"),
-                dcc.Upload(
-                    id="upload-file-1",
-                    accept=".csv",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A("Select File"),
-                        ]
-                    ),
-                    multiple=False,
-                    className="text-center upload-box",
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-file-1",
+                            accept=".csv",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " Screening file #1",
+                                ]
+                            ),
+                            multiple=False,
+                            className="text-center upload-box",
+                        ),
+                        html.Div(id="dummy-upload-file-1"),
+                    ],
+                    type="circle",
                 ),
             ],
         ),
@@ -37,17 +44,24 @@ FILE_INPUT_COMPONENT = html.Div(
             className="flex-grow-1",
             children=[
                 html.H5("Second File"),
-                dcc.Upload(
-                    id="upload-file-2",
-                    accept=".csv",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A("Select File"),
-                        ]
-                    ),
-                    multiple=False,
-                    className="text-center upload-box",
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-file-2",
+                            accept=".csv",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " Screening file #2",
+                                ]
+                            ),
+                            multiple=False,
+                            className="text-center upload-box",
+                        ),
+                        html.Div(id="dummy-upload-file-2"),
+                    ],
+                    type="circle",
                 ),
             ],
         ),

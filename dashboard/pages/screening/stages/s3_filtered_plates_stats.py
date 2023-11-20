@@ -1,5 +1,4 @@
-from dash import html, dcc
-
+from dash import dcc, html
 
 FILTERED_PLATES_STATS_STAGE = html.Div(
     id="filtered_plates_stats_stage",
@@ -44,20 +43,35 @@ FILTERED_PLATES_STATS_STAGE = html.Div(
                         html.Div(
                             className="row",
                             children=[
-                                dcc.Graph(id="control-values"),
+                                dcc.Loading(
+                                    children=[
+                                        dcc.Graph(id="control-values"),
+                                    ],
+                                    type="circle",
+                                ),
                                 html.Div(
                                     className="row",
                                     children=[
                                         html.Div(
                                             className="col",
                                             children=[
-                                                dcc.Graph(id="mean-cols-rows"),
+                                                dcc.Loading(
+                                                    children=[
+                                                        dcc.Graph(id="mean-cols-rows"),
+                                                    ],
+                                                    type="circle",
+                                                ),
                                             ],
                                         ),
                                         html.Div(
                                             className="col",
                                             children=[
-                                                dcc.Graph(id="z-per-plate"),
+                                                dcc.Loading(
+                                                    children=[
+                                                        dcc.Graph(id="z-per-plate"),
+                                                    ],
+                                                    type="circle",
+                                                ),
                                             ],
                                         ),
                                     ],

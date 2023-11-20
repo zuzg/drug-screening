@@ -1,16 +1,15 @@
-import uuid
-import functools
 import base64
+import functools
 import io
-from datetime import datetime
 import json
+import uuid
+from datetime import datetime
 
 import pandas as pd
 import pyarrow as pa
-
-from plotly import graph_objects as go
-from plotly import express as px
 from dash import Input, Output, State, callback, html, no_update
+from plotly import express as px
+from plotly import graph_objects as go
 
 from dashboard.data import validation
 from dashboard.data.preprocess import calculate_concentration
@@ -51,9 +50,11 @@ def on_file_upload(
     :param file_storage: file storage
     :param store_suffix: suffix for the file name
     :return: icon indicating the status of the upload
+    :return: dummy element to trigger the loading component
+    :return: session uuid
     """
     if content is None:
-        return no_update, no_update
+        return no_update, no_update, no_update
 
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
@@ -69,7 +70,7 @@ def on_file_upload(
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, stored_uuid
+    return ICON_OK, no_update, stored_uuid
 
 
 def on_both_files_uploaded(
@@ -105,9 +106,9 @@ def on_both_files_uploaded(
         )
         validation.validate_correlation_dfs_compatible(corr_df_1, corr_df_2)
     except Exception as e:
-        return ICON_ERROR
+        return ICON_ERROR, True
 
-    return ICON_OK
+    return ICON_OK, False
 
 
 # === STAGE 2 ===
@@ -173,7 +174,7 @@ def on_visualization_stage_entry(
         ),
     }
 
-    return feature_fig, concentration_fig, report_data_correlation_plots
+    return feature_fig, concentration_fig, report_data_correlation_plots, False
 
 
 # === STAGE 3 ===
@@ -206,6 +207,7 @@ def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("dummy-upload-file-1", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
         State("user-uuid", "data"),
@@ -218,6 +220,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("dummy-upload-file-2", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),
@@ -230,6 +233,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("compatibility-status", "children"),
+        Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-file-1", "contents"),
         Input("upload-file-2", "contents"),
         State("user-uuid", "data"),
@@ -239,6 +243,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
+        Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("concentration-slider", "value"),
         Input("volume-slider", "value"),

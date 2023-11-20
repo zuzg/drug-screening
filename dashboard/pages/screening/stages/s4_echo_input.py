@@ -21,17 +21,29 @@ ECHO_INPUT_STAGE = html.Div(
                         html.P(ECHO_DESC, className="text-justify"),
                     ]
                 ),
-                dcc.Upload(
-                    id="upload-echo-data",
-                    accept=".csv",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A("Select Files"),
-                        ]
-                    ),
-                    multiple=True,
-                    className="text-center upload-box",
+                dcc.Loading(
+                    children=[
+                        html.Div(
+                            children=[
+                                dcc.Upload(
+                                    id="upload-echo-data",
+                                    accept=".csv",
+                                    children=html.Div(
+                                        [
+                                            "Drag and Drop or ",
+                                            html.A("Select", className="select-file"),
+                                            " ECHO files",
+                                        ]
+                                    ),
+                                    multiple=True,
+                                    className="text-center",
+                                ),
+                                html.Div(id="dummy-upload-echo-data"),
+                            ],
+                            className="upload-box",
+                        ),
+                    ],
+                    type="circle",
                 ),
             ],
             className="grid-2-1",
@@ -45,17 +57,24 @@ ECHO_INPUT_STAGE = html.Div(
                         html.P(EOS_DESC, className="text-justify"),
                     ]
                 ),
-                dcc.Upload(
-                    id="upload-eos-mapping",
-                    accept=".csv",
-                    children=html.Div(
-                        [
-                            "Drag and Drop or ",
-                            html.A("Select File"),
-                        ]
-                    ),
-                    multiple=False,
-                    className="text-center upload-box",
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-eos-mapping",
+                            accept=".csv",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " EOS mapping file",
+                                ]
+                            ),
+                            multiple=False,
+                            className="text-center upload-box",
+                        ),
+                        html.Div(id="dummy-upload-eos-mapping"),
+                    ],
+                    type="circle",
                 ),
             ],
             className="grid-2-1",

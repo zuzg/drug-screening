@@ -1,9 +1,25 @@
+import dash_bootstrap_components as dbc
 import pandas as pd
 from dash import dash_table, html
 from dash.dash_table.Format import Format, Scheme
 from sklearn.decomposition import PCA
 
 PRECISION = 5
+
+
+def make_download_button_text(text: str) -> html.Span:
+    """
+    Creates a download button with text.
+
+    :param text: text to be displayed on the button
+    :return: download button with text
+    """
+    return html.Span(
+        [
+            html.Span(text, style={"margin-right": "8px"}),
+            html.I(className=f"fa-solid fa-download"),
+        ]
+    )
 
 
 def make_filter_radio_options(key: str):
@@ -202,3 +218,62 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     )
 
     return projection_info
+
+
+def make_info_icon(
+    element: html.Div(),
+    text: str,
+    id: str,
+    position: tuple[int],
+    placement: str = "right",
+):
+    """
+    Make an info icon with a tooltip positioned in the upper right corner of the element.
+
+    :param element: element where the icon will be positioned
+    :param text: text to be displayed in the tooltip
+    :param id: id of the icon
+    :param position: position of the icon relative to the element (left, right, top, bottom)
+    :param placement: placement of the tooltip
+    :return: html Div element containing the icon and tooltip
+    """
+    left, right, top, bottom = position
+
+    style = {
+        pos_name: f"{pos_value}px"
+        for pos_name, pos_value in [
+            ("left", left),
+            ("right", right),
+            ("top", top),
+            ("bottom", bottom),
+        ]
+        if pos_value is not None
+    }
+    style["position"] = "absolute"
+
+    icon_div = html.Div(
+        [
+            dbc.Tooltip(
+                text,
+                target=id,
+            ),
+            html.Div(
+                children=[
+                    html.I(
+                        id=id,
+                        className="fas fa-info-circle fa d-flex m-auto",
+                        style={"color": "rgb(84, 153, 255)"},
+                    ),
+                ],
+                className="p-2 d-flex justify-content-center align-items-center",
+            ),
+        ],
+        style=style,
+    )
+    return html.Div(
+        [
+            element,
+            html.Div(icon_div),
+        ],
+        style={"position": "relative"},
+    )

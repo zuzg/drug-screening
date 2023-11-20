@@ -84,8 +84,8 @@ class EchoFilesParser:
         :return: number of skipped rows (without EOS)
         """
         # handle different well naming (A01 or A1)
-        eos_df["Well"] = eos_df["Well"].str.replace(r"0(?!$)", "", regex=True)
-        self.echo_df["Source Well"] = self.echo_df["Source Well"].str.replace(
+        eos_df.loc[:, "Well"] = eos_df["Well"].str.replace(r"0(?!$)", "", regex=True)
+        self.echo_df.loc[:, "Source Well"] = self.echo_df["Source Well"].str.replace(
             r"0(?!$)", "", regex=True
         )
 
@@ -99,7 +99,9 @@ class EchoFilesParser:
         self.echo_df = merged_df
         return len(no_eos)
 
-    def retain_key_columns(self, columns: list[str] = None) -> EchoFilesParser:
+    def retain_key_columns(
+        self, columns: list[str] = None, eos: bool = True, exceptions: bool = False
+    ) -> EchoFilesParser:
         """
         Retains only the specified columns.
 
@@ -109,26 +111,29 @@ class EchoFilesParser:
 
         if columns is None:
             columns = [
-                "EOS",
                 "Source Plate Barcode",
                 "Source Well",
                 "Destination Plate Barcode",
                 "Destination Well",
                 "Actual Volume",
             ]
+        if eos:
+            columns.append("EOS")
 
         retain_echo = [col for col in columns if col in self.echo_df.columns]
         self.echo_df = self.echo_df[retain_echo]
         if "Destination Well" in self.echo_df.columns:
-            self.echo_df["Destination Well"] = self.echo_df[
+            self.echo_df.loc[:, "Destination Well"] = self.echo_df[
                 "Destination Well"
             ].str.replace(r"0(?!$)", "", regex=True)
-        retain_exceptions = [
-            col
-            for col in columns + ["Transfer Status"]
-            if col in self.exceptions_df.columns
-        ]
-        self.exceptions_df = self.exceptions_df[retain_exceptions]
+
+        if exceptions:
+            retain_exceptions = [
+                col
+                for col in columns + ["Transfer Status"]
+                if col in self.exceptions_df.columns
+            ]
+            self.exceptions_df = self.exceptions_df[retain_exceptions]
         return self
 
     def get_processed_echo_df(self) -> pd.DataFrame:
@@ -146,3 +151,13 @@ class EchoFilesParser:
         :return: processed dataframe
         """
         return self.exceptions_df
+
+    def set_echo_df(self, echo_df: pd.DataFrame) -> EchoFilesParser:
+        """
+        Set the echo dataframe
+
+        :param echo_df: dataframe
+        :return: self
+        """
+        self.echo_df = echo_df
+        return self
