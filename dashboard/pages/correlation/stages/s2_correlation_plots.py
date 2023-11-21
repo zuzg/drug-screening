@@ -3,7 +3,7 @@ from dash import html, dcc
 from dashboard.pages.components import annotate_with_tooltip
 
 CONCENTRATION_SLIDER_DESC = """
-Choose the concentration to be used for the compound concentration calculation that will be
+Choose the concentration to be used for the final compound concentration calculation that will be
 visible on the Concentration plot.
 """
 
