@@ -1,16 +1,26 @@
 from dash import dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
+DOWNLOAD_SELECTION_BUTTON_DESC = """
+Download the data of the compounds that are currently selected on the plot using
+box or lasso selection to a csv file containing projection values and compound data.
+"""
+
 CONTROLS = (
     html.Div(
         className="d-flex flex-row gap-3 align-items-center w-100",
         children=[
-            html.Button(
-                children=[
-                    "Download Selected",
-                    dcc.Download(id="smiles-download-selection-csv"),
-                ],
-                id="smiles-download-selection-button",
-                className="btn btn-primary",
+            annotate_with_tooltip(
+                html.Button(
+                    children=[
+                        "Download Selected",
+                        dcc.Download(id="smiles-download-selection-csv"),
+                    ],
+                    id="smiles-download-selection-button",
+                    className="btn btn-primary",
+                ),
+                DOWNLOAD_SELECTION_BUTTON_DESC,
             ),
             dcc.Dropdown(
                 className="min-w-150px",

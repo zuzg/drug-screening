@@ -1,5 +1,18 @@
 from dash import dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
+
+SHOW_CONTROL_CHECKBOX_DESC = """
+Select whether to show for reference how the control values will be projected relatively
+to the compounds with selected settings.
+"""
+
+DOWNLOAD_SELECTION_BUTTON_DESC = """
+Download the data of the compounds that are currently selected on the plot using
+box or lasso selection to a csv file containing projection values and compound data.
+"""
+
 PROJECTION_DISPLAY_STAGE = html.Div(
     [
         html.Div(
@@ -105,15 +118,20 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                                 html.Span(
                                     className="d-flex flex-row align-items-center gap-3",
                                     children=[
-                                        dcc.Checklist(
-                                            options=[
-                                                {
-                                                    "label": "  Show control values",
-                                                    "value": "controls",
-                                                }
-                                            ],
-                                            value=[],
-                                            id="control-checkbox",
+                                        annotate_with_tooltip(
+                                            html.Span(
+                                                dcc.Checklist(
+                                                    options=[
+                                                        {
+                                                            "label": "  Show control values",
+                                                            "value": "controls",
+                                                        }
+                                                    ],
+                                                    value=[],
+                                                    id="control-checkbox",
+                                                )
+                                            ),
+                                            SHOW_CONTROL_CHECKBOX_DESC,
                                         ),
                                         dcc.Checklist(
                                             options=[
@@ -127,15 +145,18 @@ PROJECTION_DISPLAY_STAGE = html.Div(
                                         ),
                                     ],
                                 ),
-                                html.Button(
-                                    children=[
-                                        "Download Selected",
-                                        dcc.Download(
-                                            id="projection-download-selection-csv"
-                                        ),
-                                    ],
-                                    id="projection-download-selection-button",
-                                    className="btn btn-primary",
+                                annotate_with_tooltip(
+                                    html.Button(
+                                        children=[
+                                            "Download Selected",
+                                            dcc.Download(
+                                                id="projection-download-selection-csv"
+                                            ),
+                                        ],
+                                        id="projection-download-selection-button",
+                                        className="btn btn-primary",
+                                    ),
+                                    DOWNLOAD_SELECTION_BUTTON_DESC,
                                 ),
                             ],
                         )
