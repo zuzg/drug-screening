@@ -1,5 +1,17 @@
 from dash import html, dcc
 
+from dashboard.pages.components import annotate_with_tooltip
+
+CONCENTRATION_SLIDER_DESC = """
+Choose the concentration to be used for the compound concentration calculation that will be
+visible on the Concentration plot.
+"""
+
+VOLUME_SLIDER_DESC = """
+Choose the summary assay volume to be used for the compound concentration calculation that will be
+visible on the Concentration plot.
+"""
+
 GRAPHS = html.Div(
     id="graphs",
     className="row",
@@ -37,7 +49,12 @@ CORRELATION_PLOTS_STAGE = html.Div(
                 html.Div(
                     className="col",
                     children=[
-                        html.H5("Concentration (mM)"),
+                        html.H5(
+                            annotate_with_tooltip(
+                                html.Span("Concentration (mM)"),
+                                "Choose the concentration to be used for the summary assay volume calculation.",
+                            )
+                        ),
                         dcc.Slider(
                             0,
                             20,
@@ -53,7 +70,12 @@ CORRELATION_PLOTS_STAGE = html.Div(
                 html.Div(
                     className="col",
                     children=[
-                        html.H5("Summary assay volume (nL)"),
+                        html.H5(
+                            annotate_with_tooltip(
+                                html.Span("Summary assay volume (nL)"),
+                                "Choose the summary assay volume to be used for the correlation plots.",
+                            )
+                        ),
                         dcc.Slider(
                             0,
                             100,
