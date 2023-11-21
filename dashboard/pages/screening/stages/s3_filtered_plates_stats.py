@@ -2,6 +2,11 @@ from dash import dcc, html
 
 from dashboard.pages.components import annotate_with_tooltip
 
+FILTER_LOW_QUALITY_PLATES_DESC = """
+Plates with Z score below the threshold will be discarded from further analysis,
+not visible on the plots and not included in the final reports.
+"""
+
 FILTERED_PLATES_STATS_STAGE = html.Div(
     id="filtered_plates_stats_stage",
     className="container",
@@ -11,7 +16,15 @@ FILTERED_PLATES_STATS_STAGE = html.Div(
             children=[
                 html.Div(
                     className="col",
-                    children=[html.H6("Filter low quality plates by Z threshold:")],
+                    children=[
+                        html.H6(
+                            children=annotate_with_tooltip(
+                                html.Span("Filter low quality plates by Z threshold:"),
+                                FILTER_LOW_QUALITY_PLATES_DESC,
+                                extra_style={"transform": "translateX(10px)"},
+                            )
+                        ),
+                    ],
                 ),
                 html.Div(
                     className="col",
