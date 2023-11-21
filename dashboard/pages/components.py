@@ -259,12 +259,17 @@ def annotate_with_tooltip(
     extra_style: dict = None,
 ):
     """
-    Make an info icon with a tooltip positioned in the upper right corner of the element.
+    Make an info icon with a tooltip positioned by default
+    in the upper right corner of the element.
 
-    :param element: element where the icon will be positioned
+    Injections the tooltip into the element's child list as the first element.
+    Extends the element's class name with "position-relative" to allow for
+    absolute positioning of the tooltip.
+
+    :param element: element which will be annotated with the tooltip
     :param text: text to be displayed in the tooltip
     :param extra_style: extra style to be applied to the tooltip
-    :return: html Div element containing the icon and tooltip
+    :return: annotated element
     """
     if not hasattr(element, "className"):
         setattr(element, "className", "")
