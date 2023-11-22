@@ -10,17 +10,28 @@ logger = structlog.get_logger()
 
 @dataclass
 class MLTrainingConfig:
+    """
+    Class with ml training parameters
+    """
+
     dataset_name: str
     data_dir: Path
-    output_dir: Path
     balance_dataset: bool
+    hp_tuning: bool
 
     def log_self(self) -> None:
+        """
+        Log current config
+        """
         logger.info(f"Running with following config: {self}")
 
 
 @dataclass
 class ComponentConfig:
+    """
+    Class with config for component
+    """
+
     name: str
     component: Optional[BaseEstimator] = None
     params_str: Optional[str] = None
@@ -28,6 +39,10 @@ class ComponentConfig:
 
 @dataclass
 class SingleExperimentConfig:
-    # dim_red: ComponentConfig
+    """
+    Class with config for single experiment
+    """
+
+    feature_selection: ComponentConfig
     scaler: ComponentConfig
     model: ComponentConfig

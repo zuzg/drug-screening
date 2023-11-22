@@ -6,6 +6,12 @@ from deepchem import deepchem
 
 
 def featurize_datasets(datasets: List[pd.DataFrame]) -> List[np.ndarray]:
+    """
+    Calculate rdkit descriptors for datasets
+
+    :param datasets: list of datasets to featurize
+    :return: list with featurized datasets
+    """
     rdkit = deepchem.feat.RDKitDescriptors()
     featurized = []
     for dataset in datasets:

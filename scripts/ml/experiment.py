@@ -2,7 +2,9 @@ import neptune
 import neptune.integrations.sklearn as npt_utils
 import numpy as np
 import pandas as pd
+from sklearn.base import BaseEstimator
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import Pipeline
 import structlog
 from tdc.single_pred import Tox
@@ -10,7 +12,13 @@ from tqdm import tqdm
 from typing import List
 
 from scripts.ml.config import ComponentConfig, MLTrainingConfig, SingleExperimentConfig
-from consts import MODELS_DICT, NEPTUNE_PROJECT, SCALERS_DICT
+from consts import (
+    FEATURE_SELECTORS_DICT,
+    HP_DICT,
+    MODELS_DICT,
+    NEPTUNE_PROJECT,
+    SCALERS_DICT,
+)
 from utils.chem import featurize_datasets
 from utils.imbalance import balance_dataset
 
@@ -18,7 +26,14 @@ _logger = structlog.get_logger()
 
 
 class ToxicityPredictionExperiment:
+    """
+    Class for toxicity regression
+    """
+
     def __init__(self, cfg: MLTrainingConfig) -> None:
+        """
+        :param cfg: ml training config
+        """
         self.cfg: MLTrainingConfig = cfg
         self.X_train: np.ndarray
         self.y_train: np.ndarray
@@ -26,6 +41,12 @@ class ToxicityPredictionExperiment:
         self.y_test: np.ndarray
 
     def prepare_dataset(self) -> None:
+        """
+        1. Download data from tdc
+        2. Split dataset
+        3. Featurize
+        4. Balance
+        """
         data = Tox(name=self.cfg.dataset_name, path=self.cfg.data_dir)
         split = data.get_split()
         train_raw = pd.concat([split["train"], split["valid"]])
@@ -41,30 +62,87 @@ class ToxicityPredictionExperiment:
             self.X_train, self.y_train = balance_dataset(self.X_train, self.y_train)
 
     def prepare_pipeline(self, config: SingleExperimentConfig) -> Pipeline:
+        """
+        Prepare pipeline
+
+        :param config: single experiment config
+        :return: prepared pipeline
+        """
         components = []
-        # if config.dim_reduction:
-        #     components.append(("dim_reduction", config.dim_reduction))
+        if config.feature_selection.component:
+            components.append(("feature_selection", config.feature_selection.component))
         if config.scaler.component:
             components.append(("scaler", config.scaler.component))
-        components.append(("model", config.model.component))
+
+        if self.cfg.hp_tuning and config.model.name in HP_DICT:
+            components.append(
+                ("model", self.tune_hp(config.model.component, config.model.name))
+            )
+        else:
+            components.append(("model", config.model.component))
         return Pipeline(components)
 
     def prepare_experiment_configs(self) -> List[SingleExperimentConfig]:
+        """
+        Create combinations of experiment parameters
+
+        :return: list of single experiment configs
+        """
         configs = []
-        for scaler_name, scaler in SCALERS_DICT.items():
-            for model_name, model in MODELS_DICT.items():
-                scaler_cfg = ComponentConfig(scaler_name, scaler)
-                model_cfg = ComponentConfig(model_name, model)
-                single_exp_cfg = SingleExperimentConfig(scaler_cfg, model_cfg)
-                configs.append(single_exp_cfg)
+        for fs_name, fs in FEATURE_SELECTORS_DICT.items():
+            for scaler_name, scaler in SCALERS_DICT.items():
+                for model_name, model in MODELS_DICT.items():
+                    fs_cfg = ComponentConfig(fs_name, fs)
+                    scaler_cfg = ComponentConfig(scaler_name, scaler)
+                    model_cfg = ComponentConfig(model_name, model)
+                    single_exp_cfg = SingleExperimentConfig(
+                        fs_cfg, scaler_cfg, model_cfg
+                    )
+                    configs.append(single_exp_cfg)
         return configs
 
-    def run_experiment(self, config: SingleExperimentConfig) -> None:
-        tags = [config.model.name, config.scaler.name]
+    def get_tags(self, config: SingleExperimentConfig) -> List[str]:
+        """
+        Prepare tags to log to neptune.ai
+
+        :config: single experiment config
+        :return: list with tags
+        """
+        tags = [config.model.name, config.scaler.name, config.feature_selection.name]
         if self.cfg.balance_dataset:
             tags.append("balanced")
-        run = neptune.init_run(project=NEPTUNE_PROJECT, tags=tags)
+        if self.cfg.hp_tuning:
+            tags.append("hp_tuning")
+        return tags
+
+    def tune_hp(self, model: BaseEstimator, model_name: str) -> BaseEstimator:
+        """
+        Create grid search for hp tuning
+
+        :param model: model to tune
+        :param model_name: model name
+        :return: grid search object
+        """
+        _logger.info("Preparing hyperparameter search")
+        params = HP_DICT[model_name]
+        gs = GridSearchCV(
+            model,
+            param_grid=params,
+            scoring=["neg_mean_absolute_error", "neg_mean_squared_error"],
+            refit="neg_mean_absolute_error",
+            return_train_score=True,
+        )
+        return gs
+
+    def run_experiment(self, config: SingleExperimentConfig) -> None:
+        """
+        Run single experiment and log it to neptune
+
+        :param config: single experiment config
+        """
+        run = neptune.init_run(project=NEPTUNE_PROJECT, tags=self.get_tags(config))
         pipeline = self.prepare_pipeline(config)
+
         _logger.info("Fitting")
         pipeline.fit(
             self.X_train,
@@ -72,12 +150,12 @@ class ToxicityPredictionExperiment:
         )
         _logger.info("Logging to neptune")
         run["summary"] = npt_utils.create_regressor_summary(
-            pipeline["model"],
+            pipeline,
             self.X_train,
             self.X_test,
             self.y_train,
             self.y_test,
-            nrows=100,
+            nrows=10,
             log_charts=False,
         )
         preds = pipeline.predict(X=self.X_test)
@@ -85,6 +163,9 @@ class ToxicityPredictionExperiment:
         run.stop()
 
     def run_trainings(self):
+        """
+        Run all prepared experiments
+        """
         experiment_configs = self.prepare_experiment_configs()
         for config in tqdm(experiment_configs, desc="Executing individual experiments"):
             self.run_experiment(config=config)

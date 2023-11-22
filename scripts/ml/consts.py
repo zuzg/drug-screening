@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import xgboost as xgb
 from sklearn.base import BaseEstimator
@@ -8,10 +8,8 @@ from sklearn.ensemble import (
     BaggingRegressor,
     RandomForestRegressor,
 )
-from sklearn.linear_model import (
-    PassiveAggressiveRegressor,
-    Perceptron,
-)
+from sklearn.feature_selection import r_regression, SelectKBest, VarianceThreshold
+from sklearn.linear_model import PassiveAggressiveRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.neural_network import MLPRegressor
 from sklearn.preprocessing import (
@@ -27,7 +25,7 @@ ROOT_DIR: Path = Path(__file__).resolve().parents[2]
 DATA_FOLDER_NAME: Path = ROOT_DIR / "data"
 OUTPUT_FOLDER_NAME: Path = ROOT_DIR / "output"
 
-NEPTUNE_PROJECT = "drug-screening/toxicity-prediction"
+NEPTUNE_PROJECT: str = "drug-screening/toxicity-prediction"
 
 MODELS_DICT: Dict[str, BaseEstimator] = {
     "RandomForestRegressor": RandomForestRegressor(),
@@ -41,11 +39,15 @@ MODELS_DICT: Dict[str, BaseEstimator] = {
     "XGBRegressor": xgb.XGBRegressor(),
 }
 
-HP_DICT = {
+HP_DICT: Dict[str, Dict[str, List[Any]]] = {
     "RandomForestRegressor": {
-        "n_estimators": [10, 20, 50, 100],
-        "n_estimators": [10, 20, 50, 70, 100],
-        "max_depth": [None, 5, 7, 10, 15],
+        "n_estimators": [50, 100, 150],
+        "max_depth": [None, 5, 10, 15],
+    },
+    "PassiveAggressiveRegressor": {"C": [0.5, 1, 5]},
+    "XGBRegressor": {
+        "n_estimators": [20, 50, 70, 100],
+        "max_depth": [None, 5, 10, 15],
         "learning_rate": [10e-1, 10e-2, 10e-3],
     },
     "MLPRegressor": {
@@ -58,8 +60,14 @@ HP_DICT = {
 }
 
 SCALERS_DICT: Dict[str, Optional[BaseEstimator]] = {
-    "none": None,
-    "standardscaler": StandardScaler(),
-    "minmaxscaler": MinMaxScaler(),
-    "robustscaler": RobustScaler(),
+    "NoScaler": None,
+    "StandardScaler": StandardScaler(),
+    "MinMaxScaler": MinMaxScaler(),
+    "RobustScaler": RobustScaler(),
+}
+
+FEATURE_SELECTORS_DICT: Dict[str, Optional[BaseEstimator]] = {
+    "NoFeatureSelector": None,
+    "VarianceThreshold": VarianceThreshold(),
+    "SelectKBest": SelectKBest(r_regression, k=20),
 }
