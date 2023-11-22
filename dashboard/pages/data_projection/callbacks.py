@@ -68,6 +68,19 @@ def on_projection_files_upload(
         return no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
+    if len(filenames) < 3:
+        return (
+            html.Div(
+                children=[
+                    html.I(className="fas fa-exclamation-circle me-2"),
+                    html.Span("You need to upload at least 3 files."),
+                ],
+                className="alert alert-danger",
+            ),
+            stored_uuid,
+            no_update,
+            True,
+        )
 
     projection_files = []
 
