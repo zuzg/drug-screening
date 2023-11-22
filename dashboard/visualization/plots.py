@@ -322,7 +322,8 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
         horizontal_spacing=0.01,
     )
     ticks_all = []
-    for p in params:
+    colors = ["lightblue", "lightskyblue"]
+    for p, color in zip(params, colors):
         name, axis = p
         means = np.nanmean(arrays, axis=(0, axis))
         stds = np.nanstd(arrays, axis=(0, axis))
@@ -335,6 +336,7 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
                 error_y=dict(
                     type="data", array=stds, color="gray", thickness=0.5, width=2
                 ),
+                marker_color=color,
             ),
             row=1,
             col=axis,
