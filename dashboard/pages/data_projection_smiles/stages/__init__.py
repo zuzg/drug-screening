@@ -1,0 +1,8 @@
+from .s1_smiles_input import SMILES_INPUT_STAGE
+from .s2_smiles_display import SMILES_PROJECTION_DISPLAY_STAGE
+
+
+STAGES = [
+    SMILES_INPUT_STAGE,
+    SMILES_PROJECTION_DISPLAY_STAGE,
+]
