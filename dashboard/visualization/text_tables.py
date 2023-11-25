@@ -1,5 +1,5 @@
-import dash_bootstrap_components as dbc
 import pandas as pd
+
 from dash import dash_table, html
 from dash.dash_table.Format import Format, Scheme
 from sklearn.decomposition import PCA
@@ -66,7 +66,7 @@ def make_summary_stage_datatable(df: pd.DataFrame, feature: str):
         id=feature,
         name=feature,
         type="numeric",
-        format=Format(precision=PRECISION, scheme=Scheme.fixed),
+        format=Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
     )
 
     ACT_INH_DATATABLE = dash_table.DataTable(
@@ -81,7 +81,7 @@ def make_summary_stage_datatable(df: pd.DataFrame, feature: str):
                 id="Z-SCORE",
                 name=" Z-SCORE",
                 type="numeric",
-                format=Format(precision=PRECISION, scheme=Scheme.fixed),
+                format=Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
             ),
         ],
         style_table={"overflowX": "auto", "overflowY": "auto"},
@@ -132,7 +132,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
             "id": x,
             "name": x,
             "type": "numeric",
-            "format": Format(precision=3, scheme=Scheme.fixed),
+            "format": Format(group=True, precision=PRECISION, scheme=Scheme.fixed),
         }
         for x in df.columns
     ]
@@ -191,14 +191,14 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     total_explained_variance = pca.explained_variance_ratio_.sum()
     projection_text.append(
         html.Li(
-            html.Strong(f"Total Explained Variance: {total_explained_variance:.5f}")
+            html.Strong(f"Total Explained Variance: {total_explained_variance:,.5f}")
         )
     )
 
     explained_variance_list = []
     for i, ev in enumerate(explained_variance):
         explained_variance_list.append(
-            html.Li(f"Explained Variance for PC{i + 1}: {ev:.5f}")
+            html.Li(f"Explained Variance for PC{i + 1}: {ev:,.5f}")
         )
 
     projection_text.append(html.Ul(explained_variance_list))
@@ -207,7 +207,7 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
         projection_text.append(html.Li(html.Strong(f"Coefficients for PC{i + 1}:")))
         sublist = []
         for j, feature in enumerate(coefficient):
-            sublist.append(html.Li(f"{activation_columns[j]}: {feature:.5f}"))
+            sublist.append(html.Li(f"{activation_columns[j]}: {feature:,.5f}"))
         projection_text.append(html.Ul(sublist))
 
     projection_info = html.Details(
@@ -218,62 +218,3 @@ def pca_summary(pca: PCA, activation_columns: list[str]):
     )
 
     return projection_info
-
-
-def make_info_icon(
-    element: html.Div(),
-    text: str,
-    id: str,
-    position: tuple[int],
-    placement: str = "right",
-):
-    """
-    Make an info icon with a tooltip positioned in the upper right corner of the element.
-
-    :param element: element where the icon will be positioned
-    :param text: text to be displayed in the tooltip
-    :param id: id of the icon
-    :param position: position of the icon relative to the element (left, right, top, bottom)
-    :param placement: placement of the tooltip
-    :return: html Div element containing the icon and tooltip
-    """
-    left, right, top, bottom = position
-
-    style = {
-        pos_name: f"{pos_value}px"
-        for pos_name, pos_value in [
-            ("left", left),
-            ("right", right),
-            ("top", top),
-            ("bottom", bottom),
-        ]
-        if pos_value is not None
-    }
-    style["position"] = "absolute"
-
-    icon_div = html.Div(
-        [
-            dbc.Tooltip(
-                text,
-                target=id,
-            ),
-            html.Div(
-                children=[
-                    html.I(
-                        id=id,
-                        className="fas fa-info-circle fa d-flex m-auto",
-                        style={"color": "rgb(84, 153, 255)"},
-                    ),
-                ],
-                className="p-2 d-flex justify-content-center align-items-center",
-            ),
-        ],
-        style=style,
-    )
-    return html.Div(
-        [
-            element,
-            html.Div(icon_div),
-        ],
-        style={"position": "relative"},
-    )

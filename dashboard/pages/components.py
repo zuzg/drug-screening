@@ -2,7 +2,9 @@
 Contains common elements for the pages.
 """
 
+import uuid
 from dash import html, dcc
+import dash_bootstrap_components as dbc
 
 
 # Extra elements that are not part of the main layout
@@ -140,7 +142,10 @@ def make_card_component(
 
 
 def make_page_controls_rich_widget(
-    previous_stage_btn_id: str, next_stage_btn_id: str, stage_names: list[str]
+    previous_stage_btn_id: str,
+    next_stage_btn_id: str,
+    stage_names: list[str],
+    process_name: str,
 ) -> html.Div:
     controls_content = html.Ul(
         className="controls__content",
@@ -168,7 +173,13 @@ def make_page_controls_rich_widget(
                     html.I(className="fa-solid fa-arrow-left"),
                 ],
             ),
-            controls_content,
+            html.Div(
+                className="controls__wrapper",
+                children=[
+                    html.H2(f"{process_name} Process", className="controls__title"),
+                    controls_content,
+                ],
+            ),
             html.Button(
                 id=next_stage_btn_id,
                 className="btn btn-primary btn--round",
@@ -240,3 +251,50 @@ def make_file_list_component(
             ),
         ],
     )
+
+
+def annotate_with_tooltip(
+    element: html.Div,
+    text: str,
+    extra_style: dict = None,
+):
+    """
+    Make an info icon with a tooltip positioned by default
+    in the upper right corner of the element.
+
+    Injections the tooltip into the element's child list as the first element.
+    Extends the element's class name with "position-relative" to allow for
+    absolute positioning of the tooltip.
+
+    :param element: element which will be annotated with the tooltip
+    :param text: text to be displayed in the tooltip
+    :param extra_style: extra style to be applied to the tooltip
+    :return: annotated element
+    """
+    if not hasattr(element, "className"):
+        setattr(element, "className", "")
+
+    color = "primary"
+    if color in element.className:
+        color = "secondary"
+
+    tooltip_id = str(uuid.uuid4())
+    tooltip = html.Span(
+        children=[
+            dbc.Tooltip(
+                text,
+                target=tooltip_id,
+            ),
+            html.I(
+                id=tooltip_id,
+                className=f"fa-solid fa-info-circle fa-xs text-primary d-flex m-auto tooltip-icon",
+            ),
+        ],
+        className="position-absolute top-0 end-0 tooltip-holder",
+        style=extra_style or {},
+    )
+    element.className += " position-relative"
+    if type(element.children) is not list:
+        element.children = [element.children]
+    element.children.insert(0, tooltip)
+    return element

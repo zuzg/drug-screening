@@ -19,3 +19,4 @@ jinja2
 dash_dangerously_set_inner_html
 hdbscan
 xlsxwriter
+kaleido

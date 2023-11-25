@@ -1,5 +1,7 @@
 from dash import dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
 DESC = [
     html.Span(
         """
@@ -11,6 +13,12 @@ DESC = [
     html.A("Screening", href="/screening"),
     html.Span(" page for correlation analysis."),
 ]
+
+FILE_UPLOAD_DESC = """
+The status of the uploaded files is displayed here.
+Individual files are checked in terms of their columns,
+whilst the compatibility check validates they can be compared.
+"""
 
 FILE_INPUT_COMPONENT = html.Div(
     className="d-flex flex-column justify-content-evenly gap-3",
@@ -84,7 +92,13 @@ CORRELATION_FILES_INPUT_STAGE = html.Div(
                 html.Div(
                     className="my-auto mx-5",
                     children=[
-                        html.H5("Upload Status"),
+                        html.H5(
+                            annotate_with_tooltip(
+                                html.Span("Upload Status"),
+                                FILE_UPLOAD_DESC,
+                                extra_style={"transform": "translateY(5px)"},
+                            ),
+                        ),
                         html.Div(
                             className="grid-2-1",
                             children=[

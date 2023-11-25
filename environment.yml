@@ -20,8 +20,6 @@ dependencies:
   - umap-learn
   - pre-commit
   - xlsxwriter
-  - pip
+  - kaleido
   - pip:
       - dash_dangerously_set_inner_html
-      - neptune[sklearn]
-      - structlog
