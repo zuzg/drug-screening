@@ -19,7 +19,6 @@ dependencies:
   - dash
   - umap-learn
   - pre-commit
-  - pip
   - xlsxwriter
   - kaleido
   - pip:
