@@ -12,6 +12,7 @@ from plotly import express as px
 from plotly import graph_objects as go
 
 from dashboard.data import validation
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.preprocess import calculate_concentration
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
@@ -111,23 +112,15 @@ def on_both_files_uploaded(
     return ICON_OK, False
 
 
-def upload_settings_data(content, name):
-    if content is None:
-        return no_update
+def upload_settings_data(content: str | None, name: str | None) -> dict:
+    """
+    Callback for file upload. It saves the in local storage for other components.
 
-    file = None
-
-    _, extension = name.split(".")
-    if extension == "json":
-        _, content_string = content.split(",")
-        decoded = base64.b64decode(content_string)
-        file = io.StringIO(decoded.decode("utf-8"))
-
-    loaded_data = {}
-    if file:
-        loaded_data = json.load(file)
-
-    return loaded_data
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    return load_data_from_json(content, name)
 
 
 # === STAGE 2 ===
@@ -191,15 +184,16 @@ def on_visualization_stage_entry_load_settings(
     concentration: float,
     volume: float,
     saved_data: dict,
-) -> float:
+) -> tuple[float, float]:
     """
-    Callback for the stage 3 entry
-    Loads the data from storage and prepares visualizations, depending on the
-    Z threshold = slider value
+    Callback for visualization stage entry.
+    Loads the data from local storage and update sliders value
 
     :param current_stage: current stage index of the process
-    :param value: z threshold, slider value
-    :return: value for z-slider
+    :param concentration: concentration slider value
+    :param volume: volume slider value
+    :return: value for concentration slider
+    :return: value for volume slider
     """
 
     if current_stage != 1:

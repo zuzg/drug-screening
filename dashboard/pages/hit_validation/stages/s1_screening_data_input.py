@@ -124,29 +124,54 @@ FILE_INPUT_CONTAINER = html.Div(
                         ),
                     ],
                 ),
-                dcc.Loading(
+                html.Div(
                     children=[
-                        html.Div(
+                        dcc.Loading(
+                            children=[
+                                html.Div(
+                                    children=[
+                                        dcc.Upload(
+                                            id="upload-screening-data",
+                                            accept=".csv",
+                                            children=html.Div(
+                                                [
+                                                    "Drag and Drop or ",
+                                                    html.A(
+                                                        "Select",
+                                                        className="select-file",
+                                                    ),
+                                                    " Hit Validation input file",
+                                                ]
+                                            ),
+                                            multiple=False,
+                                            className="text-center",
+                                        ),
+                                        html.Div(id="dummy-upload-screening-data"),
+                                    ],
+                                    className="upload-box m-1",
+                                ),
+                            ],
+                            type="circle",
+                        ),
+                        dcc.Loading(
                             children=[
                                 dcc.Upload(
-                                    id="upload-screening-data",
-                                    accept=".csv",
+                                    id="upload-settings-hit-validation",
+                                    accept=".json",
                                     children=html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " Hit Validation input file",
+                                            " Settings for hit validation",
                                         ]
                                     ),
                                     multiple=False,
-                                    className="text-center",
+                                    className="text-center upload-box m-1",
                                 ),
-                                html.Div(id="dummy-upload-screening-data"),
                             ],
-                            className="upload-box",
+                            type="circle",
                         ),
                     ],
-                    type="circle",
                 ),
             ],
             className="grid-1-1",

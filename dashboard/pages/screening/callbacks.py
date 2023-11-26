@@ -22,6 +22,7 @@ from dash import (
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.combine import (
     aggregate_well_plate_stats,
     combine_bmg_echo_data,
@@ -86,23 +87,15 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     )
 
 
-def upload_settings_data(content, name):
-    if content is None:
-        return no_update
+def upload_settings_data(content: str | None, name: str | None):
+    """
+    Callback for file upload. It saves the in local storage for other components.
 
-    file = None
-
-    _, extension = name.split(".")
-    if extension == "json":
-        _, content_string = content.split(",")
-        decoded = base64.b64decode(content_string)
-        file = io.StringIO(decoded.decode("utf-8"))
-
-    loaded_data = {}
-    if file:
-        loaded_data = json.load(file)
-
-    return loaded_data
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    return load_data_from_json(content, name)
 
 
 # === STAGE 2 ===
@@ -234,29 +227,31 @@ def on_outlier_purge_stage_entry(
     )
 
 
-def on_outlier_purge_stage_entry_2(
+def on_outlier_purge_stage_entry_load_settings(
     current_stage: int,
     value: float,
     saved_data: dict,
 ) -> list[bool]:
     """
     Callback for the stage 2 entry
-    Loads the data from storage and prepares visualizations, depending on the
-    Z threshold = slider value
+    Change value of checkbox if json was loaded
 
     :param current_stage: current stage index of the process
     :param value: z threshold, slider value
-    :return: value for z-slider
+    :param saved_data: dict with loaded data
+    :return: value for checkbox
     """
 
+    print(value)
     if current_stage != 1:
         return no_update
 
     checkbox = value
     if saved_data != None:
-        checkbox = saved_data["outliers_preview_stage"]["outliers_only_checklist"]
+        if saved_data["outliers_preview_stage"]["outliers_only_checklist"]:
+            checkbox = ["Show only with outliers"]
 
-    return [checkbox]
+    return checkbox
 
 
 # === STAGE 3 ===
@@ -316,18 +311,18 @@ def on_plates_stats_stage_entry(
     )
 
 
-def on_plates_stats_stage_entry_2(
+def on_plates_stats_stage_entry_load_settings(
     current_stage: int,
     value: float,
     saved_data: dict,
 ) -> float:
     """
     Callback for the stage 3 entry
-    Loads the data from storage and prepares visualizations, depending on the
-    Z threshold = slider value
+    Change value of z-slider if json was loaded
 
     :param current_stage: current stage index of the process
     :param value: z threshold, slider value
+    :param saved_data: dict with loaded data
     :return: value for z-slider
     """
 
@@ -551,7 +546,7 @@ def on_summary_entry(
     )
 
 
-def on_summary_entry_2(
+def on_summary_entry_load_settings(
     current_stage: int,
     z_score_min,
     z_score_max,
@@ -560,13 +555,19 @@ def on_summary_entry_2(
     saved_data: dict,
 ) -> float:
     """
-    Callback for the stage 3 entry
-    Loads the data from storage and prepares visualizations, depending on the
-    Z threshold = slider value
+    Callback for the stage 5 entry
+    Loads the data from loaded settings and change values for z-score or feature based on key
 
     :param current_stage: current stage index of the process
-    :param value: z threshold, slider value
-    :return: value for z-slider
+    :param z_score_min: min z-score value
+    :param z_score_max: max z-score value
+    :param feature_min: min feature value
+    :param feature_max: max feature value
+    :param saved_data: dict with loaded data
+    :return min z-score value
+    :return max z-score value
+    :return min feature value
+    :return max feature value
     """
 
     if current_stage != 4:
@@ -847,7 +848,7 @@ def register_callbacks(elements, file_storage):
         Input(elements["STAGES_STORE"], "data"),
         State("heatmap-outliers-checklist", "value"),
         State("loaded-setings-screening", "data"),
-    )(functools.partial(on_outlier_purge_stage_entry_2))
+    )(functools.partial(on_outlier_purge_stage_entry_load_settings))
 
     callback(
         Output("plates-heatmap-container", "children"),
@@ -873,7 +874,7 @@ def register_callbacks(elements, file_storage):
         Input(elements["STAGES_STORE"], "data"),
         State("z-slider", "value"),
         State("loaded-setings-screening", "data"),
-    )(functools.partial(on_plates_stats_stage_entry_2))
+    )(functools.partial(on_plates_stats_stage_entry_load_settings))
 
     callback(
         Output("dummy-upload-echo-data", "children"),
@@ -941,7 +942,7 @@ def register_callbacks(elements, file_storage):
         State("feature-min-input", "value"),
         State("feature-max-input", "value"),
         State("loaded-setings-screening", "data"),
-    )(functools.partial(on_summary_entry_2))
+    )(functools.partial(on_summary_entry_load_settings))
 
     # Z-SCORE
     callback(
