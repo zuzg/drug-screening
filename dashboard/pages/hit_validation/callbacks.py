@@ -214,8 +214,6 @@ def upload_settings_data(
         top_lower_bound_value = loaded_data["top_lower_bound"]
         top_upper_bound_value = loaded_data["top_upper_bound"]
 
-    print(loaded_data)
-
     return (
         concentration_lower_bound_value,
         concentration_upper_bound_value,

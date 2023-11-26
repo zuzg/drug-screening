@@ -227,33 +227,6 @@ def on_outlier_purge_stage_entry(
     )
 
 
-def on_outlier_purge_stage_entry_load_settings(
-    current_stage: int,
-    value: float,
-    saved_data: dict,
-) -> list[bool]:
-    """
-    Callback for the stage 2 entry
-    Change value of checkbox if json was loaded
-
-    :param current_stage: current stage index of the process
-    :param value: z threshold, slider value
-    :param saved_data: dict with loaded data
-    :return: value for checkbox
-    """
-
-    print(value)
-    if current_stage != 1:
-        return no_update
-
-    checkbox = value
-    if saved_data != None:
-        if saved_data["outliers_preview_stage"]["outliers_only_checklist"]:
-            checkbox = ["Show only with outliers"]
-
-    return checkbox
-
-
 # === STAGE 3 ===
 
 
@@ -842,13 +815,6 @@ def register_callbacks(elements, file_storage):
         Input("heatmap-outliers-checklist", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
-
-    callback(
-        Output("heatmap-outliers-checklist", "value"),
-        Input(elements["STAGES_STORE"], "data"),
-        State("heatmap-outliers-checklist", "value"),
-        State("loaded-setings-screening", "data"),
-    )(functools.partial(on_outlier_purge_stage_entry_load_settings))
 
     callback(
         Output("plates-heatmap-container", "children"),
