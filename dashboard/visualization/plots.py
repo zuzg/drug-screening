@@ -277,7 +277,6 @@ def plot_control_values(df: pd.DataFrame) -> go.Figure:
             ),
             mode="markers",
             marker_color="#d73027",
-            marker_symbol="circle",
             opacity=0.75,
         )
     )
@@ -323,21 +322,21 @@ def plot_row_col_means(plate_array: np.ndarray) -> go.Figure:
         horizontal_spacing=0.01,
     )
     ticks_all = []
-    for p in params:
+    colors = ["lightblue", "lightskyblue"]
+    for p, color in zip(params, colors):
         name, axis = p
         means = np.nanmean(arrays, axis=(0, axis))
         stds = np.nanstd(arrays, axis=(0, axis))
         ticks = [*range(1, means.shape[0] + 1)]
         ticks_all.append(ticks)
         fig.add_trace(
-            go.Scatter(
+            go.Bar(
                 x=ticks,
                 y=means,
                 error_y=dict(
                     type="data", array=stds, color="gray", thickness=0.5, width=2
                 ),
-                mode="markers",
-                marker_color="blue",
+                marker_color=color,
             ),
             row=1,
             col=axis,
@@ -403,10 +402,9 @@ def plot_z_per_plate(barcode: pd.Series, z_factor: pd.Series) -> go.Figure:
         },
     )
     fig.add_trace(
-        go.Scatter(
+        go.Bar(
             x=barcode,
             y=z_factor,
-            mode="markers",
         )
     )
     fig.update_layout(

@@ -10,19 +10,14 @@ import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
 from sklearn.decomposition import PCA
-
 from umap import UMAP
+
 from dashboard.data.controls import controls_index_annotator, generate_controls
 from dashboard.data.preprocess import MergedAssaysPreprocessor
-from dashboard.data.structural_similarity import prepare_cluster_viz
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import (
-    make_projection_plot,
-    plot_clustered_smiles,
-    plot_projection_2d,
-)
+from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
 from dashboard.visualization.text_tables import pca_summary, table_from_df
 
 PROJECTION_SETUP = [
@@ -68,6 +63,19 @@ def on_projection_files_upload(
         return no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
+    if len(filenames) < 3:
+        return (
+            html.Div(
+                children=[
+                    html.I(className="fas fa-exclamation-circle me-2"),
+                    html.Span("You need to upload at least 3 files."),
+                ],
+                className="alert alert-danger",
+            ),
+            stored_uuid,
+            no_update,
+            True,
+        )
 
     projection_files = []
 
@@ -311,138 +319,6 @@ def on_save_projections_click(
     return dcc.send_data_frame(projections_df.to_csv, filename)
 
 
-# === STAGE 4 ===
-
-
-def on_smiles_files_upload(
-    contents: str | None,
-    filename: str,
-    last_modified: int,
-    smiles_content: str | None,
-    smiles_filename: str,
-    stored_uuid: str | None,
-    file_storage: FileStorage,
-) -> Tuple[html.Div, str]:
-    """
-    Callback for file upload.
-
-    :param content: base64 encoded file content
-    :param content: base64 encoded smiles content
-    :param stored_uuid: session uuid
-    :param file_storage: file storage
-    :return: list of loaded and not loaded files
-    :return: next stage button disabled status
-    """
-    if not contents or not smiles_content:
-        return no_update
-    if not stored_uuid:
-        stored_uuid = str(uuid.uuid4())
-
-    activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
-    activity = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
-
-    smiles_decoded = base64.b64decode(smiles_content.split(",")[1]).decode("utf-8")
-    smiles_new = pd.read_csv(io.StringIO(smiles_decoded), dtype="str")
-    smiles_active = pd.read_parquet("dashboard/assets/ml/predictions.pq")
-
-    df_merged = prepare_cluster_viz(activity, smiles_active, smiles_new)
-
-    saved_name = f"{stored_uuid}_smiles_merged.pq"
-    file_storage.save_file(saved_name, df_merged.reset_index().to_parquet())
-
-    return (
-        html.Div(
-            children=[
-                make_file_list_component([filename, smiles_filename], [], 1),
-            ],
-        ),
-        False,
-    )
-
-
-# === STAGE 5 ===
-
-
-def on_plot_smiles(
-    current_stage: int,
-    stored_uuid: str,
-    file_storage: FileStorage,
-) -> Tuple[go.Figure, html.Div, html.Div, html.Div, html.Div, html.Div]:
-    """
-    Callback for projections visualization stage entry.
-    It loads the data from the storage, computes and visualizes the projections.
-
-    :param current_stage: index of the current stage
-    :param stored_uuid: session uuid
-    :param file_storage: file storage
-    :return: figure with projections, table with projections, dropdown with projection methods
-    """
-    if current_stage != 4:
-        return no_update
-
-    df = pd.read_parquet(
-        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
-    )
-
-    fig = plot_clustered_smiles(df)
-    projections_df = eos_to_ecbd_link(df)[
-        ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP", "cluster_UMAP3D"]
-    ]
-    table = table_from_df(projections_df, "projection-table")
-
-    return fig, table
-
-
-def on_smiles_dropdown_checkbox_change(
-    projection_type: str,
-    plot_3d_checkbox: List[str],
-    stored_uuid: str,
-    file_storage: FileStorage,
-) -> go.Figure:
-    """
-    Callback for dropdown change. It loads the data from the storage and visualizes the projections.
-
-    :param projection_type: projection method
-    :param plot_3d_checkbox: 3d checkbox selection
-    :param stored_uuid: session uuid
-    :param file_storage: file storage
-    :return: figure with projections"""
-
-    df = pd.read_parquet(
-        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
-    )
-    return plot_clustered_smiles(
-        df, projection=projection_type, plot_3d=bool(plot_3d_checkbox)
-    )
-
-
-def on_smiles_download_selection_button_click(
-    n_clicks: int,
-    selection: dict,
-    stored_uuid: str,
-    file_storage: FileStorage,
-) -> dict:
-    """
-    Callback for the download selected button click. Downloads lasso/box selected datapoints
-    to a csv file.
-
-    :param n_clicks: number of clicks
-    :param stored_uuid: session uuid
-    :param file_storage: storage object
-    """
-    if not selection:
-        return no_update
-
-    datapoints = [point["pointIndex"] for point in selection["points"]]
-
-    df = pd.read_parquet(
-        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_smiles_merged.pq")),
-    )
-    selected_subset_df = df.iloc[datapoints]
-    filename = f"smiles_data_{datetime.now().strftime('%Y-%m-%d')}-selection-{selected_subset_df.shape[0]}.csv"
-    return dcc.send_data_frame(selected_subset_df.to_csv, filename)
-
-
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
@@ -506,43 +382,3 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("projection-method-selection-box", "value"),
         prevent_initial_call=True,
     )(functools.partial(on_plot_zommed_in, file_storage=file_storage))
-    callback(
-        Output("smiles-file-message", "children"),
-        Output({"type": elements["BLOCKER"], "index": 3}, "data"),
-        Input("upload-activity-data", "contents"),
-        Input("upload-activity-data", "filename"),
-        Input("upload-activity-data", "last_modified"),
-        Input("upload-smiles-data", "contents"),
-        Input("upload-smiles-data", "filename"),
-        State("user-uuid", "data"),
-        prevent_initial_call=True,
-    )(functools.partial(on_smiles_files_upload, file_storage=file_storage))
-    callback(
-        Output("smiles-projection-plot", "figure", allow_duplicate=True),
-        Output("smiles-projection-table", "children"),
-        Input(elements["STAGES_STORE"], "data"),
-        State("user-uuid", "data"),
-        prevent_initial_call=True,
-    )(functools.partial(on_plot_smiles, file_storage=file_storage))
-    callback(
-        Output("smiles-projection-plot", "figure", allow_duplicate=True),
-        Input("smiles-projection-method-selection-box", "value"),
-        Input("3d-checkbox-smiles", "value"),
-        State("user-uuid", "data"),
-        prevent_initial_call=True,
-    )(functools.partial(on_smiles_dropdown_checkbox_change, file_storage=file_storage))
-    callback(
-        Output("smiles-download-selection-csv", "data"),
-        Input("smiles-download-selection-button", "n_clicks"),
-        State("smiles-projection-plot", "selectedData"),
-        State("user-uuid", "data"),
-        prevent_initial_call=True,
-    )(
-        functools.partial(
-            on_smiles_download_selection_button_click, file_storage=file_storage
-        )
-    )
-    callback(
-        Output("smiles-download-selection-button", "disabled"),
-        Input("3d-checkbox-smiles", "value"),
-    )(on_3d_checkbox_change)

@@ -1,5 +1,7 @@
 from dash import dash_table, dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
 _COMPOUNDS_DATATABLE = dash_table.DataTable(
     id="plates-table",
     style_table={
@@ -106,6 +108,11 @@ HEATMAP_SECTION = html.Div(
         ),
     ],
 )
+
+SHOW_ONLY_WITH_OUTLIERS_DESC = """
+Restrict the list of heatmaps to only those that have been found to contain outliers.
+"""
+
 DATATABLE_SECTION = html.Div(
     className="col d-flex flex-column gap-3 w-50 h-100",
     children=[
@@ -169,14 +176,18 @@ STATS_SECTION = html.Div(
                 ),
             ]
         ),
-        html.Div(
-            children=[
-                dcc.Checklist(
-                    id="heatmap-outliers-checklist",
-                    options=["Show only with outliers"],
-                    inputClassName="me-2",
-                ),
-            ],
+        annotate_with_tooltip(
+            html.Div(
+                children=[
+                    dcc.Checklist(
+                        id="heatmap-outliers-checklist",
+                        options=["Show only with outliers"],
+                        inputClassName="me-2",
+                    ),
+                ],
+            ),
+            SHOW_ONLY_WITH_OUTLIERS_DESC,
+            extra_style={"transform": "translateY(2px)"},
         ),
     ],
 )

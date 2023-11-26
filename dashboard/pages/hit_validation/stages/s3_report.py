@@ -1,6 +1,7 @@
 from dash import dcc, html
 
 from dashboard.visualization.text_tables import make_download_button_text
+from dashboard.pages.components import annotate_with_tooltip
 
 REPORT_STAGE = html.Div(
     id="report_stage",
@@ -17,12 +18,15 @@ REPORT_STAGE = html.Div(
                             children=[
                                 dcc.Loading(
                                     children=[
-                                        html.Button(
-                                            make_download_button_text(
-                                                "Download Report XLSX"
+                                        annotate_with_tooltip(
+                                            html.Button(
+                                                make_download_button_text(
+                                                    "Download Report XLSX"
+                                                ),
+                                                className="btn btn-primary btn-lg btn-block btn-report",
+                                                id="download-report-hit-validation-button",
                                             ),
-                                            className="btn btn-primary btn-lg btn-block btn-report",
-                                            id="download-report-hit-validation-button",
+                                            "Exports the hit validation results together with the plots - may take a while to generate.",
                                         ),
                                         dcc.Download(
                                             id="download-report-hit-validation"

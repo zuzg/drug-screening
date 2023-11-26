@@ -1,5 +1,7 @@
 from dash import dcc, html
 
+from dashboard.pages.components import annotate_with_tooltip
+
 ECHO_DESC = """
 ECHO files in ".csv" format should have [DETAILS] and (if there are exceptions in the file) [EXCEPTIONS] tags
 in the file. A file without any tags will be treated as containing only successfully processed compounds.
@@ -93,7 +95,12 @@ ECHO_INPUT_STAGE = html.Div(
                                             children=[
                                                 html.Div(
                                                     [
-                                                        html.Span("Screening feature:"),
+                                                        annotate_with_tooltip(
+                                                            html.Span(
+                                                                "Screening feature:"
+                                                            ),
+                                                            "Choose whether to display the percentage of activation or inhibition.",
+                                                        ),
                                                         html.Div(
                                                             children=[
                                                                 dcc.Dropdown(
@@ -118,8 +125,11 @@ ECHO_INPUT_STAGE = html.Div(
                                                 ),
                                                 html.Div(
                                                     [
-                                                        html.Span(
-                                                            "Activation formula:"
+                                                        annotate_with_tooltip(
+                                                            html.Span(
+                                                                "Activation formula:"
+                                                            ),
+                                                            "Choose whether to use the formula with or without positive control.",
                                                         ),
                                                         html.Div(
                                                             children=[
