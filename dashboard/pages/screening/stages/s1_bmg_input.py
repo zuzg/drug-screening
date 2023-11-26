@@ -13,24 +13,49 @@ BMG_INPUT_STAGE = html.Div(
         html.Div(
             children=[
                 html.P(BMG_DESC, className="text-justify"),
-                dcc.Loading(
+                html.Div(
                     children=[
-                        dcc.Upload(
-                            id="upload-bmg-data",
-                            accept=".txt",
-                            children=html.Div(
-                                [
-                                    "Drag and Drop or ",
-                                    html.A("Select", className="select-file"),
-                                    " BMG files",
-                                ]
-                            ),
-                            multiple=True,
-                            className="text-center upload-box",
+                        dcc.Loading(
+                            children=[
+                                dcc.Upload(
+                                    id="upload-bmg-data",
+                                    accept=".txt",
+                                    children=html.Div(
+                                        [
+                                            "Drag and Drop or ",
+                                            html.A("Select", className="select-file"),
+                                            " BMG files",
+                                        ]
+                                    ),
+                                    multiple=True,
+                                    className="text-center upload-box",
+                                ),
+                                html.Div(
+                                    id="dummy-upload-bmg-data",
+                                    className="p-1",
+                                ),
+                            ],
+                            type="circle",
                         ),
-                        html.Div(id="dummy-upload-bmg-data"),
-                    ],
-                    type="circle",
+                        dcc.Loading(
+                            children=[
+                                dcc.Upload(
+                                    id="upload-settings-screening",
+                                    accept=".json",
+                                    children=html.Div(
+                                        [
+                                            "Drag and Drop or ",
+                                            html.A("Select", className="select-file"),
+                                            " Settings for screening",
+                                        ]
+                                    ),
+                                    multiple=False,
+                                    className="text-center upload-box",
+                                ),
+                            ],
+                            type="circle",
+                        ),
+                    ]
                 ),
             ],
             className="grid-2-1",

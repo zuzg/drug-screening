@@ -86,6 +86,25 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     )
 
 
+def upload_settings_data(content, name):
+    if content is None:
+        return no_update
+
+    file = None
+
+    _, extension = name.split(".")
+    if extension == "json":
+        _, content_string = content.split(",")
+        decoded = base64.b64decode(content_string)
+        file = io.StringIO(decoded.decode("utf-8"))
+
+    loaded_data = {}
+    if file:
+        loaded_data = json.load(file)
+
+    return loaded_data
+
+
 # === STAGE 2 ===
 
 DISPLAYED_PLATES = 12
@@ -212,11 +231,39 @@ def on_outlier_purge_stage_entry(
     )
 
 
+def on_outlier_purge_stage_entry_2(
+    current_stage: int,
+    value: float,
+    saved_data: dict,
+) -> list[bool]:
+    """
+    Callback for the stage 2 entry
+    Loads the data from storage and prepares visualizations, depending on the
+    Z threshold = slider value
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :return: value for z-slider
+    """
+
+    if current_stage != 1:
+        return no_update
+
+    checkbox = value
+    if saved_data != None:
+        checkbox = saved_data["outliers_preview_stage"]["outliers_only_checklist"]
+
+    return [checkbox]
+
+
 # === STAGE 3 ===
 
 
 def on_plates_stats_stage_entry(
-    current_stage: int, value: float, stored_uuid: str, file_storage: FileStorage
+    current_stage: int,
+    value: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
 ) -> tuple[go.Figure, go.Figure, go.Figure, str, str]:
     """
     Callback for the stage 3 entry
@@ -264,6 +311,31 @@ def on_plates_stats_stage_entry(
         z_slider_data,
         False,
     )
+
+
+def on_plates_stats_stage_entry_2(
+    current_stage: int,
+    value: float,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 3 entry
+    Loads the data from storage and prepares visualizations, depending on the
+    Z threshold = slider value
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :return: value for z-slider
+    """
+
+    if current_stage != 2:
+        return no_update
+
+    z_slider_value = value
+    if saved_data != None:
+        z_slider_value = saved_data["statistics_stage"]["z_slider_value"]
+
+    return z_slider_value
 
 
 def hide_heatmap_loading(trigger, children):
@@ -462,8 +534,6 @@ def on_summary_entry(
         summary_stage_datatable,
         fig_z_score,
         fig_feature,
-        -3,  # z_score_min,
-        3,  # z_score_max,
         False,  # min input disabled
         False,  # max input disabled
         feature_min,
@@ -476,6 +546,42 @@ def on_summary_entry(
         report_data,
         False,  # next button disabled
     )
+
+
+def on_summary_entry_2(
+    current_stage: int,
+    z_score_min,
+    z_score_max,
+    feature_min,
+    feature_max,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 3 entry
+    Loads the data from storage and prepares visualizations, depending on the
+    Z threshold = slider value
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :return: value for z-slider
+    """
+
+    if current_stage != 4:
+        return no_update
+
+    z_score_min_value = z_score_min
+    z_score_max_value = z_score_max
+    feature_min_value = feature_min
+    feature_max_value = feature_max
+    if saved_data != None:
+        if saved_data["summary_stage"]["key"] == "activation":
+            feature_min_value = saved_data["summary_stage"]["key_min"]
+            feature_max_value = saved_data["summary_stage"]["key_max"]
+        elif saved_data["summary_stage"]["key"] == "z_score":
+            z_score_min_value = saved_data["summary_stage"]["key_min"]
+            z_score_max_value = saved_data["summary_stage"]["key_max"]
+
+    return z_score_min_value, z_score_max_value, feature_min_value, feature_max_value
 
 
 def on_filter_radio_or_range_update(
@@ -702,6 +808,12 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
 
     callback(
+        Output("loaded-setings-screening", "data"),
+        Input("upload-settings-screening", "contents"),
+        Input("upload-settings-screening", "filename"),
+    )(functools.partial(upload_settings_data))
+
+    callback(
         Output("heatmap-start-index", "data"),
         Input("heatmap-previous-btn", "n_clicks"),
         Input("heatmap-next-btn", "n_clicks"),
@@ -728,6 +840,13 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_outlier_purge_stage_entry, file_storage=file_storage))
 
     callback(
+        Output("heatmap-outliers-checklist", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("heatmap-outliers-checklist", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_outlier_purge_stage_entry_2))
+
+    callback(
         Output("plates-heatmap-container", "children"),
         Input("plates-table", "data"),
         State("plates-heatmap-subcontainer", "children"),
@@ -745,6 +864,13 @@ def register_callbacks(elements, file_storage):
         Input("z-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("z-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-slider", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_plates_stats_stage_entry_2))
 
     callback(
         Output("dummy-upload-echo-data", "children"),
@@ -783,12 +909,10 @@ def register_callbacks(elements, file_storage):
         Output("compounds-data-table", "children"),
         Output("z-score-plot", "figure"),
         Output("feature-plot", "figure"),
-        Output("z-score-min-input", "value"),
-        Output("z-score-max-input", "value"),
         Output("z-score-min-input", "disabled"),
         Output("z-score-max-input", "disabled"),
-        Output("feature-min-input", "value"),
-        Output("feature-max-input", "value"),
+        Output("feature-min-input", "value", allow_duplicate=True),
+        Output("feature-max-input", "value", allow_duplicate=True),
         Output("feature-min-input", "disabled"),
         Output("feature-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
@@ -800,7 +924,22 @@ def register_callbacks(elements, file_storage):
         State("user-uuid", "data"),
         State("z-slider-value", "data"),
         State("activation-inhibition-screening-options", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_summary_entry, file_storage=file_storage))
+
+    callback(
+        Output("z-score-min-input", "value"),
+        Output("z-score-max-input", "value"),
+        Output("feature-min-input", "value"),
+        Output("feature-max-input", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-score-min-input", "value"),
+        State("z-score-max-input", "value"),
+        State("feature-min-input", "value"),
+        State("feature-max-input", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_summary_entry_2))
+
     # Z-SCORE
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),

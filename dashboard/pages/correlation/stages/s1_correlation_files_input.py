@@ -65,6 +65,30 @@ FILE_INPUT_COMPONENT = html.Div(
                 ),
             ],
         ),
+        html.Div(
+            className="flex-grow-1",
+            children=[
+                html.H5("Settings File"),
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-settings-correlation",
+                            accept=".json",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " Settings for correlation analysis",
+                                ]
+                            ),
+                            multiple=False,
+                            className="text-center upload-box",
+                        ),
+                    ],
+                    type="circle",
+                ),
+            ],
+        ),
     ],
 )
 

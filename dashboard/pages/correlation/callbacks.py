@@ -111,6 +111,25 @@ def on_both_files_uploaded(
     return ICON_OK, False
 
 
+def upload_settings_data(content, name):
+    if content is None:
+        return no_update
+
+    file = None
+
+    _, extension = name.split(".")
+    if extension == "json":
+        _, content_string = content.split(",")
+        decoded = base64.b64decode(content_string)
+        file = io.StringIO(decoded.decode("utf-8"))
+
+    loaded_data = {}
+    if file:
+        loaded_data = json.load(file)
+
+    return loaded_data
+
+
 # === STAGE 2 ===
 
 
@@ -167,6 +186,34 @@ def on_visualization_stage_entry(
     return feature_fig, concentration_fig, report_data_correlation_plots, False
 
 
+def on_visualization_stage_entry_load_settings(
+    current_stage: int,
+    concentration: float,
+    volume: float,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 3 entry
+    Loads the data from storage and prepares visualizations, depending on the
+    Z threshold = slider value
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :return: value for z-slider
+    """
+
+    if current_stage != 1:
+        return no_update
+
+    concentration_value = concentration
+    volume_value = volume
+    if saved_data != None:
+        concentration_value = saved_data["concentration_value"]
+        volume_value = saved_data["volume_value"]
+
+    return concentration_value, volume_value
+
+
 # === STAGE 3 ===
 
 
@@ -177,7 +224,11 @@ def on_json_generate_button_click(
     filename = (
         f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     )
-    json_object = json.dumps(correlation_plots_report, indent=4)
+    data_to_save = {
+        "concentration_value": correlation_plots_report["concentration_value"],
+        "volume_value": correlation_plots_report["volume_value"],
+    }
+    json_object = json.dumps(data_to_save, indent=4)
     return dict(content=json_object, filename=filename)
 
 
@@ -230,6 +281,12 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_both_files_uploaded, file_storage=file_storage))
 
     callback(
+        Output("loaded-setings-correlation", "data"),
+        Input("upload-settings-correlation", "contents"),
+        Input("upload-settings-correlation", "filename"),
+    )(functools.partial(upload_settings_data))
+
+    callback(
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
@@ -239,6 +296,16 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("volume-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("concentration-slider", "value"),
+        Output("volume-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("concentration-slider", "value"),
+        State("volume-slider", "value"),
+        State("loaded-setings-correlation", "data"),
+    )(functools.partial(on_visualization_stage_entry_load_settings))
+
     callback(
         Output("download-json-settings-correlation", "data"),
         Input("generate-json-button", "n_clicks"),
