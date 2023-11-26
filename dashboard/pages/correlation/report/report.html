@@ -26,25 +26,75 @@
     }
 
     h3 {
-        text-align: left;
+        text-align: center;
         font-weight: bold;
         font-size: 24px;
+    }
+
+    header {
+        background-color: black;
+        color: white;
+        text-align: center;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 3px;
+    }
+
+    .logopart1 {
+        margin-left: 66px;
+        font-weight: bold;
+        font-size: 52px;
+    }
+
+    .logopart2 {
+        font-size: 25px;
+        font-weight: 200;
+        font-style: italic;
+    }
+
+    .title {
+        font-size: 65px;
+        font-style: italic;
+        margin-left: 205px;
+    }
+
+    .data {
+        font-size: 20px;
+        font-style: italic;
+        position: absolute;
+        top: 80px;
+        right: 30px;
+    }
+
+    .logo {
+        text-decoration: underline;
+        text-decoration-thickness: 0.1em;
+        text-decoration-color: blue;
     }
 </style>
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Correlation analysis</title>
+    <title>Correlation Analysis</title>
 </head>
 
 <body>
-    <h1>
-        Report {{current_day}}
-    </h1>
-    <h2>
-        {{current_time}}
-    </h2>
+    <header>
+        <header>
+            <div class="logo">
+                <span class="logopart1">HTS</span>
+                <span class="logopart2">INSIGHT</span>
+            </div>
+            <div>
+                <span class="title">Correlation Analysis</span>
+            </div>
+            <div>
+                <span class="data">Generated {{current_day}}</span>
+            </div>
+        </header>
+    </header>
     <h3>
         Concentration
     </h3>
