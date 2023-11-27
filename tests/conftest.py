@@ -1,7 +1,10 @@
 # Put common fixtures here to be available in other test suits without explicit import
 
 import pytest
+import numpy as np
 import pandas as pd
+
+from dashboard.data.bmg_plate import Plate, get_summary_tuple, calculate_z_outliers
 
 
 @pytest.fixture
@@ -41,3 +44,50 @@ def combine_dataframes():
         }
     )
     return [df, df2]
+
+
+@pytest.fixture
+def plate_summary():
+    barcode = "abcd"
+    plate_array = np.array([[1, 3, 2], [0, 0, 0]])
+    plate = Plate(barcode, plate_array)
+    z_wo, outliers_mask = calculate_z_outliers(plate)
+    summary = get_summary_tuple(plate, z_wo)
+    return summary
+
+
+@pytest.fixture
+def df_stats():
+    data = {
+        "barcode": ["1234"],
+        "std_cmpd": [1],
+        "std_pos": [1.5],
+        "std_neg": [1.0],
+        "mean_cmpd": [2],
+        "mean_pos": [3],
+        "mean_neg": [2],
+        "z_factor": [-2],
+        "z_factor_no_outliers": [2],
+    }
+    return pd.DataFrame.from_dict(data)
+
+
+@pytest.fixture
+def stats_for_all():
+    data = {
+        "mean_cmpd": 1000,
+        "std_cmpd": 12,
+        "mean_pos": 1200,
+        "mean_neg": 800,
+    }
+    return data
+
+
+@pytest.fixture
+def values_dict():
+    return {
+        "activation": np.array([[1.0, 2.0], [3.0, 4.0]]),
+        "inhibition": np.array([[0.5, 0.2], [0.1, 0.3]]),
+        "z_score": np.array([[-1.0, 0.5], [1.0, -0.5]]),
+        "outliers": np.array([[0, 0], [1, 0]]),
+    }
