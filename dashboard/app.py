@@ -10,7 +10,7 @@ BOOTSTRAP_CDN = (
 FONT_AWESOME_CDN = (
     "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
 )
-VERSION = "v2.0.0-dev"
+VERSION = "v2.0.0"
 
 fs_dir = os.environ.get("DRUG_SCREENING_DATA_DIR", ".drug-screening-data")
 
