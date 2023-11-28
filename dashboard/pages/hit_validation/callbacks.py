@@ -202,23 +202,41 @@ def upload_settings_data(
     :return: top lower bound
     :return: top_upper_bound
     """
+    if not content:
+        return no_update
     loaded_data = load_data_from_json(content, name)
-    concentration_lower_bound_value = concentration_lower_bound
-    concentration_upper_bound_value = concentration_upper_bound
-    top_lower_bound_value = top_lower_bound
-    top_upper_bound_value = top_upper_bound
+    if loaded_data == None or not set(
+        [
+            "concentration_lower_bound",
+            "concentration_upper_bound",
+            "top_lower_bound",
+            "top_upper_bound",
+        ]
+    ).issubset(loaded_data.keys()):
+        concentration_lower_bound_value = concentration_lower_bound
+        concentration_upper_bound_value = concentration_upper_bound
+        top_lower_bound_value = top_lower_bound
+        top_upper_bound_value = top_upper_bound
+        color = "danger"
+        text = "Settings not uploaded"
 
-    if loaded_data != None:
+    else:
         concentration_lower_bound_value = loaded_data["concentration_lower_bound"]
         concentration_upper_bound_value = loaded_data["concentration_upper_bound"]
         top_lower_bound_value = loaded_data["top_lower_bound"]
         top_upper_bound_value = loaded_data["top_upper_bound"]
+        color = "success"
+        text = "Settings uploaded successful"
 
     return (
         concentration_lower_bound_value,
         concentration_upper_bound_value,
         top_lower_bound_value,
         top_upper_bound_value,
+        True,
+        html.Span(text),
+        color,
+        no_update,
     )
 
 
@@ -501,6 +519,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("concentration-upper-bound-input", "value"),
         Output("top-lower-bound-input", "value"),
         Output("top-upper-bound-input", "value"),
+        Output("alert-upload-settings-hit-validation", "is_open"),
+        Output("alert-upload-settings-hit-validation-text", "children"),
+        Output("alert-upload-settings-hit-validation", "color"),
+        Output("dummy-upload-settings-hit-validation", "children"),
         Input("upload-settings-hit-validation", "contents"),
         Input("upload-settings-hit-validation", "filename"),
         State("concentration-lower-bound-input", "value"),

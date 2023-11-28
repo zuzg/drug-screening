@@ -95,7 +95,17 @@ def upload_settings_data(content: str | None, name: str | None):
     :param name: filename
     :return: dict with loaded data
     """
-    return load_data_from_json(content, name)
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successful"
+    if loaded_data == None or not set(["statistics_stage", "summary_stage"]).issubset(
+        loaded_data.keys()
+    ):
+        color = "danger"
+        text = "Settings not uploaded"
+    return loaded_data, True, html.Span(text), color, no_update
 
 
 # === STAGE 2 ===
@@ -786,6 +796,10 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("loaded-setings-screening", "data"),
+        Output("alert-upload-settings-screening", "is_open"),
+        Output("alert-upload-settings-screening-text", "children"),
+        Output("alert-upload-settings-screening", "color"),
+        Output("dummy-upload-settings-screening", "children"),
         Input("upload-settings-screening", "contents"),
         Input("upload-settings-screening", "filename"),
     )(functools.partial(upload_settings_data))

@@ -1,5 +1,6 @@
 from dash import dcc, html
 
+import dash_bootstrap_components as dbc
 from dashboard.pages.components import annotate_with_tooltip
 
 ACTIVY_DETERMINATION_PARAMS_DESC = """
@@ -168,8 +169,20 @@ FILE_INPUT_CONTAINER = html.Div(
                                     multiple=False,
                                     className="text-center upload-box m-1",
                                 ),
+                                html.Div(
+                                    id="dummy-upload-settings-hit-validation",
+                                    className="p-1",
+                                ),
                             ],
                             type="circle",
+                        ),
+                        dbc.Alert(
+                            html.Div(id="alert-upload-settings-hit-validation-text"),
+                            id="alert-upload-settings-hit-validation",
+                            dismissable=True,
+                            is_open=False,
+                            duration=4000,
+                            className="m-1",
                         ),
                     ],
                 ),
