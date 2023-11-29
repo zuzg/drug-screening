@@ -1,6 +1,5 @@
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from scipy.optimize import curve_fit
 
 
@@ -33,7 +32,23 @@ def find_argument_four_param_logistic(
     :param slope: the steepness of the curve
     :return: argument of the function for given y
     """
-    return ic50 * ((lower_limit - upper_limit) / (y - upper_limit) - 1) ** (1 / slope)
+    x = ic50 * ((lower_limit - upper_limit) / (y - upper_limit) - 1) ** (1 / slope)
+    if type(x) == complex:
+        x = np.nan
+    return x
+
+
+def calculate_modulation_ic50_and_concentration_50(row):
+    modulation_ic50 = four_param_logistic(
+        row["ic50"], row["BOTTOM"], row["TOP"], row["ic50"], row["slope"]
+    )
+    concentration_50 = find_argument_four_param_logistic(
+        50, row["BOTTOM"], row["TOP"], row["ic50"], row["slope"]
+    )
+
+    return pd.Series(
+        {"modulation_ic50": modulation_ic50, "concentration_50": concentration_50}
+    )
 
 
 def curve_fit_for_activation(screen_df: pd.DataFrame) -> pd.DataFrame:
@@ -140,7 +155,17 @@ def process_activation_df(
         & (activation_df.ic50 < concentration_upper_bound)
         & (activation_df.ic50 > concentration_lower_bound)
     )
-    return activation_df
+
+    cols = activation_df.columns.to_list()
+    modulation_concentraion = ["modulation_ic50", "concentration_50"]
+    pos = cols.index("slope")
+    column_order = cols[:pos] + modulation_concentraion + cols[pos:]
+
+    activation_df[modulation_concentraion] = activation_df.apply(
+        lambda row: calculate_modulation_ic50_and_concentration_50(row), axis=1
+    )
+
+    return activation_df[column_order]
 
 
 def perform_hit_determination(
