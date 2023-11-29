@@ -89,6 +89,12 @@
     column-gap: 2rem;
 }
 
+.grid-1-1-projections {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: center;
+    width: 50%;
+  }
 
 .upload-box {
     width: 100%;
@@ -276,5 +282,10 @@
 @media (max-width: 600px) {
     main.grid-1-1-1-1 {
         grid-template-columns: repeat(1, 1fr);
+    }
+
+    main.grid-1-1-projections {
+        grid-template-columns: repeat(1, 1fr);
+        width: 100%;
     }
 }

@@ -10,6 +10,7 @@ import pyarrow as pa
 from dash import Input, Output, State, callback, html, no_update
 from plotly import express as px
 from plotly import graph_objects as go
+import dash_bootstrap_components as dbc
 
 from dashboard.data import validation
 from dashboard.data.json_reader import load_data_from_json
@@ -120,7 +121,18 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
     :param name: filename
     :return: dict with loaded data
     """
-    return load_data_from_json(content, name)
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successfully"
+    settings_keys = ["concentration_value", "volume_value"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+    return loaded_data, True, html.Span(text), color, no_update
 
 
 # === STAGE 2 ===
@@ -276,8 +288,13 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("loaded-setings-correlation", "data"),
+        Output("alert-upload-settings-correlation", "is_open"),
+        Output("alert-upload-settings-correlation-text", "children"),
+        Output("alert-upload-settings-correlation", "color"),
+        Output("dummy-upload-settings-correlation", "children"),
         Input("upload-settings-correlation", "contents"),
         Input("upload-settings-correlation", "filename"),
+        prevent_initial_call=True,
     )(functools.partial(upload_settings_data))
 
     callback(

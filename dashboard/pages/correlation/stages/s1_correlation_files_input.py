@@ -2,6 +2,8 @@ from dash import dcc, html
 
 from dashboard.pages.components import annotate_with_tooltip
 
+import dash_bootstrap_components as dbc
+
 DESC = [
     html.Span(
         """
@@ -92,8 +94,20 @@ FILE_INPUT_COMPONENT = html.Div(
                             multiple=False,
                             className="text-center upload-box",
                         ),
+                        html.Div(
+                            id="dummy-upload-settings-correlation",
+                            className="p-1",
+                        ),
                     ],
                     type="circle",
+                ),
+                dbc.Alert(
+                    html.Div(id="alert-upload-settings-correlation-text"),
+                    id="alert-upload-settings-correlation",
+                    dismissable=True,
+                    is_open=False,
+                    duration=4000,
+                    className="m-1",
                 ),
             ],
         ),

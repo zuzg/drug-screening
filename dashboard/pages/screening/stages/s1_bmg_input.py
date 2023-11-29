@@ -1,4 +1,5 @@
 from dash import dcc, html
+import dash_bootstrap_components as dbc
 
 BMG_DESC = """BMG files in ".txt" format should be in the form of two columns,
 where the first column contains the well unique to the plate, e.g. A02, M13, P24, etc.
@@ -52,8 +53,20 @@ BMG_INPUT_STAGE = html.Div(
                                     multiple=False,
                                     className="text-center upload-box",
                                 ),
+                                html.Div(
+                                    id="dummy-upload-settings-screening",
+                                    className="p-1",
+                                ),
                             ],
                             type="circle",
+                        ),
+                        dbc.Alert(
+                            html.Div(id="alert-upload-settings-screening-text"),
+                            id="alert-upload-settings-screening",
+                            dismissable=True,
+                            is_open=False,
+                            duration=4000,
+                            className="m-1",
                         ),
                     ]
                 ),

@@ -202,23 +202,102 @@ def upload_settings_data(
     :return: top lower bound
     :return: top_upper_bound
     """
+    if not content:
+        return no_update
     loaded_data = load_data_from_json(content, name)
-    concentration_lower_bound_value = concentration_lower_bound
-    concentration_upper_bound_value = concentration_upper_bound
-    top_lower_bound_value = top_lower_bound
-    top_upper_bound_value = top_upper_bound
+    settings_keys = [
+        "concentration_lower_bound",
+        "concentration_upper_bound",
+        "top_lower_bound",
+        "top_upper_bound",
+    ]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        concentration_lower_bound_value = concentration_lower_bound
+        concentration_upper_bound_value = concentration_upper_bound
+        top_lower_bound_value = top_lower_bound
+        top_upper_bound_value = top_upper_bound
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
 
-    if loaded_data != None:
+    else:
         concentration_lower_bound_value = loaded_data["concentration_lower_bound"]
         concentration_upper_bound_value = loaded_data["concentration_upper_bound"]
         top_lower_bound_value = loaded_data["top_lower_bound"]
         top_upper_bound_value = loaded_data["top_upper_bound"]
+        color = "success"
+        text = "Settings uploaded successfully"
 
     return (
         concentration_lower_bound_value,
         concentration_upper_bound_value,
         top_lower_bound_value,
         top_upper_bound_value,
+        True,
+        html.Span(text),
+        color,
+        no_update,
+    )
+
+
+def upload_settings_data(
+    content: str | None,
+    name: str | None,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
+) -> tuple[float, float, float, float]:
+    """
+    Callback for file upload. It update concentration lower bound,
+    concentration upper bound, top lower bound, top upper bound
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :param concentration_lower_bound: concentration lower bound
+    :param concentration_upper_bound: concentration upper bound
+    :param top_lower_bound: top lower bound
+    :param top_upper_bound: top upper bound
+    :return: concentration lower bound
+    :return: concentration upper bound
+    :return: top lower bound
+    :return: top_upper_bound
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    settings_keys = [
+        "concentration_lower_bound",
+        "concentration_upper_bound",
+        "top_lower_bound",
+        "top_upper_bound",
+    ]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        concentration_lower_bound_value = concentration_lower_bound
+        concentration_upper_bound_value = concentration_upper_bound
+        top_lower_bound_value = top_lower_bound
+        top_upper_bound_value = top_upper_bound
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+
+    else:
+        concentration_lower_bound_value = loaded_data["concentration_lower_bound"]
+        concentration_upper_bound_value = loaded_data["concentration_upper_bound"]
+        top_lower_bound_value = loaded_data["top_lower_bound"]
+        top_upper_bound_value = loaded_data["top_upper_bound"]
+        color = "success"
+        text = "Settings uploaded successfully"
+
+    return (
+        concentration_lower_bound_value,
+        concentration_upper_bound_value,
+        top_lower_bound_value,
+        top_upper_bound_value,
+        True,
+        no_update,
     )
 
 
@@ -501,6 +580,10 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("concentration-upper-bound-input", "value"),
         Output("top-lower-bound-input", "value"),
         Output("top-upper-bound-input", "value"),
+        Output("alert-upload-settings-hit-validation", "is_open"),
+        Output("alert-upload-settings-hit-validation-text", "children"),
+        Output("alert-upload-settings-hit-validation", "color"),
+        Output("dummy-upload-settings-hit-validation", "children"),
         Input("upload-settings-hit-validation", "contents"),
         Input("upload-settings-hit-validation", "filename"),
         State("concentration-lower-bound-input", "value"),
