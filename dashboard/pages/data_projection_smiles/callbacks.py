@@ -23,27 +23,7 @@ from dashboard.visualization.plots import (
     plot_clustered_smiles,
     plot_projection_2d,
 )
-from dashboard.visualization.text_tables import pca_summary, table_from_df
-
-PROJECTION_SETUP = [
-    (PCA(n_components=3), "PCA"),
-    (
-        UMAP(
-            n_components=2,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP",
-    ),
-    (
-        UMAP(
-            n_components=3,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP3D",
-    ),
-]
+from dashboard.visualization.text_tables import pca_smiles_summary, table_from_df
 
 
 def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
@@ -164,8 +144,9 @@ def on_plot_smiles(
         ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP", "cluster_UMAP3D"]
     ]
     table = table_from_df(projections_df, "projection-table")
+    pca_summary = pca_smiles_summary()
 
-    return fig, table
+    return fig, table, pca_summary
 
 
 def on_smiles_dropdown_checkbox_change(
@@ -241,6 +222,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("smiles-projection-plot", "figure", allow_duplicate=True),
         Output("smiles-projection-table", "children"),
+        Output("pca-smiles-info", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,

@@ -98,5 +98,16 @@ SMILES_PROJECTION_DISPLAY_STAGE = html.Div(
                 ),
             ],
         ),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
+                    children=[
+                        html.Div(id="pca-smiles-info", className="row", children=[]),
+                    ],
+                    className="col-md-6",
+                ),
+            ],
+        ),
     ]
 )
