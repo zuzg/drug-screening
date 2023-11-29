@@ -99,12 +99,13 @@ def upload_settings_data(content: str | None, name: str | None):
         return no_update
     loaded_data = load_data_from_json(content, name)
     color = "success"
-    text = "Settings uploaded successful"
-    if loaded_data == None or not set(["statistics_stage", "summary_stage"]).issubset(
-        loaded_data.keys()
-    ):
+    text = "Settings uploaded successfully"
+    settings_keys = ["statistics_stage", "summary_stage"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
         color = "danger"
-        text = "Settings not uploaded"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
     return loaded_data, True, html.Span(text), color, no_update
 
 
@@ -755,15 +756,7 @@ def on_report_generate_button_click(
     report_data_second_stage.update(report_data_third_stage)
     report_data_second_stage.update(report_data_screening_summary_plots)
     jinja_template = generate_jinja_report(report_data_second_stage)
-    return html.Div(
-        className="col",
-        children=[
-            html.H5(
-                className="text-center",
-                children=f"Report generated",
-            ),
-        ],
-    ), dict(content=jinja_template, filename=filename)
+    return dict(content=jinja_template, filename=filename)
 
 
 def on_json_generate_button_click(
@@ -965,7 +958,6 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_save_exceptions_click, file_storage=file_storage))
     callback(
-        Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
         Input("generate-report-button", "n_clicks"),
         State("report-data-second-stage", "data"),

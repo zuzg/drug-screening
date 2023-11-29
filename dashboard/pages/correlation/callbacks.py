@@ -125,12 +125,13 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
         return no_update
     loaded_data = load_data_from_json(content, name)
     color = "success"
-    text = "Settings uploaded successful"
-    if loaded_data == None or not set(["concentration_value", "volume_value"]).issubset(
-        loaded_data.keys()
-    ):
+    text = "Settings uploaded successfully"
+    settings_keys = ["concentration_value", "volume_value"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
         color = "danger"
-        text = "Settings not uploaded"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
     return loaded_data, True, html.Span(text), color, no_update
 
 

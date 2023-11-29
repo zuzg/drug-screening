@@ -205,20 +205,21 @@ def upload_settings_data(
     if not content:
         return no_update
     loaded_data = load_data_from_json(content, name)
-    if loaded_data == None or not set(
-        [
-            "concentration_lower_bound",
-            "concentration_upper_bound",
-            "top_lower_bound",
-            "top_upper_bound",
-        ]
-    ).issubset(loaded_data.keys()):
+    settings_keys = [
+        "concentration_lower_bound",
+        "concentration_upper_bound",
+        "top_lower_bound",
+        "top_upper_bound",
+    ]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
         concentration_lower_bound_value = concentration_lower_bound
         concentration_upper_bound_value = concentration_upper_bound
         top_lower_bound_value = top_lower_bound
         top_upper_bound_value = top_upper_bound
         color = "danger"
-        text = "Settings not uploaded"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
 
     else:
         concentration_lower_bound_value = loaded_data["concentration_lower_bound"]
@@ -226,7 +227,7 @@ def upload_settings_data(
         top_lower_bound_value = loaded_data["top_lower_bound"]
         top_upper_bound_value = loaded_data["top_upper_bound"]
         color = "success"
-        text = "Settings uploaded successful"
+        text = "Settings uploaded successfully"
 
     return (
         concentration_lower_bound_value,
