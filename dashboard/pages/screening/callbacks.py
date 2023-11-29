@@ -70,16 +70,21 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
             decoded = base64.b64decode(content_string)
             bmg_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
 
-    if bmg_files:
-        bmg_df, val = parse_bmg_files(tuple(bmg_files))
-        stream = io.BytesIO()
-        np.savez_compressed(stream, val)
-        stream.seek(0)
-        file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
-        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", bmg_df.to_parquet())
+    if not bmg_files:
+        return no_update, no_update, no_update, no_update
+
+    bmg_df, val, failed_files = parse_bmg_files(tuple(bmg_files))
+    ok_names = [name for name, _ in bmg_files if name not in failed_files]
+    nok_entries = [f"{name}: {error}" for name, error in failed_files.items()]
+
+    stream = io.BytesIO()
+    np.savez_compressed(stream, val)
+    stream.seek(0)
+    file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
+    file_storage.save_file(f"{stored_uuid}_bmg_df.pq", bmg_df.to_parquet())
 
     return (
-        make_file_list_component(names, [], 2),
+        make_file_list_component(ok_names, nok_entries, 2),
         no_update,
         stored_uuid,
         False,
@@ -213,6 +218,46 @@ def on_outlier_purge_stage_entry(
         final_vis_df.to_dict("records"),
         False,
     )
+
+
+HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW = 250
+HEATMAP_PLOT_REPORT_COLS = 5
+
+
+def on_export_plots_button_click(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> dict[str, str]:
+    """
+    Callback for the export plots button. Exports all heatmap plots to a single html file.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: dictionary containing the html file with plots and its name
+    """
+    if n_clicks is None:
+        return no_update
+
+    bmg_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_bmg_df.pq"))
+    )
+    bmg_vals = np.load(
+        io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
+    )["arr_0"]
+    n_rows, remainder = divmod(bmg_vals.shape[0], N_COLS)
+    n_rows += bool(remainder)
+
+    fig = visualize_multiple_plates(
+        bmg_df, bmg_vals, n_rows, HEATMAP_PLOT_REPORT_COLS, free_format=True
+    )
+    fig.update_layout(
+        height=n_rows * HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW, coloraxis_showscale=False
+    )
+    as_html = fig.to_html()
+    filename = f"screening_heatmaps_{datetime.now().strftime('%Y-%m-%dT%H_%M_%S')}.html"
+    return dict(content=as_html, filename=filename)
 
 
 # === STAGE 3 ===
@@ -748,6 +793,13 @@ def register_callbacks(elements, file_storage):
         Input("z-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("download-plates-heatmap", "data"),
+        Input("heatmaps-export-btn", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_export_plots_button_click, file_storage=file_storage))
 
     callback(
         Output("dummy-upload-echo-data", "children"),

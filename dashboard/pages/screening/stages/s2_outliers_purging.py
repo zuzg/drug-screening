@@ -176,18 +176,34 @@ STATS_SECTION = html.Div(
                 ),
             ]
         ),
-        annotate_with_tooltip(
-            html.Div(
-                children=[
-                    dcc.Checklist(
-                        id="heatmap-outliers-checklist",
-                        options=["Show only with outliers"],
-                        inputClassName="me-2",
+        html.Div(
+            children=[
+                dcc.Loading(
+                    html.Button(
+                        id="heatmaps-export-btn",
+                        children=[
+                            "Export Plates Plots",
+                            dcc.Download(id="download-plates-heatmap"),
+                        ],
+                        className="btn btn-primary",
                     ),
-                ],
-            ),
-            SHOW_ONLY_WITH_OUTLIERS_DESC,
-            extra_style={"transform": "translateY(2px)"},
+                    type="circle",
+                ),
+                annotate_with_tooltip(
+                    html.Div(
+                        children=[
+                            dcc.Checklist(
+                                id="heatmap-outliers-checklist",
+                                options=["Show only with outliers"],
+                                inputClassName="me-2",
+                            ),
+                        ],
+                    ),
+                    SHOW_ONLY_WITH_OUTLIERS_DESC,
+                    extra_style={"transform": "translateY(2px)"},
+                ),
+            ],
+            className="d-flex flex-row gap-3 align-items-center",
         ),
     ],
 )

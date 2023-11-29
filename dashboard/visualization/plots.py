@@ -175,7 +175,11 @@ def make_projection_plot(
 
 
 def visualize_multiple_plates(
-    df: pd.DataFrame, plate_array: np.ndarray, rows: int = 3, cols: int = 3
+    df: pd.DataFrame,
+    plate_array: np.ndarray,
+    rows: int = 3,
+    cols: int = 3,
+    free_format: bool = False,
 ) -> go.Figure:
     """
     Visualize plate values on subplots 3x3
@@ -184,14 +188,17 @@ def visualize_multiple_plates(
     :param plate_array: array with plate values
     :param rows: number of rows in plot grid
     :param cols: number of cols in plot grid
+    :param free_format: whether to use free format for export
     :return: plot with visualized plates
     """
+    extra_args = {}
+    if not free_format:
+        extra_args = {"horizontal_spacing": 0.01, "vertical_spacing": 0.05}
     fig = make_subplots(
         rows,
         cols,
-        horizontal_spacing=0.01,
-        vertical_spacing=0.05,
         subplot_titles=df.barcode.to_list(),
+        **extra_args,
     )
     ids = product(list(range(1, rows + 1)), list(range(1, cols + 1)))
     for i, p, plate in zip(range(1, rows * cols + 1), ids, plate_array):
@@ -206,18 +213,19 @@ def visualize_multiple_plates(
             p[1],
         )
 
-        fig.update_layout(
-            {
-                f"xaxis{i}": {"fixedrange": True, "showgrid": False},
-                f"yaxis{i}": {
-                    "fixedrange": True,
-                    "showgrid": False,
-                    "scaleanchor": f"x{i}",
-                    "autorange": "reversed",
-                },
-                "autosize": True,
-            }
-        )
+        if not free_format:
+            fig.update_layout(
+                {
+                    f"xaxis{i}": {"fixedrange": True, "showgrid": False},
+                    f"yaxis{i}": {
+                        "fixedrange": True,
+                        "showgrid": False,
+                        "scaleanchor": f"x{i}",
+                        "autorange": "reversed",
+                    },
+                    "autosize": True,
+                }
+            )
 
     fig.update_layout(
         coloraxis={"colorscale": "viridis"},
