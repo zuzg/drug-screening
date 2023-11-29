@@ -22,6 +22,7 @@ from dash import (
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.combine import (
     aggregate_well_plate_stats,
     combine_bmg_echo_data,
@@ -84,6 +85,28 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
         stored_uuid,
         False,
     )
+
+
+def upload_settings_data(content: str | None, name: str | None):
+    """
+    Callback for file upload. It saves the in local storage for other components.
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successfully"
+    settings_keys = ["statistics_stage", "summary_stage"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+    return loaded_data, True, html.Span(text), color, no_update
 
 
 # === STAGE 2 ===
@@ -219,7 +242,10 @@ def on_outlier_purge_stage_entry(
 
 
 def on_plates_stats_stage_entry(
-    current_stage: int, value: float, stored_uuid: str, file_storage: FileStorage
+    current_stage: int,
+    value: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
 ) -> tuple[go.Figure, go.Figure, go.Figure, str, str]:
     """
     Callback for the stage 3 entry
@@ -267,6 +293,31 @@ def on_plates_stats_stage_entry(
         z_slider_data,
         False,
     )
+
+
+def on_plates_stats_stage_entry_load_settings(
+    current_stage: int,
+    value: float,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 3 entry
+    Change value of z-slider if json was loaded
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :param saved_data: dict with loaded data
+    :return: value for z-slider
+    """
+
+    if current_stage != 2:
+        return no_update
+
+    z_slider_value = value
+    if saved_data != None:
+        z_slider_value = saved_data["statistics_stage"]["z_slider_value"]
+
+    return z_slider_value
 
 
 def hide_heatmap_loading(trigger, children):
@@ -465,8 +516,6 @@ def on_summary_entry(
         summary_stage_datatable,
         fig_z_score,
         fig_feature,
-        -3,  # z_score_min,
-        3,  # z_score_max,
         False,  # min input disabled
         False,  # max input disabled
         feature_min,
@@ -479,6 +528,48 @@ def on_summary_entry(
         report_data,
         False,  # next button disabled
     )
+
+
+def on_summary_entry_load_settings(
+    current_stage: int,
+    z_score_min,
+    z_score_max,
+    feature_min,
+    feature_max,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 5 entry
+    Loads the data from loaded settings and change values for z-score or feature based on key
+
+    :param current_stage: current stage index of the process
+    :param z_score_min: min z-score value
+    :param z_score_max: max z-score value
+    :param feature_min: min feature value
+    :param feature_max: max feature value
+    :param saved_data: dict with loaded data
+    :return min z-score value
+    :return max z-score value
+    :return min feature value
+    :return max feature value
+    """
+
+    if current_stage != 4:
+        return no_update
+
+    z_score_min_value = z_score_min
+    z_score_max_value = z_score_max
+    feature_min_value = feature_min
+    feature_max_value = feature_max
+    if saved_data != None:
+        if saved_data["summary_stage"]["key"] == "activation":
+            feature_min_value = saved_data["summary_stage"]["key_min"]
+            feature_max_value = saved_data["summary_stage"]["key_max"]
+        elif saved_data["summary_stage"]["key"] == "z_score":
+            z_score_min_value = saved_data["summary_stage"]["key_min"]
+            z_score_max_value = saved_data["summary_stage"]["key_max"]
+
+    return z_score_min_value, z_score_max_value, feature_min_value, feature_max_value
 
 
 def on_filter_radio_or_range_update(
@@ -665,15 +756,7 @@ def on_report_generate_button_click(
     report_data_second_stage.update(report_data_third_stage)
     report_data_second_stage.update(report_data_screening_summary_plots)
     jinja_template = generate_jinja_report(report_data_second_stage)
-    return html.Div(
-        className="col",
-        children=[
-            html.H5(
-                className="text-center",
-                children=f"Report generated",
-            ),
-        ],
-    ), dict(content=jinja_template, filename=filename)
+    return dict(content=jinja_template, filename=filename)
 
 
 def on_json_generate_button_click(
@@ -703,6 +786,16 @@ def register_callbacks(elements, file_storage):
         Input("upload-bmg-data", "last_modified"),
         State("user-uuid", "data"),
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
+
+    callback(
+        Output("loaded-setings-screening", "data"),
+        Output("alert-upload-settings-screening", "is_open"),
+        Output("alert-upload-settings-screening-text", "children"),
+        Output("alert-upload-settings-screening", "color"),
+        Output("dummy-upload-settings-screening", "children"),
+        Input("upload-settings-screening", "contents"),
+        Input("upload-settings-screening", "filename"),
+    )(functools.partial(upload_settings_data))
 
     callback(
         Output("heatmap-start-index", "data"),
@@ -750,6 +843,13 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
 
     callback(
+        Output("z-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-slider", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_plates_stats_stage_entry_load_settings))
+
+    callback(
         Output("dummy-upload-echo-data", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
@@ -786,12 +886,10 @@ def register_callbacks(elements, file_storage):
         Output("compounds-data-table", "children"),
         Output("z-score-plot", "figure"),
         Output("feature-plot", "figure"),
-        Output("z-score-min-input", "value"),
-        Output("z-score-max-input", "value"),
         Output("z-score-min-input", "disabled"),
         Output("z-score-max-input", "disabled"),
-        Output("feature-min-input", "value"),
-        Output("feature-max-input", "value"),
+        Output("feature-min-input", "value", allow_duplicate=True),
+        Output("feature-max-input", "value", allow_duplicate=True),
         Output("feature-min-input", "disabled"),
         Output("feature-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
@@ -803,7 +901,22 @@ def register_callbacks(elements, file_storage):
         State("user-uuid", "data"),
         State("z-slider-value", "data"),
         State("activation-inhibition-screening-options", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_summary_entry, file_storage=file_storage))
+
+    callback(
+        Output("z-score-min-input", "value"),
+        Output("z-score-max-input", "value"),
+        Output("feature-min-input", "value"),
+        Output("feature-max-input", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-score-min-input", "value"),
+        State("z-score-max-input", "value"),
+        State("feature-min-input", "value"),
+        State("feature-max-input", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_summary_entry_load_settings))
+
     # Z-SCORE
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
@@ -845,7 +958,6 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_save_exceptions_click, file_storage=file_storage))
     callback(
-        Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
         Input("generate-report-button", "n_clicks"),
         State("report-data-second-stage", "data"),
