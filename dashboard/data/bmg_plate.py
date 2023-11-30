@@ -261,17 +261,18 @@ def get_activation_inhibition_zscore_dict(
 
 def filter_low_quality_plates(
     df: pd.DataFrame, plate_array: np.ndarray, threshold: float = 0.5
-) -> tuple[pd.DataFrame, np.ndarray]:
+) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
     """
     Remove plates with Z factor lower than threshold
 
     :param df: DataFrame with control values
     :param plate_array: array with plate values
     :param threshold: Z factor threshold value
-    :return: high quality plates
+    :return: high quality plates, low quality plates, high quality plate array
     """
     quality_mask = df.z_factor > threshold
     quality_df = df[quality_mask]
+    low_quality_df = df[~quality_mask][["barcode", "z_factor"]]
     low_quality_ids = np.where(quality_mask == False)
     quality_plates = np.delete(plate_array, low_quality_ids, axis=0)
-    return quality_df, quality_plates
+    return quality_df, low_quality_df, quality_plates

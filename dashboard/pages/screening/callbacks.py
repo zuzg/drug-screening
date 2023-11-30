@@ -266,8 +266,10 @@ def on_plates_stats_stage_entry(
     raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
     bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
 
-    filtered_df, filtered_vals = filter_low_quality_plates(bmg_df, bmg_vals, value)
-    num_removed = bmg_df.shape[0] - filtered_df.shape[0]
+    filtered_df, low_quality_df, filtered_vals = filter_low_quality_plates(
+        bmg_df, bmg_vals, value
+    )
+    num_removed = len(low_quality_df)
 
     control_values_fig = plot_control_values(filtered_df)
     row_col_fig = plot_row_col_means(filtered_vals)
@@ -447,7 +449,7 @@ def on_summary_entry(
         io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
     )["arr_0"]
 
-    filtered_df, filtered_vals = filter_low_quality_plates(
+    filtered_df, _, filtered_vals = filter_low_quality_plates(
         bmg_df, bmg_vals, z_slider["z_slider_value"]
     )
 
@@ -723,6 +725,38 @@ def on_save_results_click(
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
+def on_save_low_quality_plates_click(
+    n_clicks: int,
+    stored_uuid: str,
+    z_slider: float,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save exceptions button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+    z_slider = z_slider["z_slider_value"]
+    filename = f"screening_low_quality_plates_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    raw_bmg = file_storage.read_file(f"{stored_uuid}_bmg_df.pq")
+    bmg_df = pd.read_parquet(pa.BufferReader(raw_bmg))
+    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
+    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
+
+    _, low_quality_df, _ = filter_low_quality_plates(bmg_df, bmg_vals, z_slider)
+    low_quality_df = low_quality_df.rename(
+        columns={
+            "barcode": "Plate Barcode",
+            "z_factor": f"Z factor value (lower bound: {z_slider})",
+        }
+    )
+
+    return dcc.send_data_frame(low_quality_df.to_csv, filename)
+
+
 def on_save_exceptions_click(
     n_clicks: int,
     stored_uuid: str,
@@ -951,6 +985,13 @@ def register_callbacks(elements, file_storage):
         State("report-data-csv", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
+    callback(
+        Output("download-low-quality-plates-csv", "data"),
+        Input("save-low-quality-plates-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("z-slider-value", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_low_quality_plates_click, file_storage=file_storage))
     callback(
         Output("download-exceptions-csv", "data"),
         Input("save-exceptions-button", "n_clicks"),
