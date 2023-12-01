@@ -1,6 +1,8 @@
 from dash import html, dcc
 
 from dashboard.pages.components import annotate_with_tooltip
+from dashboard.visualization.text_tables import make_download_button_text
+
 
 CONCENTRATION_SLIDER_DESC = """
 Choose the concentration to be used for the final compound concentration calculation that will be
@@ -89,6 +91,19 @@ GRAPHS = html.Div(
                                     ],
                                     className="flex-grow-1",
                                 ),
+                            ],
+                        ),
+                        html.Div(
+                            className="d-flex justify-content-center",
+                            children=[
+                                html.Button(
+                                    make_download_button_text(
+                                        "Save filtered dataframe"
+                                    ),
+                                    className="btn btn-primary btn-lg btn-block btn-report",
+                                    id="save-filtered-button",
+                                ),
+                                dcc.Download(id="download-filtered-csv"),
                             ],
                         ),
                     ],

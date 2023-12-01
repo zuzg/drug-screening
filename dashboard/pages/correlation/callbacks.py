@@ -8,7 +8,7 @@ from typing import Tuple
 
 import pandas as pd
 import pyarrow as pa
-from dash import Input, Output, State, callback, html, no_update
+from dash import Input, Output, State, callback, dcc, html, no_update
 from plotly import graph_objects as go
 
 from dashboard.data import validation
@@ -165,16 +165,19 @@ def on_visualization_stage_entry(
     df_secondary = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(saved_name_2))
     )
-    df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
+    df_merged = pd.merge(
+        df_primary, df_secondary, on="EOS", how="inner", suffixes=["_0", "_1"]
+    )
+    df_merged.drop(["Unnamed: 0_0", "Unnamed: 0_1"], axis=1, inplace=True)
     df = calculate_concentration(df_merged, concentration_value, volume_value)
-    file_storage.save_file(f"{stored_uuid}_correlation_df", df.to_parquet())
+    file_storage.save_file(f"{stored_uuid}_correlation_df.pq", df.to_parquet())
 
-    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
 
     concentration_fig = concentration_plot(df, feature[2:])
     feature_fig = concentration_confirmatory_plot(
-        df[f"{feature}_x"],
-        df[f"{feature}_y"],
+        df[f"{feature}_0"],
+        df[f"{feature}_1"],
         df["Concentration"],
         f"{feature[2:]}",
     )
@@ -205,9 +208,9 @@ def on_threshold_change(
     :param file_storage: file storage
     :return: figures
     """
-    saved_name = f"{stored_uuid}_correlation_df"
+    saved_name = f"{stored_uuid}_correlation_df.pq"
     df = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name)))
-    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
 
     new_fig = concentration_plot(
         df,
@@ -215,11 +218,36 @@ def on_threshold_change(
         threshold_1,
         threshold_2,
     )
+
+    df["is_above_threshold_one"] = False
+    df.loc[df[f"{feature}_0"] > threshold_1, "is_above_threshold_one"] = True
+    df["is_above_threshold_two"] = False
+    df.loc[df[f"{feature}_0"] > threshold_2, "is_above_threshold_two"] = True
+
+    file_storage.save_file(f"{stored_uuid}_filtered_correlation_df.pq", df.to_parquet())
     return new_fig
 
 
-def on_save_filtering_clicked():
-    pass
+def on_save_filtering_clicked(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save filtered button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+    filename = f"correlation_threshold_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    correlation_df = pd.read_parquet(
+        pa.BufferReader(
+            file_storage.read_file(f"{stored_uuid}_filtered_correlation_df.pq")
+        ),
+    )
+    return dcc.send_data_frame(correlation_df.to_csv, filename)
 
 
 def on_visualization_stage_entry_load_settings(
@@ -346,6 +374,13 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_threshold_change, file_storage=file_storage))
+
+    callback(
+        Output("download-filtered-csv", "data"),
+        Input("save-filtered-button", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_filtering_clicked, file_storage=file_storage))
 
     callback(
         Output("concentration-slider", "value"),

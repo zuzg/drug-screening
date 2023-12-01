@@ -610,7 +610,7 @@ def concentration_plot(
     """
     fig = go.Figure()
     # NOTE: to clarify
-    value_by_conc = df.pivot_table(f"% {reaction_type}_x", "EOS", "Concentration")
+    value_by_conc = df.pivot_table(f"% {reaction_type}_0", "EOS", "Concentration")
     for _, row in value_by_conc.iterrows():
         fig.add_trace(
             go.Scatter(
