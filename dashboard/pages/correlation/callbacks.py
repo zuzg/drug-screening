@@ -4,13 +4,12 @@ import io
 import json
 import uuid
 from datetime import datetime
+from typing import Tuple
 
 import pandas as pd
 import pyarrow as pa
 from dash import Input, Output, State, callback, html, no_update
-from plotly import express as px
 from plotly import graph_objects as go
-import dash_bootstrap_components as dbc
 
 from dashboard.data import validation
 from dashboard.data.json_reader import load_data_from_json
@@ -42,7 +41,7 @@ SUFFIX_CORR_FILE2 = "corr_file2"
 
 def on_file_upload(
     content: str | None, stored_uuid: str, file_storage: FileStorage, store_suffix: str
-) -> tuple[html.I, str]:
+) -> Tuple[html.I, str]:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
@@ -142,11 +141,9 @@ def on_visualization_stage_entry(
     current_stage: int,
     concentration_value: int,
     volume_value: int,
-    activity_threshold_bottom: float,
-    activity_threshold_top: float,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[go.Figure, go.Figure]:
+) -> Tuple[go.Figure, go.Figure]:
     """
     Callback for visualization stage entry. It loads the data from the storage and
     returns the figures.
@@ -154,7 +151,6 @@ def on_visualization_stage_entry(
     :param current_stage: current stage number
     :param concentration_value: concentration
     :param volume_value: summary assay volume
-    :param activity_threshold: threshold for the second plot
     :param stored_uuid: session uuid
     :param file_storage: file storage
     :return: figures
@@ -171,17 +167,11 @@ def on_visualization_stage_entry(
     )
     df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
     df = calculate_concentration(df_merged, concentration_value, volume_value)
+    file_storage.save_file(f"{stored_uuid}_correlation_df", df.to_parquet())
 
     feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
-    concentration_fig = concentration_plot(
-        df[
-            df[f"{feature}_x"].between(
-                activity_threshold_bottom, activity_threshold_top
-            )
-        ],
-        feature[2:],
-    )
 
+    concentration_fig = concentration_plot(df, feature[2:])
     feature_fig = concentration_confirmatory_plot(
         df[f"{feature}_x"],
         df[f"{feature}_y"],
@@ -197,8 +187,39 @@ def on_visualization_stage_entry(
             full_html=False, include_plotlyjs="cdn"
         ),
     }
-
     return feature_fig, concentration_fig, report_data_correlation_plots, False
+
+
+def on_threshold_change(
+    threshold_1: float,
+    threshold_2: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
+):
+    """
+    Callback for threshold update, updates the plot
+
+    :param threshold_1: first threshold
+    :param threshold_2: second threshold
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figures
+    """
+    saved_name = f"{stored_uuid}_correlation_df"
+    df = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name)))
+    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+
+    new_fig = concentration_plot(
+        df,
+        feature[2:],
+        threshold_1,
+        threshold_2,
+    )
+    return new_fig
+
+
+def on_save_filtering_clicked():
+    pass
 
 
 def on_visualization_stage_entry_load_settings(
@@ -206,7 +227,7 @@ def on_visualization_stage_entry_load_settings(
     concentration: float,
     volume: float,
     saved_data: dict,
-) -> tuple[float, float]:
+) -> Tuple[float, float]:
     """
     Callback for visualization stage entry.
     Loads the data from local storage and update sliders value
@@ -308,17 +329,23 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(upload_settings_data))
 
     callback(
-        Output("inhibition-graph", "figure"),
+        Output("feature-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
         Output({"type": elements["BLOCKER"], "index": 1}, "data"),
         Input(elements["STAGES_STORE"], "data"),
         Input("concentration-slider", "value"),
         Input("volume-slider", "value"),
+        State("user-uuid", "data"),
+    )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("concentration-graph", "figure", allow_duplicate=True),
         Input("activity-threshold-bottom-input", "value"),
         Input("activity-threshold-top-input", "value"),
         State("user-uuid", "data"),
-    )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+        prevent_initial_call=True,
+    )(functools.partial(on_threshold_change, file_storage=file_storage))
 
     callback(
         Output("concentration-slider", "value"),

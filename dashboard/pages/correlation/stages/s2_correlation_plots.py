@@ -20,10 +20,10 @@ GRAPHS = html.Div(
             className="col",
             children=[
                 dcc.Loading(
-                    id="loading-inhibition-graph",
+                    id="loading-feature-graph",
                     children=[
                         dcc.Graph(
-                            id="inhibition-graph",
+                            id="feature-graph",
                             className="six columns",
                             style={"width": "100%"},
                         )
@@ -55,13 +55,13 @@ GRAPHS = html.Div(
                                 html.Span(
                                     children=[
                                         html.Label(
-                                            children="Set act/inh bottom threshold",
+                                            children="Set the first threshold",
                                             className="form-label",
                                         ),
                                         dcc.Input(
                                             id="activity-threshold-bottom-input",
                                             type="number",
-                                            value=-10,
+                                            value=0,
                                             min=-50,
                                             className="form-control",
                                         ),
@@ -76,7 +76,7 @@ GRAPHS = html.Div(
                                 html.Span(
                                     children=[
                                         html.Label(
-                                            children="Set act/inh upper threshold",
+                                            children="Set the second threshold",
                                             className="form-label",
                                         ),
                                         dcc.Input(
