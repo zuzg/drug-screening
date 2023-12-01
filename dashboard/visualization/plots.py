@@ -191,9 +191,12 @@ def visualize_multiple_plates(
     :param free_format: whether to use free format for export
     :return: plot with visualized plates
     """
-    extra_args = {}
+    extra_args = {
+        "horizontal_spacing": 0.01,
+        "vertical_spacing": 0.02,
+    }
     if not free_format:
-        extra_args = {"horizontal_spacing": 0.01, "vertical_spacing": 0.05}
+        extra_args["vertical_spacing"] = 0.05
     fig = make_subplots(
         rows,
         cols,

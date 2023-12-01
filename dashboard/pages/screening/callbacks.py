@@ -253,7 +253,11 @@ def on_export_plots_button_click(
         bmg_df, bmg_vals, n_rows, HEATMAP_PLOT_REPORT_COLS, free_format=True
     )
     fig.update_layout(
-        height=n_rows * HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW, coloraxis_showscale=False
+        height=n_rows * HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW,
+        coloraxis_showscale=False,
+    )
+    fig.update_annotations(
+        font_size=16,
     )
     as_html = fig.to_html()
     filename = f"screening_heatmaps_{datetime.now().strftime('%Y-%m-%dT%H_%M_%S')}.html"
