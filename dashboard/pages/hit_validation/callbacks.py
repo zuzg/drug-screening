@@ -32,6 +32,8 @@ from dashboard.pages.hit_validation.report.generate_report import (
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import plot_ic50, plot_smiles
 
+from dashboard.data.json_reader import load_data_from_json
+
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
 
@@ -177,6 +179,68 @@ FAIL_BOUNDS_ELEMENT = html.Div(
 )
 
 
+def upload_settings_data(
+    content: str | None,
+    name: str | None,
+    concentration_lower_bound: float,
+    concentration_upper_bound: float,
+    top_lower_bound: float,
+    top_upper_bound: float,
+) -> tuple[float, float, float, float]:
+    """
+    Callback for file upload. It update concentration lower bound,
+    concentration upper bound, top lower bound, top upper bound
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :param concentration_lower_bound: concentration lower bound
+    :param concentration_upper_bound: concentration upper bound
+    :param top_lower_bound: top lower bound
+    :param top_upper_bound: top upper bound
+    :return: concentration lower bound
+    :return: concentration upper bound
+    :return: top lower bound
+    :return: top_upper_bound
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    settings_keys = [
+        "concentration_lower_bound",
+        "concentration_upper_bound",
+        "top_lower_bound",
+        "top_upper_bound",
+    ]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        concentration_lower_bound_value = concentration_lower_bound
+        concentration_upper_bound_value = concentration_upper_bound
+        top_lower_bound_value = top_lower_bound
+        top_upper_bound_value = top_upper_bound
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+
+    else:
+        concentration_lower_bound_value = loaded_data["concentration_lower_bound"]
+        concentration_upper_bound_value = loaded_data["concentration_upper_bound"]
+        top_lower_bound_value = loaded_data["top_lower_bound"]
+        top_upper_bound_value = loaded_data["top_upper_bound"]
+        color = "success"
+        text = "Settings uploaded successfully"
+
+    return (
+        concentration_lower_bound_value,
+        concentration_upper_bound_value,
+        top_lower_bound_value,
+        top_upper_bound_value,
+        True,
+        html.Span(text),
+        color,
+        no_update,
+    )
+
+
 def on_bounds_change(
     lower_bound: float, upper_bound: float
 ) -> tuple[float, float, html.Div]:
@@ -315,19 +379,18 @@ def on_selected_compound_changed(
     smiles_graph = plot_smiles(smiles)
     smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
 
-    if type(concentration_50) == complex:
-        concentration_50 = "Not found"
-    else:
-        concentration_50 = f"{round(concentration_50, 5)} µM"
+    text_concentration_50 = "NaN"
+    if type(concentration_50) != complex:
+        text_concentration_50 = f"{concentration_50:,.5f}"
 
     result = {
-        "min_modulation": round(entry["min_value"], 5),
-        "max_modulation": round(entry["max_value"], 5),
-        "ic50": round(entry["ic50"], 5),
-        "modulation_ic50": round(modulation_ic50, 5),
-        "concentration_50": concentration_50,
-        "curve_slope": round(entry["slope"], 5),
-        "r2": round(entry["r2"] * 100, 5),
+        "min_modulation": f"{entry['min_value']:,.5f}",
+        "max_modulation": f"{entry['max_value']:,.5f}",
+        "ic50": f"{entry['ic50']:,.5f}",
+        "modulation_ic50": f"{modulation_ic50:,.5f}",
+        "concentration_50": text_concentration_50,
+        "curve_slope": f"{entry['slope']:,.5f}",
+        "r2": f"{entry['r2'] * 100:,.5f}",
         "is_active": html.Span(
             children=[
                 activity_icons[entry["activity_final"]],
@@ -347,7 +410,7 @@ def on_selected_compound_changed(
         "top": round(entry["TOP"], 5),
         "bottom": round(entry["BOTTOM"], 5),
         "smiles": smiles_html,
-        "toxicity": round(float(toxicity), 5),
+        "toxicity": f"{float(toxicity):,.5f}",
     }
 
     report_data = result.copy()
@@ -451,6 +514,24 @@ def register_callbacks(elements, file_storage: FileStorage):
         State("top-upper-bound-store", "data"),
         prevent_initial_call="initial_duplicate",
     )(functools.partial(on_file_upload, file_storage=file_storage))
+
+    callback(
+        Output("concentration-lower-bound-input", "value"),
+        Output("concentration-upper-bound-input", "value"),
+        Output("top-lower-bound-input", "value"),
+        Output("top-upper-bound-input", "value"),
+        Output("alert-upload-settings-hit-validation", "is_open"),
+        Output("alert-upload-settings-hit-validation-text", "children"),
+        Output("alert-upload-settings-hit-validation", "color"),
+        Output("dummy-upload-settings-hit-validation", "children"),
+        Input("upload-settings-hit-validation", "contents"),
+        Input("upload-settings-hit-validation", "filename"),
+        State("concentration-lower-bound-input", "value"),
+        State("concentration-upper-bound-input", "value"),
+        State("top-lower-bound-input", "value"),
+        State("top-upper-bound-input", "value"),
+        prevent_initial_call=True,
+    )(functools.partial(upload_settings_data))
 
     callback(
         Output("concentration-lower-bound-store", "data"),

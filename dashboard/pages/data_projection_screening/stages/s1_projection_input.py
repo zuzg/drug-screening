@@ -1,8 +1,8 @@
 from dash import dcc, html
 
 PROJECTION_DESC = """
-Upload the screening data file from the screening process for data projection.
-Uploading the file will start the process of caltulating and visualizing projections that can be seved as a report.
+Upload at least 3 result files from the screening process for data projection.
+Facilitates  projection of the data to a 2D/3D space and visualization of the results.
 """
 
 FILE_INPUT_CONTAINER = html.Div(

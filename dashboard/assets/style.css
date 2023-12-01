@@ -89,6 +89,12 @@
     column-gap: 2rem;
 }
 
+.grid-1-1-projections {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    justify-content: center;
+    width: 50%;
+  }
 
 .upload-box {
     width: 100%;
@@ -110,17 +116,32 @@
 }
 
 .controls {
-    padding: 1rem;
+    padding: 0.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-direction: row;
     width: 100%;
+    position: relative;
+}
+
+.controls__wrapper {
+    flex-grow: 1;
+}
+
+.controls__title {
+    font-size: 1.25rem;
+    text-align: center;
+    margin: auto;
+    padding-top: 0.5rem;
+    letter-spacing: .15ch;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .controls__content {
     position: relative;
-    margin: 3rem 7rem 2rem 5rem;
+    margin: 1.5rem 7rem 3.5rem 5rem;
     display: flex;
     justify-content: space-evenly;
     flex-grow: 1;
@@ -171,11 +192,17 @@
 .controls__point__label {
     position: absolute;
     left: 0.7rem;
-    top: -2.75rem;
-    font-weight: 700;
+    top: 1rem;
+    /* font-weight: 700; */
+    transition: all 0.2s ease-in-out;
     font-size: 0.9rem;
     width: 120px;
-    transform: rotate(-20deg);
+    transform: rotate(15deg);
+}
+
+.controls__point--active .controls__point__label {
+    font-weight: 700;
+
 }
 
 .btn--round {
@@ -200,6 +227,21 @@
 .panel-restricted {
     max-height: calc(100vh - 400px);
     overflow-y: auto;
+}
+
+
+.tooltip-holder {
+    height: 16px;
+    width: 16px;
+    border-radius: 100%;
+    margin: -10px;
+    background-color: white;
+}
+
+.tooltip-icon {
+    cursor: pointer;
+    font-size: 0.9rem;
+    transform: translate(0.4px, 8px);
 }
 
 #select-file {
@@ -240,5 +282,10 @@
 @media (max-width: 600px) {
     main.grid-1-1-1-1 {
         grid-template-columns: repeat(1, 1fr);
+    }
+
+    main.grid-1-1-projections {
+        grid-template-columns: repeat(1, 1fr);
+        width: 100%;
     }
 }

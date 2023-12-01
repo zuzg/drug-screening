@@ -10,8 +10,10 @@ import pyarrow as pa
 from dash import Input, Output, State, callback, html, no_update
 from plotly import express as px
 from plotly import graph_objects as go
+import dash_bootstrap_components as dbc
 
 from dashboard.data import validation
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.preprocess import calculate_concentration
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
@@ -111,6 +113,28 @@ def on_both_files_uploaded(
     return ICON_OK, False
 
 
+def upload_settings_data(content: str | None, name: str | None) -> dict:
+    """
+    Callback for file upload. It saves the in local storage for other components.
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successfully"
+    settings_keys = ["concentration_value", "volume_value"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+    return loaded_data, True, html.Span(text), color, no_update
+
+
 # === STAGE 2 ===
 
 
@@ -177,6 +201,35 @@ def on_visualization_stage_entry(
     return feature_fig, concentration_fig, report_data_correlation_plots, False
 
 
+def on_visualization_stage_entry_load_settings(
+    current_stage: int,
+    concentration: float,
+    volume: float,
+    saved_data: dict,
+) -> tuple[float, float]:
+    """
+    Callback for visualization stage entry.
+    Loads the data from local storage and update sliders value
+
+    :param current_stage: current stage index of the process
+    :param concentration: concentration slider value
+    :param volume: volume slider value
+    :return: value for concentration slider
+    :return: value for volume slider
+    """
+
+    if current_stage != 1:
+        return no_update
+
+    concentration_value = concentration
+    volume_value = volume
+    if saved_data != None:
+        concentration_value = saved_data["concentration_value"]
+        volume_value = saved_data["volume_value"]
+
+    return concentration_value, volume_value
+
+
 # === STAGE 3 ===
 
 
@@ -187,7 +240,11 @@ def on_json_generate_button_click(
     filename = (
         f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     )
-    json_object = json.dumps(correlation_plots_report, indent=4)
+    data_to_save = {
+        "concentration_value": correlation_plots_report["concentration_value"],
+        "volume_value": correlation_plots_report["volume_value"],
+    }
+    json_object = json.dumps(data_to_save, indent=4)
     return dict(content=json_object, filename=filename)
 
 
@@ -240,6 +297,17 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_both_files_uploaded, file_storage=file_storage))
 
     callback(
+        Output("loaded-setings-correlation", "data"),
+        Output("alert-upload-settings-correlation", "is_open"),
+        Output("alert-upload-settings-correlation-text", "children"),
+        Output("alert-upload-settings-correlation", "color"),
+        Output("dummy-upload-settings-correlation", "children"),
+        Input("upload-settings-correlation", "contents"),
+        Input("upload-settings-correlation", "filename"),
+        prevent_initial_call=True,
+    )(functools.partial(upload_settings_data))
+
+    callback(
         Output("inhibition-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
@@ -251,6 +319,16 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("activity-threshold-top-input", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("concentration-slider", "value"),
+        Output("volume-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("concentration-slider", "value"),
+        State("volume-slider", "value"),
+        State("loaded-setings-correlation", "data"),
+    )(functools.partial(on_visualization_stage_entry_load_settings))
+
     callback(
         Output("download-json-settings-correlation", "data"),
         Input("generate-json-button", "n_clicks"),

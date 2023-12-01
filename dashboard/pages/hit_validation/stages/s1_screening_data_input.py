@@ -1,9 +1,25 @@
 from dash import dcc, html
 
+import dash_bootstrap_components as dbc
+from dashboard.pages.components import annotate_with_tooltip
+
+ACTIVY_DETERMINATION_PARAMS_DESC = """
+Specify parameters used for activity classification.
+Concentration bounds are used to determine the allowable range of concentrations for IC50.
+Top bounds are used to determine the allowable range of TOP value of the fitted curve.
+"""
+
 PARAMS_CONTAINER = html.Div(
     children=[
         html.H5(
-            children="Activity Determination Parameters",
+            children=annotate_with_tooltip(
+                html.Span(
+                    "Activity Determination Parameters",
+                    className="pe-2",
+                ),
+                ACTIVY_DETERMINATION_PARAMS_DESC,
+                extra_style={"transform": "translateY(10px)"},
+            )
         ),
         html.Div(
             children=[
@@ -109,29 +125,66 @@ FILE_INPUT_CONTAINER = html.Div(
                         ),
                     ],
                 ),
-                dcc.Loading(
+                html.Div(
                     children=[
-                        html.Div(
+                        dcc.Loading(
+                            children=[
+                                html.Div(
+                                    children=[
+                                        dcc.Upload(
+                                            id="upload-screening-data",
+                                            accept=".csv",
+                                            children=html.Div(
+                                                [
+                                                    "Drag and Drop or ",
+                                                    html.A(
+                                                        "Select",
+                                                        className="select-file",
+                                                    ),
+                                                    " Hit Validation input file",
+                                                ]
+                                            ),
+                                            multiple=False,
+                                            className="text-center",
+                                        ),
+                                        html.Div(id="dummy-upload-screening-data"),
+                                    ],
+                                    className="upload-box m-1",
+                                ),
+                            ],
+                            type="circle",
+                        ),
+                        dcc.Loading(
                             children=[
                                 dcc.Upload(
-                                    id="upload-screening-data",
-                                    accept=".csv",
+                                    id="upload-settings-hit-validation",
+                                    accept=".json",
                                     children=html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " Hit Validation input file",
+                                            " Settings for hit validation",
                                         ]
                                     ),
                                     multiple=False,
-                                    className="text-center",
+                                    className="text-center upload-box m-1",
                                 ),
-                                html.Div(id="dummy-upload-screening-data"),
+                                html.Div(
+                                    id="dummy-upload-settings-hit-validation",
+                                    className="p-1",
+                                ),
                             ],
-                            className="upload-box",
+                            type="circle",
+                        ),
+                        dbc.Alert(
+                            html.Div(id="alert-upload-settings-hit-validation-text"),
+                            id="alert-upload-settings-hit-validation",
+                            dismissable=True,
+                            is_open=False,
+                            duration=4000,
+                            className="m-1",
                         ),
                     ],
-                    type="circle",
                 ),
             ],
             className="grid-1-1",

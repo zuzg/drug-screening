@@ -1,27 +1,43 @@
-from dash import register_page, html, dcc
+from dash import html, register_page
 
-from dashboard.pages.builders import ProcessPageBuilder
-from dashboard.pages.data_projection.stages import STAGES
-from dashboard.pages.data_projection.callbacks import register_callbacks
-from dashboard.storage.local import LocalFileStorage
+from dashboard.pages.builders import PageBuilder
+from dashboard.pages.components import make_card_component
 
-
-NAME = "Data Projection"
+NAME = "Data Projections"
 register_page(path="/data-projection", name=NAME, module=__name__)
 
-pb = ProcessPageBuilder(name=NAME)
-STAGE_NAMES = [
-    "Files Input",
-    "Visualization",
-    "Save Results",
-    "SMILES Input",
-    "Similarity",
+CARDS_DATA = [
+    {
+        "title": "Screening Data Projections",
+        "description": [
+            "Preview data projections for the same set of compounds tested in different experiments.",
+            html.Br(),
+            html.Br(),
+            "Requires a set of csv files (screening process outputs) with overlapping set of compounds.",
+        ],
+        "icon": "fa-vial-circle-check",
+        "link": "/data-projection-screening",
+    },
+    {
+        "title": "SMILES Data Projections",
+        "description": [
+            "Examine structural similarity between compounds tested in an experiment and new SMILES.",
+            html.Br(),
+            html.Br(),
+            "Requires results from Hit Validation along with a file with not tested SMILES.",
+        ],
+        "icon": "fa-atom",
+        "link": "/data-projection-smiles",
+    },
 ]
 
-pb.add_stages(STAGES, STAGE_NAMES)
+children = [make_card_component(**card_data) for card_data in CARDS_DATA]
 
+pb = PageBuilder(name=NAME)
+pb.extend_layout(
+    layout=html.Main(
+        className="h-100 flex-grow-1 grid-1-1-projections gap-3 mx-auto my-5 container-xxl",
+        children=children,
+    )
+)
 layout = pb.build()
-
-file_storage = LocalFileStorage()
-
-register_callbacks(pb.elements, file_storage)

@@ -2,6 +2,7 @@ tmp/
 **/out/
 
 # Data
+./data
 data/raw/*
 !data/raw/.gitkeep
 notebooks/data
@@ -15,3 +16,6 @@ notebooks/data
 __pycache__/
 *$py.class
 .venv/
+.env
+
+.neptune
