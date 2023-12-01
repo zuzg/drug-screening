@@ -131,7 +131,19 @@ STATS_SECTION = html.Div(
     className="d-flex flex-row justify-content-between align-items-center",
     children=[
         html.Div(
+            className="d-flex flex-row gap-3 align-items-center",
             children=[
+                dcc.Loading(
+                    html.Button(
+                        id="heatmaps-export-btn",
+                        children=[
+                            "Export Plates Plots",
+                            dcc.Download(id="download-plates-heatmap"),
+                        ],
+                        className="btn btn-primary",
+                    ),
+                    type="circle",
+                ),
                 html.Span(
                     className="mx-2",
                     children=[
@@ -174,7 +186,7 @@ STATS_SECTION = html.Div(
                         ),
                     ],
                 ),
-            ]
+            ],
         ),
         annotate_with_tooltip(
             html.Div(
