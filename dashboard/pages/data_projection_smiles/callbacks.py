@@ -23,7 +23,7 @@ from dashboard.visualization.plots import (
     plot_clustered_smiles,
     plot_projection_2d,
 )
-from dashboard.visualization.text_tables import pca_smiles_summary, table_from_df
+from dashboard.visualization.text_tables import table_from_df
 
 
 def on_3d_checkbox_change(plot_3d: List[str]) -> bool:

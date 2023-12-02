@@ -217,29 +217,3 @@ def pca_summary(pca: PCA, activation_columns: list[str]) -> html.Details:
     )
 
     return projection_info
-
-
-def pca_smiles_summary() -> html.Details:
-    projection_smiles_info_text = """To calculate the projections, Extended-Connectivity Fingerprints (ECFP) were used.
-    Fingerprints were calculated using RDKit method """
-
-    text_with_hyperlink = html.Span(
-        [
-            projection_smiles_info_text,
-            html.A(
-                "GetMorganFingerprintAsBitVect",
-                href="https://www.herongyang.com/Cheminformatics/Fingerprint-RDKit-Morgan-GetMorganFingerprintAsBitVect.html",
-                target="_blank",
-            ),
-        ]
-    )
-
-    projection_smiles_info = html.Details(
-        [
-            html.Summary(html.Strong("ADDITIONAL PROJECTION INFORMATION")),
-            html.Ul(
-                text_with_hyperlink,
-            ),
-        ]
-    )
-    return projection_smiles_info
