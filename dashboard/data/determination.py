@@ -38,7 +38,13 @@ def find_argument_four_param_logistic(
     return x
 
 
-def calculate_modulation_ic50_and_concentration_50(row):
+def calculate_modulation_ic50_and_concentration_50(row: pd.Series) -> pd.Series:
+    """
+    Calculates modulation_ic50 and concentration_50 (concentration for modulation = 50) for given row.
+
+    :param row: row of the dataframe
+    :return: row with calculated modulation_ic50 and concentration_50
+    """
     modulation_ic50 = four_param_logistic(
         row["ic50"], row["BOTTOM"], row["TOP"], row["ic50"], row["slope"]
     )
@@ -157,11 +163,11 @@ def process_activation_df(
     )
 
     cols = activation_df.columns.to_list()
-    modulation_concentraion = ["modulation_ic50", "concentration_50"]
+    modulation_concentration = ["modulation_ic50", "concentration_50"]
     pos = cols.index("slope")
-    column_order = cols[:pos] + modulation_concentraion + cols[pos:]
+    column_order = cols[:pos] + modulation_concentration + cols[pos:]
 
-    activation_df[modulation_concentraion] = activation_df.apply(
+    activation_df[modulation_concentration] = activation_df.apply(
         lambda row: calculate_modulation_ic50_and_concentration_50(row), axis=1
     )
 

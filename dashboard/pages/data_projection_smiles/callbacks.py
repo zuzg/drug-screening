@@ -144,9 +144,8 @@ def on_plot_smiles(
         ["EOS", "activity_final", "cluster_PCA", "cluster_UMAP", "cluster_UMAP3D"]
     ]
     table = table_from_df(projections_df, "projection-table")
-    pca_summary = pca_smiles_summary()
 
-    return fig, table, pca_summary
+    return fig, table
 
 
 def on_smiles_dropdown_checkbox_change(
@@ -222,7 +221,6 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("smiles-projection-plot", "figure", allow_duplicate=True),
         Output("smiles-projection-table", "children"),
-        Output("pca-smiles-info", "children"),
         Input(elements["STAGES_STORE"], "data"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
