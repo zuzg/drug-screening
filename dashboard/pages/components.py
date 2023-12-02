@@ -216,7 +216,7 @@ def make_file_list_component(
                                 className="col",
                                 children=html.Ul(
                                     children=[
-                                        html.Li(name.split(".")[0])
+                                        html.Li(name)
                                         for name in successfull_filenames[i::num_cols]
                                     ]
                                 ),
@@ -242,7 +242,7 @@ def make_file_list_component(
                                 className="col",
                                 children=html.Ul(
                                     children=[
-                                        html.Li(name.split(".")[0])
+                                        html.Li(name)
                                         for name in failed_filenames[i::num_cols]
                                     ]
                                 ),
