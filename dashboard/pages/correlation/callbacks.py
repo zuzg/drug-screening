@@ -56,7 +56,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update
+        return no_update
 
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
@@ -72,7 +72,7 @@ def on_file_upload(
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, no_update, stored_uuid
+    return ICON_OK, html.Div("Files uploaded."), no_update, stored_uuid
 
 
 def on_both_files_uploaded(
@@ -132,7 +132,14 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
         text = (
             f"Invalid settings uploaded: the file should contain {settings_keys} keys."
         )
-    return loaded_data, True, html.Span(text), color, no_update
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        html.Div("Files uploaded."),
+        no_update,
+    )
 
 
 # === STAGE 2 ===
@@ -254,6 +261,7 @@ def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("upload-file-1", "children"),
         Output("dummy-upload-file-1", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
@@ -267,6 +275,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("upload-file-2", "children"),
         Output("dummy-upload-file-2", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
@@ -291,6 +300,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("alert-upload-settings-correlation", "is_open"),
         Output("alert-upload-settings-correlation-text", "children"),
         Output("alert-upload-settings-correlation", "color"),
+        Output("upload-settings-correlation", "children"),
         Output("dummy-upload-settings-correlation", "children"),
         Input("upload-settings-correlation", "contents"),
         Input("upload-settings-correlation", "filename"),

@@ -163,7 +163,7 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, None, stored_uuid, False
+    return result_msg, None, html.Div("Files uploaded."), stored_uuid, False
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -237,6 +237,7 @@ def upload_settings_data(
         True,
         html.Span(text),
         color,
+        html.Div("Files uploaded."),
         no_update,
     )
 
@@ -504,6 +505,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
         Output("dummy-upload-screening-data", "children"),
+        Output("upload-screening-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-screening-data", "contents"),
@@ -523,6 +525,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("alert-upload-settings-hit-validation", "is_open"),
         Output("alert-upload-settings-hit-validation-text", "children"),
         Output("alert-upload-settings-hit-validation", "color"),
+        Output("upload-settings-hit-validation", "children"),
         Output("dummy-upload-settings-hit-validation", "children"),
         Input("upload-settings-hit-validation", "contents"),
         Input("upload-settings-hit-validation", "filename"),

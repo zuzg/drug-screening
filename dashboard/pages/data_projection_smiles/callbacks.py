@@ -79,7 +79,11 @@ def on_hit_validation_upload(
     activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
     activity_df = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_activity_df.pq", activity_df.to_parquet())
-    return stored_uuid, None  # dummy activity upload return
+    return (
+        html.Div("Files uploaded."),
+        stored_uuid,
+        None,
+    )  # dummy activity upload return
 
 
 def on_smiles_files_upload(
@@ -129,6 +133,7 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
+        html.Div("Files uploaded."),
         False,  # next stage button disabled status
         stored_uuid,
         None,  # dummy smiles upload return
@@ -220,6 +225,7 @@ def on_smiles_download_selection_button_click(
 
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
+        Output("upload-activity-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-activity-data", "children"),
         Input("upload-activity-data", "contents"),
@@ -228,6 +234,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_hit_validation_upload, file_storage=file_storage))
     callback(
         Output("smiles-file-message", "children"),
+        Output("upload-smiles-data", "children"),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-smiles-data", "children"),

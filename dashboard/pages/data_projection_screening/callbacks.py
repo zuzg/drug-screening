@@ -99,6 +99,7 @@ def on_projection_files_upload(
                 make_file_list_component(filenames, [], 1),
             ],
         ),
+        html.Div("Files uploaded."),
         stored_uuid,
         no_update,
         False,
@@ -322,6 +323,7 @@ def on_save_projections_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
+        Output("upload-projection-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-projection-data", "children"),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
