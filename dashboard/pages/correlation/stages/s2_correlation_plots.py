@@ -93,9 +93,8 @@ GRAPHS = html.Div(
                                 ),
                             ],
                         ),
-                        html.Hr(),
                         html.Div(
-                            className="d-flex justify-content-center",
+                            className="mt-3 mb-1 d-flex justify-content-center",
                             children=[
                                 html.Button(
                                     make_download_button_text(
