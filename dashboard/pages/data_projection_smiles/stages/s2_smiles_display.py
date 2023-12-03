@@ -2,6 +2,19 @@ from dash import dcc, html
 
 from dashboard.pages.components import annotate_with_tooltip
 
+PROJECTION_SMILES_INFO_TEXT = html.Span(
+    [
+        """To calculate the projections, Extended-Connectivity Fingerprints (ECFP) were used.
+Fingerprints were calculated using RDKit method """,
+        html.A(
+            "GetMorganFingerprintAsBitVect",
+            href="https://www.herongyang.com/Cheminformatics/Fingerprint-RDKit-Morgan-GetMorganFingerprintAsBitVect.html",
+            target="_blank",
+        ),
+    ]
+)
+
+
 DOWNLOAD_SELECTION_BUTTON_DESC = """
 Download the data of the compounds that are currently selected on the plot using
 box or lasso selection to a csv file containing projection values and compound data.
@@ -92,6 +105,33 @@ SMILES_PROJECTION_DISPLAY_STAGE = html.Div(
                                 dcc.Graph(id="smiles-projection-plot", figure={}),
                             ],
                             type="circle",
+                        ),
+                    ],
+                    className="col-md-6",
+                ),
+            ],
+        ),
+        html.Div(
+            className="row",
+            children=[
+                html.Div(
+                    children=[
+                        html.Div(
+                            className="row",
+                            children=[
+                                html.Details(
+                                    [
+                                        html.Summary(
+                                            html.Strong(
+                                                "ADDITIONAL PROJECTION INFORMATION"
+                                            )
+                                        ),
+                                        html.Ul(
+                                            PROJECTION_SMILES_INFO_TEXT,
+                                        ),
+                                    ]
+                                )
+                            ],
                         ),
                     ],
                     className="col-md-6",

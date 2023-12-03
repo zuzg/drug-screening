@@ -23,27 +23,7 @@ from dashboard.visualization.plots import (
     plot_clustered_smiles,
     plot_projection_2d,
 )
-from dashboard.visualization.text_tables import pca_summary, table_from_df
-
-PROJECTION_SETUP = [
-    (PCA(n_components=3), "PCA"),
-    (
-        UMAP(
-            n_components=2,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP",
-    ),
-    (
-        UMAP(
-            n_components=3,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP3D",
-    ),
-]
+from dashboard.visualization.text_tables import table_from_df
 
 
 def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
