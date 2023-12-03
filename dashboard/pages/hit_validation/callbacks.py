@@ -64,7 +64,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -110,7 +110,9 @@ def on_file_upload(
                 className="text-danger",
             ),
             no_update,
+            html.Div("File uploading error."),
             stored_uuid,
+            no_update,
         )
 
     # screening df needs to be safed for plots
@@ -163,7 +165,7 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, None, html.Div("Files uploaded."), stored_uuid, False
+    return result_msg, None, html.Div("File uploaded successfully."), stored_uuid, False
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -237,7 +239,7 @@ def upload_settings_data(
         True,
         html.Span(text),
         color,
-        html.Div("Files uploaded."),
+        html.Div(text),
         no_update,
     )
 

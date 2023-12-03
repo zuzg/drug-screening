@@ -141,7 +141,7 @@ FILE_INPUT_CONTAINER = html.Div(
                                                         "Select",
                                                         className="select-file",
                                                     ),
-                                                    " Hit Validation input file",
+                                                    " Hit Validation input file (.csv)",
                                                 ]
                                             ),
                                             multiple=False,
@@ -163,7 +163,7 @@ FILE_INPUT_CONTAINER = html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " Settings for hit validation",
+                                            " Settings for hit validation (.json)",
                                         ]
                                     ),
                                     multiple=False,

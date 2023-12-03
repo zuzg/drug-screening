@@ -87,7 +87,9 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     return (
         make_file_list_component(ok_names, nok_entries, 2),
         no_update,
-        html.Div("Files uploaded."),
+        html.Div(
+            f"Files uploaded. Success: {len(ok_names)}. Skipped {len(nok_entries)}"
+        ),
         stored_uuid,
         False,
     )

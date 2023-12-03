@@ -66,13 +66,13 @@ def on_file_upload(
         corr_df = pd.read_csv(io.StringIO(decoded))
         validation.validate_correlation_dataframe(corr_df)
     except Exception as e:
-        return ICON_ERROR, stored_uuid
+        return ICON_ERROR, html.Div("File uploading error."), no_update, stored_uuid
 
     saved_name = f"{stored_uuid}_{store_suffix}.pq"
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, html.Div("Files uploaded."), no_update, stored_uuid
+    return ICON_OK, html.Div("File uploaded successfully."), no_update, stored_uuid
 
 
 def on_both_files_uploaded(
@@ -137,7 +137,7 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
         True,
         html.Span(text),
         color,
-        html.Div("Files uploaded."),
+        html.Div(text),
         no_update,
     )
 
