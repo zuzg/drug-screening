@@ -93,6 +93,7 @@ GRAPHS = html.Div(
                                 ),
                             ],
                         ),
+                        html.Hr(),
                         html.Div(
                             className="d-flex justify-content-center",
                             children=[

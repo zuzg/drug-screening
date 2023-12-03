@@ -218,18 +218,13 @@ def on_threshold_change(
         threshold_1,
         threshold_2,
     )
-
-    df["is_above_threshold_one"] = False
-    df.loc[df[f"{feature}_0"] > threshold_1, "is_above_threshold_one"] = True
-    df["is_above_threshold_two"] = False
-    df.loc[df[f"{feature}_0"] > threshold_2, "is_above_threshold_two"] = True
-
-    file_storage.save_file(f"{stored_uuid}_filtered_correlation_df.pq", df.to_parquet())
     return new_fig
 
 
 def on_save_filtering_clicked(
     n_clicks: int,
+    threshold_1: float,
+    threshold_2: float,
     stored_uuid: str,
     file_storage: FileStorage,
 ) -> None:
@@ -237,17 +232,25 @@ def on_save_filtering_clicked(
     Callback for the save filtered button
 
     :param n_clicks: number of clicks
+    :param threshold_1: first threshold
+    :param threshold_2: second threshold
     :param stored_uuid: uuid of the stored data
     :param file_storage: storage object
     :return: None
     """
+    saved_name = f"{stored_uuid}_correlation_df.pq"
+    df = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name)))
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
+
     filename = f"correlation_threshold_{datetime.now().strftime('%Y-%m-%d')}.csv"
-    correlation_df = pd.read_parquet(
-        pa.BufferReader(
-            file_storage.read_file(f"{stored_uuid}_filtered_correlation_df.pq")
-        ),
-    )
-    return dcc.send_data_frame(correlation_df.to_csv, filename)
+    df["> threshold_one"] = False
+    df.loc[df[f"{feature}_0"] > threshold_1, "> threshold_one"] = True
+    df["> threshold_two"] = False
+    df.loc[df[f"{feature}_0"] > threshold_2, "> threshold_two"] = True
+
+    file_storage.save_file(f"{stored_uuid}_filtered_correlation_df.pq", df.to_parquet())
+
+    return dcc.send_data_frame(df.to_csv, filename)
 
 
 def on_visualization_stage_entry_load_settings(
@@ -378,6 +381,8 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("download-filtered-csv", "data"),
         Input("save-filtered-button", "n_clicks"),
+        State("activity-threshold-bottom-input", "value"),
+        State("activity-threshold-top-input", "value"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_filtering_clicked, file_storage=file_storage))
