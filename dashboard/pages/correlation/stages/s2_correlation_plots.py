@@ -1,6 +1,8 @@
 from dash import html, dcc
 
 from dashboard.pages.components import annotate_with_tooltip
+from dashboard.visualization.text_tables import make_download_button_text
+
 
 CONCENTRATION_SLIDER_DESC = """
 Choose the concentration to be used for the final compound concentration calculation that will be
@@ -20,8 +22,14 @@ GRAPHS = html.Div(
             className="col",
             children=[
                 dcc.Loading(
-                    id="loading-inhibition-graph",
-                    children=[dcc.Graph(id="inhibition-graph")],
+                    id="loading-feature-graph",
+                    children=[
+                        dcc.Graph(
+                            id="feature-graph",
+                            className="six columns",
+                            style={"width": "100%"},
+                        )
+                    ],
                     type="circle",
                 )
             ],
@@ -31,9 +39,75 @@ GRAPHS = html.Div(
             children=[
                 dcc.Loading(
                     id="loading-concentration-graph",
-                    children=[dcc.Graph(id="concentration-graph")],
+                    children=[
+                        dcc.Graph(
+                            id="concentration-graph",
+                            className="six columns",
+                            style={"width": "100%"},
+                        )
+                    ],
                     type="circle",
-                )
+                ),
+                html.Div(
+                    className="row",
+                    children=[
+                        html.Div(
+                            className="col",
+                            children=[
+                                html.Span(
+                                    children=[
+                                        html.Label(
+                                            children="Set the first threshold",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="activity-threshold-bottom-input",
+                                            type="number",
+                                            value=0,
+                                            min=-50,
+                                            className="form-control",
+                                        ),
+                                    ],
+                                    className="flex-grow-1",
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            className="col",
+                            children=[
+                                html.Span(
+                                    children=[
+                                        html.Label(
+                                            children="Set the second threshold",
+                                            className="form-label",
+                                        ),
+                                        dcc.Input(
+                                            id="activity-threshold-top-input",
+                                            type="number",
+                                            value=100,
+                                            min=0,
+                                            className="form-control",
+                                        ),
+                                    ],
+                                    className="flex-grow-1",
+                                ),
+                            ],
+                        ),
+                        html.Div(
+                            className="mt-3 mb-1 d-flex justify-content-center",
+                            children=[
+                                html.Button(
+                                    make_download_button_text(
+                                        "Save filtered dataframe"
+                                    ),
+                                    className="btn btn-primary btn-lg btn-block btn-report",
+                                    id="save-filtered-button",
+                                ),
+                                dcc.Download(id="download-filtered-csv"),
+                            ],
+                        ),
+                    ],
+                ),
             ],
         ),
     ],

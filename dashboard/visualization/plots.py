@@ -609,7 +609,9 @@ def concentration_confirmatory_plot(
     return fig
 
 
-def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
+def concentration_plot(
+    df: pd.DataFrame, reaction_type: str, line_1: float = 0, line_2: float = 100
+) -> go.Figure:
     """
     Plot activation/inhibition values for each compound by concentration
 
@@ -619,7 +621,7 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
     """
     fig = go.Figure()
     # NOTE: to clarify
-    value_by_conc = df.pivot_table(f"% {reaction_type}_x", "EOS", "Concentration")
+    value_by_conc = df.pivot_table(f"% {reaction_type}_0", "EOS", "Concentration")
     for _, row in value_by_conc.iterrows():
         fig.add_trace(
             go.Scatter(
@@ -632,6 +634,8 @@ def concentration_plot(df: pd.DataFrame, reaction_type: str) -> go.Figure:
                 text=[str(row.name), str(row.name), str(row.name)],
             )
         )
+    fig.add_hline(y=line_1, line_dash="dash")
+    fig.add_hline(y=line_2, line_dash="dash")
     fig.update_layout(
         title_text="Concentrations",
         xaxis_title="Concentration [uM]",
