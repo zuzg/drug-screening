@@ -44,6 +44,31 @@ REPORT_STAGE = html.Div(
                                     children=[
                                         html.Button(
                                             make_download_button_text(
+                                                "Save low quality plates as CSV"
+                                            ),
+                                            className="btn btn-primary btn-lg btn-block btn-report",
+                                            id="save-low-quality-plates-button",
+                                        ),
+                                        dcc.Download(
+                                            id="download-low-quality-plates-csv"
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+                html.Div(
+                    className="row mt-2",
+                    children=[
+                        html.Div(
+                            className="col",
+                            children=[
+                                html.Div(
+                                    className="d-flex justify-content-center",
+                                    children=[
+                                        html.Button(
+                                            make_download_button_text(
                                                 "Save exceptions as CSV"
                                             ),
                                             className="btn btn-primary btn-lg btn-block btn-report",

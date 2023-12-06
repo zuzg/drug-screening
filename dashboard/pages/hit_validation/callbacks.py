@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 
 import dash_dangerously_set_inner_html as dhtml
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 from dash import (
@@ -25,6 +26,7 @@ from dashboard.data.determination import (
     four_param_logistic,
     perform_hit_determination,
 )
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.pages.hit_validation.report.generate_report import (
     generate_hit_valildation_report,
     generate_jinja_report,
@@ -366,22 +368,6 @@ def on_selected_compound_changed(
 
     graph = plot_ic50(entry, concentrations, values)
 
-    modulation_ic50 = four_param_logistic(
-        entry["ic50"],
-        entry["BOTTOM"],
-        entry["TOP"],
-        entry["ic50"],
-        entry["slope"],
-    )
-
-    concentration_50 = find_argument_four_param_logistic(
-        50,
-        entry["BOTTOM"],
-        entry["TOP"],
-        entry["ic50"],
-        entry["slope"],
-    )
-
     smiles_row = pd.read_parquet("dashboard/assets/ml/predictions.pq").loc[
         lambda df: df["EOS"] == selected_compound
     ]
@@ -393,14 +379,14 @@ def on_selected_compound_changed(
     smiles_html = dhtml.DangerouslySetInnerHTML(smiles_graph)
 
     text_concentration_50 = "NaN"
-    if type(concentration_50) != complex:
-        text_concentration_50 = f"{concentration_50:,.5f}"
+    if entry["concentration_50"] != np.nan:
+        text_concentration_50 = f"{entry['concentration_50']:,.5f}"
 
     result = {
         "min_modulation": f"{entry['min_value']:,.5f}",
         "max_modulation": f"{entry['max_value']:,.5f}",
         "ic50": f"{entry['ic50']:,.5f}",
-        "modulation_ic50": f"{modulation_ic50:,.5f}",
+        "modulation_ic50": f"{entry['modulation_ic50']:,.5f}",
         "concentration_50": text_concentration_50,
         "curve_slope": f"{entry['slope']:,.5f}",
         "r2": f"{entry['r2'] * 100:,.5f}",

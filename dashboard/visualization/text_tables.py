@@ -1,5 +1,4 @@
 import pandas as pd
-
 from dash import dash_table, html
 from dash.dash_table.Format import Format, Scheme
 from sklearn.decomposition import PCA
@@ -176,7 +175,7 @@ def table_from_df(df: pd.DataFrame, table_id: str) -> html.Div:
     )
 
 
-def pca_summary(pca: PCA, activation_columns: list[str]):
+def pca_summary(pca: PCA, activation_columns: list[str]) -> html.Details:
     """
     Construct a summary of PCA projection.
     :param pca: PCA object
