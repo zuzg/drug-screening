@@ -23,6 +23,7 @@ from dashboard.visualization.plots import (
 from dashboard.pages.correlation.report.generate_jinja_report import (
     generate_jinja_report,
 )
+from dashboard.pages.components import make_new_upload_view
 
 # === STAGE 1 ===
 
@@ -66,13 +67,26 @@ def on_file_upload(
         corr_df = pd.read_csv(io.StringIO(decoded))
         validation.validate_correlation_dataframe(corr_df)
     except Exception as e:
-        return ICON_ERROR, html.Div("File uploading error."), no_update, stored_uuid
+        return (
+            ICON_ERROR,
+            make_new_upload_view(
+                f'File uploading error. File should contain "EOS" and also "% INHIBITION" or "% ACTIVATION" keys.',
+                "new Screening file (.csv)",
+            ),
+            no_update,
+            stored_uuid,
+        )
 
     saved_name = f"{stored_uuid}_{store_suffix}.pq"
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, html.Div("File uploaded successfully."), no_update, stored_uuid
+    return (
+        ICON_OK,
+        make_new_upload_view("File uploaded successfully", "new Screening file (.csv)"),
+        no_update,
+        stored_uuid,
+    )
 
 
 def on_both_files_uploaded(
@@ -137,7 +151,7 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
         True,
         html.Span(text),
         color,
-        html.Div(text),
+        make_new_upload_view(text, "new Settings file (.json)"),
         no_update,
     )
 

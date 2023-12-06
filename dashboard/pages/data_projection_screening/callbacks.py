@@ -19,6 +19,7 @@ from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
 from dashboard.visualization.text_tables import pca_summary, table_from_df
+from dashboard.pages.components import make_new_upload_view
 
 PROJECTION_SETUP = [
     (PCA(n_components=3), "PCA"),
@@ -72,6 +73,9 @@ def on_projection_files_upload(
                 ],
                 className="alert alert-danger",
             ),
+            make_new_upload_view(
+                "You need to upload at least 3 files.", "Screening files (.csv)"
+            ),
             stored_uuid,
             no_update,
             True,
@@ -99,7 +103,7 @@ def on_projection_files_upload(
                 make_file_list_component(filenames, [], 1),
             ],
         ),
-        html.Div("Files uploaded."),
+        make_new_upload_view("Files uploaded successfully", "Screening files (.csv)"),
         stored_uuid,
         no_update,
         False,

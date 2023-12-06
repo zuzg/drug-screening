@@ -45,6 +45,7 @@ from dashboard.visualization.text_tables import (
     make_filter_radio_options,
     make_summary_stage_datatable,
 )
+from dashboard.pages.components import make_new_upload_view
 
 
 def on_next_button_click(n_clicks):
@@ -87,8 +88,9 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     return (
         make_file_list_component(ok_names, nok_entries, 2),
         no_update,
-        html.Div(
-            f"Files uploaded. Success: {len(ok_names)}. Skipped {len(nok_entries)}"
+        make_new_upload_view(
+            f"Files uploaded. Success: {len(ok_names)}. Skipped {len(nok_entries)}",
+            "new BMG files (.txt)",
         ),
         stored_uuid,
         False,
@@ -114,7 +116,14 @@ def upload_settings_data(content: str | None, name: str | None):
         text = (
             f"Invalid settings uploaded: the file should contain {settings_keys} keys."
         )
-    return loaded_data, True, html.Span(text), color, html.Div(text), no_update
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        make_new_upload_view(text, "new Settings file (.json)"),
+        no_update,
+    )
 
 
 # === STAGE 2 ===
@@ -404,7 +413,9 @@ def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storag
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
-    return None, html.Div("Files uploaded.")  # dummy upload echo return
+    return None, make_new_upload_view(
+        "Files uploaded", "ECHO files (.csv)"
+    )  # dummy upload echo return
 
 
 def on_upload_eos_data(contents, stored_uuid, file_storage):
@@ -414,7 +425,9 @@ def on_upload_eos_data(contents, stored_uuid, file_storage):
     eos_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
     eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_eos_df.pq", eos_df.to_parquet())
-    return None, html.Div("Files uploaded.")  # dummy upload eos return
+    return None, make_new_upload_view(
+        "File uploaded", "new EOS file (.csv)"
+    )  # dummy upload eos return
 
 
 def on_upload_echo_eos_data(echo_upload, names, eos_upload, stored_uuid, file_storage):

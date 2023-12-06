@@ -31,7 +31,7 @@ from dashboard.pages.hit_validation.report.generate_report import (
 )
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import plot_ic50, plot_smiles
-
+from dashboard.pages.components import make_new_upload_view
 from dashboard.data.json_reader import load_data_from_json
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
@@ -110,7 +110,9 @@ def on_file_upload(
                 className="text-danger",
             ),
             no_update,
-            html.Div("File uploading error."),
+            make_new_upload_view(
+                "File uploading error", "Hit Validation input file (.csv)"
+            ),
             stored_uuid,
             no_update,
         )
@@ -165,7 +167,15 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, None, html.Div("File uploaded successfully."), stored_uuid, False
+    return (
+        result_msg,
+        None,
+        make_new_upload_view(
+            "File uploaded successfully", "Hit Validation input file (.csv)"
+        ),
+        stored_uuid,
+        False,
+    )
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -239,7 +249,7 @@ def upload_settings_data(
         True,
         html.Span(text),
         color,
-        html.Div(text),
+        make_new_upload_view(text, "new Settings file (.json)"),
         no_update,
     )
 

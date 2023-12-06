@@ -24,6 +24,7 @@ from dashboard.visualization.plots import (
     plot_projection_2d,
 )
 from dashboard.visualization.text_tables import pca_summary, table_from_df
+from dashboard.pages.components import make_new_upload_view
 
 PROJECTION_SETUP = [
     (PCA(n_components=3), "PCA"),
@@ -80,7 +81,7 @@ def on_hit_validation_upload(
     activity_df = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_activity_df.pq", activity_df.to_parquet())
     return (
-        html.Div("Files uploaded."),
+        make_new_upload_view("File uploaded", "Hit Validation file (.csv)"),
         stored_uuid,
         None,
     )  # dummy activity upload return
@@ -133,7 +134,7 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
-        html.Div("Files uploaded."),
+        make_new_upload_view("File uploaded", "SMILES file (.csv)"),
         False,  # next stage button disabled status
         stored_uuid,
         None,  # dummy smiles upload return
