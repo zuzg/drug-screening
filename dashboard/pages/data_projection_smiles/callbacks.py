@@ -9,42 +9,15 @@ import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
-from sklearn.decomposition import PCA
-from umap import UMAP
 
-from dashboard.data.controls import controls_index_annotator, generate_controls
-from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.structural_similarity import prepare_cluster_viz
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import (
-    make_projection_plot,
-    plot_clustered_smiles,
-    plot_projection_2d,
-)
-from dashboard.visualization.text_tables import pca_summary, table_from_df
-from dashboard.pages.components import make_new_upload_view
+from dashboard.visualization.plots import plot_clustered_smiles
 
-PROJECTION_SETUP = [
-    (PCA(n_components=3), "PCA"),
-    (
-        UMAP(
-            n_components=2,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP",
-    ),
-    (
-        UMAP(
-            n_components=3,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP3D",
-    ),
-]
+from dashboard.visualization.text_tables import table_from_df
+from dashboard.pages.components import make_new_upload_view
 
 
 def on_3d_checkbox_change(plot_3d: List[str]) -> bool:

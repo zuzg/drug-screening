@@ -109,7 +109,7 @@ def upload_settings_data(content: str | None, name: str | None):
         return no_update
     loaded_data = load_data_from_json(content, name)
     color = "success"
-    text = f"Settings uploaded successfully"
+    text = "Settings uploaded successfully"
     settings_keys = ["statistics_stage", "summary_stage"]
     if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
         color = "danger"
