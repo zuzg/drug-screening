@@ -113,7 +113,7 @@ def on_file_upload(
             ),
             no_update,
             make_new_upload_view(
-                "File uploading error", "Hit Validation input file (.csv)"
+                "File uploading error", "new Hit Validation input file (.csv)"
             ),
             stored_uuid,
             no_update,
@@ -173,7 +173,7 @@ def on_file_upload(
         result_msg,
         None,
         make_new_upload_view(
-            "File uploaded successfully", "Hit Validation input file (.csv)"
+            "File uploaded successfully", "new Hit Validation input file (.csv)"
         ),
         stored_uuid,
         False,

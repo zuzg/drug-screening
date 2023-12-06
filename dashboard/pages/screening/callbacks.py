@@ -416,7 +416,7 @@ def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storag
         )
 
     return None, make_new_upload_view(
-        "Files uploaded", "ECHO files (.csv)"
+        "Files uploaded", "new ECHO files (.csv)"
     )  # dummy upload echo return
 
 

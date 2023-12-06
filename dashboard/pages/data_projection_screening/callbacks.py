@@ -74,7 +74,7 @@ def on_projection_files_upload(
                 className="alert alert-danger",
             ),
             make_new_upload_view(
-                "You need to upload at least 3 files.", "Screening files (.csv)"
+                "You need to upload at least 3 files.", "new Screening files (.csv)"
             ),
             stored_uuid,
             no_update,
@@ -103,7 +103,9 @@ def on_projection_files_upload(
                 make_file_list_component(filenames, [], 1),
             ],
         ),
-        make_new_upload_view("Files uploaded successfully", "Screening files (.csv)"),
+        make_new_upload_view(
+            "Files uploaded successfully", "new Screening files (.csv)"
+        ),
         stored_uuid,
         no_update,
         False,
