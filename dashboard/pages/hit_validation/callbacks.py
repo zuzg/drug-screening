@@ -33,6 +33,8 @@ from dashboard.pages.hit_validation.report.generate_report import (
 )
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import plot_ic50, plot_smiles
+from dashboard.pages.components import make_new_upload_view
+from dashboard.data.json_reader import load_data_from_json
 
 SCREENING_FILENAME = "{0}_screening_df.pq"
 HIT_FILENAME = "{0}_hit_df.pq"
@@ -64,7 +66,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
 
@@ -110,7 +112,11 @@ def on_file_upload(
                 className="text-danger",
             ),
             no_update,
+            make_new_upload_view(
+                "File uploading error", "new Hit Validation input file (.csv)"
+            ),
             stored_uuid,
+            no_update,
         )
 
     # screening df needs to be safed for plots
@@ -163,7 +169,15 @@ def on_file_upload(
             ),
         ],
     )
-    return result_msg, None, stored_uuid, False
+    return (
+        result_msg,
+        None,
+        make_new_upload_view(
+            "File uploaded successfully", "new Hit Validation input file (.csv)"
+        ),
+        stored_uuid,
+        False,
+    )
 
 
 FAIL_BOUNDS_ELEMENT = html.Div(
@@ -237,6 +251,7 @@ def upload_settings_data(
         True,
         html.Span(text),
         color,
+        make_new_upload_view(text, "new Settings file (.json)"),
         no_update,
     )
 
@@ -488,6 +503,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("screening-file-message", "children"),
         Output("dummy-upload-screening-data", "children"),
+        Output("upload-screening-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Input("upload-screening-data", "contents"),
@@ -507,6 +523,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("alert-upload-settings-hit-validation", "is_open"),
         Output("alert-upload-settings-hit-validation-text", "children"),
         Output("alert-upload-settings-hit-validation", "color"),
+        Output("upload-settings-hit-validation", "children"),
         Output("dummy-upload-settings-hit-validation", "children"),
         Input("upload-settings-hit-validation", "contents"),
         Input("upload-settings-hit-validation", "filename"),

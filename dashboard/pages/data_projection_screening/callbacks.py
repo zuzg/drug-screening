@@ -19,6 +19,7 @@ from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import make_projection_plot, plot_projection_2d
 from dashboard.visualization.text_tables import pca_summary, table_from_df
+from dashboard.pages.components import make_new_upload_view
 
 PROJECTION_SETUP = [
     (PCA(n_components=3), "PCA"),
@@ -72,6 +73,9 @@ def on_projection_files_upload(
                 ],
                 className="alert alert-danger",
             ),
+            make_new_upload_view(
+                "You need to upload at least 3 files.", "new Screening files (.csv)"
+            ),
             stored_uuid,
             no_update,
             True,
@@ -98,6 +102,9 @@ def on_projection_files_upload(
             children=[
                 make_file_list_component(filenames, [], 1),
             ],
+        ),
+        make_new_upload_view(
+            "Files uploaded successfully", "new Screening files (.csv)"
         ),
         stored_uuid,
         no_update,
@@ -322,6 +329,7 @@ def on_save_projections_click(
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("projections-file-message", "children"),
+        Output("upload-projection-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-projection-data", "children"),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),

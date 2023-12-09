@@ -301,3 +301,27 @@ def annotate_with_tooltip(
         element.children = [element.children]
     element.children.insert(0, tooltip)
     return element
+
+
+def make_new_upload_view(
+    text1: str,
+    text2: str,
+) -> list[html.Div]:
+    """
+    Prepare children for drag and drop zone.
+
+    :param text1: text for first element, it should be response on uploaded file.
+    :param text2: text to inform that new file can still be uploaded
+    :return: list of html.Div
+    """
+    return [
+        html.Div(text1),
+        html.Div(
+            [
+                "Drag and Drop or ",
+                html.A("Select", className="select-file"),
+                " ",
+                text2,
+            ],
+        ),
+    ]

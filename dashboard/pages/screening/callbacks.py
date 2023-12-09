@@ -45,6 +45,7 @@ from dashboard.visualization.text_tables import (
     make_filter_radio_options,
     make_summary_stage_datatable,
 )
+from dashboard.pages.components import make_new_upload_view
 
 
 def on_next_button_click(n_clicks):
@@ -56,7 +57,7 @@ def on_next_button_click(n_clicks):
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
 
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
@@ -87,6 +88,10 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     return (
         make_file_list_component(ok_names, nok_entries, 2),
         no_update,
+        make_new_upload_view(
+            f"Files uploaded. Success: {len(ok_names)}. Skipped {len(nok_entries)}",
+            "new BMG files (.txt)",
+        ),
         stored_uuid,
         False,
     )
@@ -111,7 +116,14 @@ def upload_settings_data(content: str | None, name: str | None):
         text = (
             f"Invalid settings uploaded: the file should contain {settings_keys} keys."
         )
-    return loaded_data, True, html.Span(text), color, no_update
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        make_new_upload_view(text, "new Settings file (.json)"),
+        no_update,
+    )
 
 
 # === STAGE 2 ===
@@ -403,7 +415,9 @@ def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storag
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
-    return None  # dummy upload echo return
+    return None, make_new_upload_view(
+        "Files uploaded", "new ECHO files (.csv)"
+    )  # dummy upload echo return
 
 
 def on_upload_eos_data(contents, stored_uuid, file_storage):
@@ -413,7 +427,9 @@ def on_upload_eos_data(contents, stored_uuid, file_storage):
     eos_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
     eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_eos_df.pq", eos_df.to_parquet())
-    return None  # dummy upload eos return
+    return None, make_new_upload_view(
+        "File uploaded", "new EOS file (.csv)"
+    )  # dummy upload eos return
 
 
 def on_upload_echo_eos_data(echo_upload, names, eos_upload, stored_uuid, file_storage):
@@ -861,6 +877,7 @@ def register_callbacks(elements, file_storage):
         [
             Output("bmg-filenames", "children"),
             Output("dummy-upload-bmg-data", "children"),
+            Output("upload-bmg-data", "children"),
             Output("user-uuid", "data"),
             Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         ],
@@ -875,6 +892,7 @@ def register_callbacks(elements, file_storage):
         Output("alert-upload-settings-screening", "is_open"),
         Output("alert-upload-settings-screening-text", "children"),
         Output("alert-upload-settings-screening", "color"),
+        Output("upload-settings-screening", "children"),
         Output("dummy-upload-settings-screening", "children"),
         Input("upload-settings-screening", "contents"),
         Input("upload-settings-screening", "filename"),
@@ -941,6 +959,7 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("dummy-upload-echo-data", "children"),
+        Output("upload-echo-data", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
@@ -950,6 +969,7 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("dummy-upload-eos-mapping", "children"),
+        Output("upload-eos-mapping", "children"),
         Input("upload-eos-mapping", "contents"),
         State("user-uuid", "data"),
         prevent_initial_call=True,

@@ -38,7 +38,7 @@ FILE_INPUT_COMPONENT = html.Div(
                                 [
                                     "Drag and Drop or ",
                                     html.A("Select", className="select-file"),
-                                    " Screening file #1",
+                                    " Screening file #1 (.csv)",
                                 ]
                             ),
                             multiple=False,
@@ -63,11 +63,11 @@ FILE_INPUT_COMPONENT = html.Div(
                                 [
                                     "Drag and Drop or ",
                                     html.A("Select", className="select-file"),
-                                    " Screening file #2",
+                                    " Screening file #2 (.csv)",
                                 ]
                             ),
                             multiple=False,
-                            className="text-center upload-box",
+                            className="text-center upload-box p-0 m-0",
                         ),
                         html.Div(id="dummy-upload-file-2"),
                     ],
@@ -88,7 +88,7 @@ FILE_INPUT_COMPONENT = html.Div(
                                 [
                                     "Drag and Drop or ",
                                     html.A("Select", className="select-file"),
-                                    " Settings for correlation analysis",
+                                    " Settings for correlation analysis (.json)",
                                 ]
                             ),
                             multiple=False,

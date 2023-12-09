@@ -26,7 +26,7 @@ FILE_INPUT_CONTAINER = html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " Screening files",
+                                            " Screening files (.csv)",
                                         ]
                                     ),
                                     multiple=True,

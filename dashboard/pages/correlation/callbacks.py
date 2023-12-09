@@ -22,6 +22,7 @@ from dashboard.visualization.plots import (
 from dashboard.pages.correlation.report.generate_jinja_report import (
     generate_jinja_report,
 )
+from dashboard.pages.components import make_new_upload_view
 
 # === STAGE 1 ===
 
@@ -55,7 +56,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update
+        return no_update
 
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
@@ -65,13 +66,26 @@ def on_file_upload(
         corr_df = pd.read_csv(io.StringIO(decoded))
         validation.validate_correlation_dataframe(corr_df)
     except Exception as e:
-        return ICON_ERROR, stored_uuid
+        return (
+            ICON_ERROR,
+            make_new_upload_view(
+                f'File uploading error. File should contain "EOS" and also "% INHIBITION" or "% ACTIVATION" keys.',
+                "new Screening file (.csv)",
+            ),
+            no_update,
+            stored_uuid,
+        )
 
     saved_name = f"{stored_uuid}_{store_suffix}.pq"
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, no_update, stored_uuid
+    return (
+        ICON_OK,
+        make_new_upload_view("File uploaded successfully", "new Screening file (.csv)"),
+        no_update,
+        stored_uuid,
+    )
 
 
 def on_both_files_uploaded(
@@ -131,7 +145,14 @@ def upload_settings_data(content: str | None, name: str | None) -> dict:
         text = (
             f"Invalid settings uploaded: the file should contain {settings_keys} keys."
         )
-    return loaded_data, True, html.Span(text), color, no_update
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        make_new_upload_view(text, "new Settings file (.json)"),
+        no_update,
+    )
 
 
 # === STAGE 2 ===
@@ -316,6 +337,7 @@ def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("upload-file-1", "children"),
         Output("dummy-upload-file-1", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
@@ -329,6 +351,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("upload-file-2", "children"),
         Output("dummy-upload-file-2", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
@@ -353,6 +376,7 @@ def register_callbacks(elements, file_storage: FileStorage):
         Output("alert-upload-settings-correlation", "is_open"),
         Output("alert-upload-settings-correlation-text", "children"),
         Output("alert-upload-settings-correlation", "color"),
+        Output("upload-settings-correlation", "children"),
         Output("dummy-upload-settings-correlation", "children"),
         Input("upload-settings-correlation", "contents"),
         Input("upload-settings-correlation", "filename"),

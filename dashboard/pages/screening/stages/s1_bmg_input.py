@@ -25,7 +25,7 @@ BMG_INPUT_STAGE = html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " BMG files",
+                                            " BMG files (.txt)",
                                         ]
                                     ),
                                     multiple=True,
@@ -47,7 +47,7 @@ BMG_INPUT_STAGE = html.Div(
                                         [
                                             "Drag and Drop or ",
                                             html.A("Select", className="select-file"),
-                                            " Settings for screening",
+                                            " Settings for screening (.json)",
                                         ]
                                     ),
                                     multiple=False,

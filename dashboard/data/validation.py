@@ -10,6 +10,10 @@ def validate_correlation_dataframe(corr_df: pd.DataFrame) -> None:
     """
     if not corr_df.columns.is_unique:
         raise ValueError("Column names must be unique.")
+    if not ("% ACTIVATION" in corr_df.columns or "% INHIBITION" in corr_df.columns):
+        raise ValueError("Column with ACTIVATION/INHIBITION not found")
+    if not "EOS" in corr_df.columns:
+        raise ValueError("Column with EOS not found")
     ...  # TODO: add more validation
 
 
