@@ -162,5 +162,5 @@ def calculate_concentration(
     :param summary_assay_volume: to divide by
     :return: dataframe
     """
-    df["Concentration"] = df["Actual Volume_y"] * concetration / summary_assay_volume
+    df["Concentration"] = df["Actual Volume_1"] * concetration / summary_assay_volume
     return df

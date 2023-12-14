@@ -4,14 +4,15 @@ import io
 import json
 import uuid
 from datetime import datetime
+from typing import Tuple
 
 import pandas as pd
 import pyarrow as pa
-from dash import Input, Output, State, callback, html, no_update
-from plotly import express as px
+from dash import Input, Output, State, callback, dcc, html, no_update
 from plotly import graph_objects as go
 
 from dashboard.data import validation
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.preprocess import calculate_concentration
 from dashboard.storage import FileStorage
 from dashboard.visualization.plots import (
@@ -21,6 +22,7 @@ from dashboard.visualization.plots import (
 from dashboard.pages.correlation.report.generate_jinja_report import (
     generate_jinja_report,
 )
+from dashboard.pages.components import make_new_upload_view
 
 # === STAGE 1 ===
 
@@ -40,7 +42,7 @@ SUFFIX_CORR_FILE2 = "corr_file2"
 
 def on_file_upload(
     content: str | None, stored_uuid: str, file_storage: FileStorage, store_suffix: str
-) -> tuple[html.I, str]:
+) -> Tuple[html.I, str]:
     """
     Callback for file upload. It saves the file to the storage and returns an icon
     indicating the status of the upload.
@@ -54,7 +56,7 @@ def on_file_upload(
     :return: session uuid
     """
     if content is None:
-        return no_update, no_update, no_update
+        return no_update
 
     if stored_uuid is None:
         stored_uuid = str(uuid.uuid4())
@@ -64,13 +66,26 @@ def on_file_upload(
         corr_df = pd.read_csv(io.StringIO(decoded))
         validation.validate_correlation_dataframe(corr_df)
     except Exception as e:
-        return ICON_ERROR, stored_uuid
+        return (
+            ICON_ERROR,
+            make_new_upload_view(
+                f'File uploading error. File should contain "EOS" and also "% INHIBITION" or "% ACTIVATION" keys.',
+                "new Screening file (.csv)",
+            ),
+            no_update,
+            stored_uuid,
+        )
 
     saved_name = f"{stored_uuid}_{store_suffix}.pq"
 
     file_storage.save_file(saved_name, corr_df.to_parquet())
 
-    return ICON_OK, no_update, stored_uuid
+    return (
+        ICON_OK,
+        make_new_upload_view("File uploaded successfully", "new Screening file (.csv)"),
+        no_update,
+        stored_uuid,
+    )
 
 
 def on_both_files_uploaded(
@@ -111,6 +126,35 @@ def on_both_files_uploaded(
     return ICON_OK, False
 
 
+def upload_settings_data(content: str | None, name: str | None) -> dict:
+    """
+    Callback for file upload. It saves the in local storage for other components.
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successfully"
+    settings_keys = ["concentration_value", "volume_value"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        make_new_upload_view(text, "new Settings file (.json)"),
+        no_update,
+    )
+
+
 # === STAGE 2 ===
 
 
@@ -120,7 +164,7 @@ def on_visualization_stage_entry(
     volume_value: int,
     stored_uuid: str,
     file_storage: FileStorage,
-) -> tuple[go.Figure, go.Figure]:
+) -> Tuple[go.Figure, go.Figure]:
     """
     Callback for visualization stage entry. It loads the data from the storage and
     returns the figures.
@@ -142,15 +186,19 @@ def on_visualization_stage_entry(
     df_secondary = pd.read_parquet(
         pa.BufferReader(file_storage.read_file(saved_name_2))
     )
-    df_merged = pd.merge(df_primary, df_secondary, on="EOS", how="inner")
+    df_merged = pd.merge(
+        df_primary, df_secondary, on="EOS", how="inner", suffixes=["_0", "_1"]
+    )
+    df_merged.drop(["Unnamed: 0_0", "Unnamed: 0_1"], axis=1, inplace=True)
     df = calculate_concentration(df_merged, concentration_value, volume_value)
+    file_storage.save_file(f"{stored_uuid}_correlation_df.pq", df.to_parquet())
 
-    feature = "% ACTIVATION" if "% ACTIVATION_x" in df.columns else "% INHIBITION"
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
+
     concentration_fig = concentration_plot(df, feature[2:])
-
     feature_fig = concentration_confirmatory_plot(
-        df[f"{feature}_x"],
-        df[f"{feature}_y"],
+        df[f"{feature}_0"],
+        df[f"{feature}_1"],
         df["Concentration"],
         f"{feature[2:]}",
     )
@@ -163,8 +211,96 @@ def on_visualization_stage_entry(
             full_html=False, include_plotlyjs="cdn"
         ),
     }
-
     return feature_fig, concentration_fig, report_data_correlation_plots, False
+
+
+def on_threshold_change(
+    threshold_1: float,
+    threshold_2: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
+):
+    """
+    Callback for threshold update, updates the plot
+
+    :param threshold_1: first threshold
+    :param threshold_2: second threshold
+    :param stored_uuid: session uuid
+    :param file_storage: file storage
+    :return: figures
+    """
+    saved_name = f"{stored_uuid}_correlation_df.pq"
+    df = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name)))
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
+
+    new_fig = concentration_plot(
+        df,
+        feature[2:],
+        threshold_1,
+        threshold_2,
+    )
+    return new_fig
+
+
+def on_save_filtering_clicked(
+    n_clicks: int,
+    threshold_1: float,
+    threshold_2: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save filtered button
+
+    :param n_clicks: number of clicks
+    :param threshold_1: first threshold
+    :param threshold_2: second threshold
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+    saved_name = f"{stored_uuid}_correlation_df.pq"
+    df = pd.read_parquet(pa.BufferReader(file_storage.read_file(saved_name)))
+    feature = "% ACTIVATION" if "% ACTIVATION_0" in df.columns else "% INHIBITION"
+
+    filename = f"correlation_threshold_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    df["> threshold_one"] = False
+    df.loc[df[f"{feature}_0"] > threshold_1, "> threshold_one"] = True
+    df["> threshold_two"] = False
+    df.loc[df[f"{feature}_0"] > threshold_2, "> threshold_two"] = True
+
+    file_storage.save_file(f"{stored_uuid}_filtered_correlation_df.pq", df.to_parquet())
+
+    return dcc.send_data_frame(df.to_csv, filename)
+
+
+def on_visualization_stage_entry_load_settings(
+    current_stage: int,
+    concentration: float,
+    volume: float,
+    saved_data: dict,
+) -> Tuple[float, float]:
+    """
+    Callback for visualization stage entry.
+    Loads the data from local storage and update sliders value
+
+    :param current_stage: current stage index of the process
+    :param concentration: concentration slider value
+    :param volume: volume slider value
+    :return: value for concentration slider
+    :return: value for volume slider
+    """
+
+    if current_stage != 1:
+        return no_update
+
+    concentration_value = concentration
+    volume_value = volume
+    if saved_data != None:
+        concentration_value = saved_data["concentration_value"]
+        volume_value = saved_data["volume_value"]
+
+    return concentration_value, volume_value
 
 
 # === STAGE 3 ===
@@ -177,7 +313,11 @@ def on_json_generate_button_click(
     filename = (
         f"correlation_analysis_settings_{datetime.now().strftime('%Y-%m-%d')}.json"
     )
-    json_object = json.dumps(correlation_plots_report, indent=4)
+    data_to_save = {
+        "concentration_value": correlation_plots_report["concentration_value"],
+        "volume_value": correlation_plots_report["volume_value"],
+    }
+    json_object = json.dumps(data_to_save, indent=4)
     return dict(content=json_object, filename=filename)
 
 
@@ -197,6 +337,7 @@ def on_save_report_button_click(n_clicks: int, report_data: dict) -> dict:
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
         Output("file-1-status", "children"),
+        Output("upload-file-1", "children"),
         Output("dummy-upload-file-1", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-1", "contents"),
@@ -210,6 +351,7 @@ def register_callbacks(elements, file_storage: FileStorage):
 
     callback(
         Output("file-2-status", "children"),
+        Output("upload-file-2", "children"),
         Output("dummy-upload-file-2", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Input("upload-file-2", "contents"),
@@ -230,7 +372,19 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_both_files_uploaded, file_storage=file_storage))
 
     callback(
-        Output("inhibition-graph", "figure"),
+        Output("loaded-setings-correlation", "data"),
+        Output("alert-upload-settings-correlation", "is_open"),
+        Output("alert-upload-settings-correlation-text", "children"),
+        Output("alert-upload-settings-correlation", "color"),
+        Output("upload-settings-correlation", "children"),
+        Output("dummy-upload-settings-correlation", "children"),
+        Input("upload-settings-correlation", "contents"),
+        Input("upload-settings-correlation", "filename"),
+        prevent_initial_call=True,
+    )(functools.partial(upload_settings_data))
+
+    callback(
+        Output("feature-graph", "figure"),
         Output("concentration-graph", "figure"),
         Output("report-data-correlation-plots", "data"),
         Output({"type": elements["BLOCKER"], "index": 1}, "data"),
@@ -239,6 +393,33 @@ def register_callbacks(elements, file_storage: FileStorage):
         Input("volume-slider", "value"),
         State("user-uuid", "data"),
     )(functools.partial(on_visualization_stage_entry, file_storage=file_storage))
+
+    callback(
+        Output("concentration-graph", "figure", allow_duplicate=True),
+        Input("activity-threshold-bottom-input", "value"),
+        Input("activity-threshold-top-input", "value"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_threshold_change, file_storage=file_storage))
+
+    callback(
+        Output("download-filtered-csv", "data"),
+        Input("save-filtered-button", "n_clicks"),
+        State("activity-threshold-bottom-input", "value"),
+        State("activity-threshold-top-input", "value"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_filtering_clicked, file_storage=file_storage))
+
+    callback(
+        Output("concentration-slider", "value"),
+        Output("volume-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("concentration-slider", "value"),
+        State("volume-slider", "value"),
+        State("loaded-setings-correlation", "data"),
+    )(functools.partial(on_visualization_stage_entry_load_settings))
+
     callback(
         Output("download-json-settings-correlation", "data"),
         Input("generate-json-button", "n_clicks"),

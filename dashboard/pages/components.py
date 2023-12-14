@@ -26,6 +26,9 @@ EXTRA = html.Div(
         dcc.Store(id="report-data-hit-validation-input", storage_type="local"),
         dcc.Store(id="report-data-hit-validation-hit-browser", storage_type="local"),
         dcc.Store(id="activation-inhibition-screening-options", storage_type="local"),
+        dcc.Store(id="loaded-setings-screening", storage_type="local"),
+        dcc.Store(id="loaded-setings-correlation", storage_type="local"),
+        dcc.Store(id="loaded-setings-hit-validation", storage_type="local"),
     ],
 )
 
@@ -213,7 +216,7 @@ def make_file_list_component(
                                 className="col",
                                 children=html.Ul(
                                     children=[
-                                        html.Li(name.split(".")[0])
+                                        html.Li(name)
                                         for name in successfull_filenames[i::num_cols]
                                     ]
                                 ),
@@ -239,7 +242,7 @@ def make_file_list_component(
                                 className="col",
                                 children=html.Ul(
                                     children=[
-                                        html.Li(name.split(".")[0])
+                                        html.Li(name)
                                         for name in failed_filenames[i::num_cols]
                                     ]
                                 ),
@@ -298,3 +301,27 @@ def annotate_with_tooltip(
         element.children = [element.children]
     element.children.insert(0, tooltip)
     return element
+
+
+def make_new_upload_view(
+    text1: str,
+    text2: str,
+) -> list[html.Div]:
+    """
+    Prepare children for drag and drop zone.
+
+    :param text1: text for first element, it should be response on uploaded file.
+    :param text2: text to inform that new file can still be uploaded
+    :return: list of html.Div
+    """
+    return [
+        html.Div(text1),
+        html.Div(
+            [
+                "Drag and Drop or ",
+                html.A("Select", className="select-file"),
+                " ",
+                text2,
+            ],
+        ),
+    ]

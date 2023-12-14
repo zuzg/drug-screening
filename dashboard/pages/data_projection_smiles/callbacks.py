@@ -9,41 +9,15 @@ import pandas as pd
 import plotly.graph_objects as go
 import pyarrow as pa
 from dash import Input, Output, State, callback, dcc, html, no_update
-from sklearn.decomposition import PCA
-from umap import UMAP
 
-from dashboard.data.controls import controls_index_annotator, generate_controls
-from dashboard.data.preprocess import MergedAssaysPreprocessor
 from dashboard.data.structural_similarity import prepare_cluster_viz
 from dashboard.data.utils import eos_to_ecbd_link
 from dashboard.pages.components import make_file_list_component
 from dashboard.storage import FileStorage
-from dashboard.visualization.plots import (
-    make_projection_plot,
-    plot_clustered_smiles,
-    plot_projection_2d,
-)
-from dashboard.visualization.text_tables import pca_summary, table_from_df
+from dashboard.visualization.plots import plot_clustered_smiles
 
-PROJECTION_SETUP = [
-    (PCA(n_components=3), "PCA"),
-    (
-        UMAP(
-            n_components=2,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP",
-    ),
-    (
-        UMAP(
-            n_components=3,
-            n_neighbors=10,
-            min_dist=0.1,
-        ),
-        "UMAP3D",
-    ),
-]
+from dashboard.visualization.text_tables import table_from_df
+from dashboard.pages.components import make_new_upload_view
 
 
 def on_3d_checkbox_change(plot_3d: List[str]) -> bool:
@@ -79,7 +53,11 @@ def on_hit_validation_upload(
     activity_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
     activity_df = pd.read_csv(io.StringIO(activity_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_activity_df.pq", activity_df.to_parquet())
-    return stored_uuid, None  # dummy activity upload return
+    return (
+        make_new_upload_view("File uploaded", "new Hit Validation file (.csv)"),
+        stored_uuid,
+        None,
+    )  # dummy activity upload return
 
 
 def on_smiles_files_upload(
@@ -129,6 +107,7 @@ def on_smiles_files_upload(
                 make_file_list_component([filename, smiles_filename], [], 1),
             ],
         ),
+        make_new_upload_view("File uploaded", "new SMILES file (.csv)"),
         False,  # next stage button disabled status
         stored_uuid,
         None,  # dummy smiles upload return
@@ -220,6 +199,7 @@ def on_smiles_download_selection_button_click(
 
 def register_callbacks(elements, file_storage: FileStorage):
     callback(
+        Output("upload-activity-data", "children"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-activity-data", "children"),
         Input("upload-activity-data", "contents"),
@@ -228,6 +208,7 @@ def register_callbacks(elements, file_storage: FileStorage):
     )(functools.partial(on_hit_validation_upload, file_storage=file_storage))
     callback(
         Output("smiles-file-message", "children"),
+        Output("upload-smiles-data", "children"),
         Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         Output("user-uuid", "data", allow_duplicate=True),
         Output("dummy-upload-smiles-data", "children"),

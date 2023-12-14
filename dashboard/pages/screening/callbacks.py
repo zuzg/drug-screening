@@ -22,6 +22,7 @@ from dash import (
 )
 
 from dashboard.data.bmg_plate import filter_low_quality_plates, parse_bmg_files
+from dashboard.data.json_reader import load_data_from_json
 from dashboard.data.combine import (
     aggregate_well_plate_stats,
     combine_bmg_echo_data,
@@ -44,6 +45,7 @@ from dashboard.visualization.text_tables import (
     make_filter_radio_options,
     make_summary_stage_datatable,
 )
+from dashboard.pages.components import make_new_upload_view
 
 
 def on_next_button_click(n_clicks):
@@ -55,7 +57,7 @@ def on_next_button_click(n_clicks):
 
 def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
     if contents is None:
-        return no_update, no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
 
     if not stored_uuid:
         stored_uuid = str(uuid.uuid4())
@@ -70,19 +72,57 @@ def upload_bmg_data(contents, names, last_modified, stored_uuid, file_storage):
             decoded = base64.b64decode(content_string)
             bmg_files.append((filename, io.StringIO(decoded.decode("utf-8"))))
 
-    if bmg_files:
-        bmg_df, val = parse_bmg_files(tuple(bmg_files))
-        stream = io.BytesIO()
-        np.savez_compressed(stream, val)
-        stream.seek(0)
-        file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
-        file_storage.save_file(f"{stored_uuid}_bmg_df.pq", bmg_df.to_parquet())
+    if not bmg_files:
+        return no_update, no_update, no_update, no_update
+
+    bmg_df, val, failed_files = parse_bmg_files(tuple(bmg_files))
+    ok_names = [name for name, _ in bmg_files if name not in failed_files]
+    nok_entries = [f"{name}: {error}" for name, error in failed_files.items()]
+
+    stream = io.BytesIO()
+    np.savez_compressed(stream, val)
+    stream.seek(0)
+    file_storage.save_file(f"{stored_uuid}_bmg_val.npz", stream.read())
+    file_storage.save_file(f"{stored_uuid}_bmg_df.pq", bmg_df.to_parquet())
 
     return (
-        make_file_list_component(names, [], 2),
+        make_file_list_component(ok_names, nok_entries, 2),
         no_update,
+        make_new_upload_view(
+            f"Files uploaded. Success: {len(ok_names)}. Skipped {len(nok_entries)}",
+            "new BMG files (.txt)",
+        ),
         stored_uuid,
         False,
+    )
+
+
+def upload_settings_data(content: str | None, name: str | None):
+    """
+    Callback for file upload. It saves the in local storage for other components.
+
+    :param content: base64 encoded file content
+    :param name: filename
+    :return: dict with loaded data
+    """
+    if not content:
+        return no_update
+    loaded_data = load_data_from_json(content, name)
+    color = "success"
+    text = "Settings uploaded successfully"
+    settings_keys = ["statistics_stage", "summary_stage"]
+    if loaded_data == None or not set(settings_keys).issubset(loaded_data.keys()):
+        color = "danger"
+        text = (
+            f"Invalid settings uploaded: the file should contain {settings_keys} keys."
+        )
+    return (
+        loaded_data,
+        True,
+        html.Span(text),
+        color,
+        make_new_upload_view(text, "new Settings file (.json)"),
+        no_update,
     )
 
 
@@ -215,11 +255,58 @@ def on_outlier_purge_stage_entry(
     )
 
 
+HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW = 250
+HEATMAP_PLOT_REPORT_COLS = 5
+
+
+def on_export_plots_button_click(
+    n_clicks: int,
+    stored_uuid: str,
+    file_storage: FileStorage,
+) -> dict[str, str]:
+    """
+    Callback for the export plots button. Exports all heatmap plots to a single html file.
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: dictionary containing the html file with plots and its name
+    """
+    if n_clicks is None:
+        return no_update
+
+    bmg_df = pd.read_parquet(
+        pa.BufferReader(file_storage.read_file(f"{stored_uuid}_bmg_df.pq"))
+    )
+    bmg_vals = np.load(
+        io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
+    )["arr_0"]
+    n_rows, remainder = divmod(bmg_vals.shape[0], N_COLS)
+    n_rows += bool(remainder)
+
+    fig = visualize_multiple_plates(
+        bmg_df, bmg_vals, n_rows, HEATMAP_PLOT_REPORT_COLS, free_format=True
+    )
+    fig.update_layout(
+        height=n_rows * HEATMAP_PLOT_REPORT_HEIGHT_PER_ROW,
+        coloraxis_showscale=False,
+    )
+    fig.update_annotations(
+        font_size=16,
+    )
+    as_html = fig.to_html()
+    filename = f"screening_heatmaps_{datetime.now().strftime('%Y-%m-%dT%H_%M_%S')}.html"
+    return dict(content=as_html, filename=filename)
+
+
 # === STAGE 3 ===
 
 
 def on_plates_stats_stage_entry(
-    current_stage: int, value: float, stored_uuid: str, file_storage: FileStorage
+    current_stage: int,
+    value: float,
+    stored_uuid: str,
+    file_storage: FileStorage,
 ) -> tuple[go.Figure, go.Figure, go.Figure, str, str]:
     """
     Callback for the stage 3 entry
@@ -240,8 +327,10 @@ def on_plates_stats_stage_entry(
     raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
     bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
 
-    filtered_df, filtered_vals = filter_low_quality_plates(bmg_df, bmg_vals, value)
-    num_removed = bmg_df.shape[0] - filtered_df.shape[0]
+    filtered_df, low_quality_df, filtered_vals = filter_low_quality_plates(
+        bmg_df, bmg_vals, value
+    )
+    num_removed = len(low_quality_df)
 
     control_values_fig = plot_control_values(filtered_df)
     row_col_fig = plot_row_col_means(filtered_vals)
@@ -267,6 +356,31 @@ def on_plates_stats_stage_entry(
         z_slider_data,
         False,
     )
+
+
+def on_plates_stats_stage_entry_load_settings(
+    current_stage: int,
+    value: float,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 3 entry
+    Change value of z-slider if json was loaded
+
+    :param current_stage: current stage index of the process
+    :param value: z threshold, slider value
+    :param saved_data: dict with loaded data
+    :return: value for z-slider
+    """
+
+    if current_stage != 2:
+        return no_update
+
+    z_slider_value = value
+    if saved_data != None:
+        z_slider_value = saved_data["statistics_stage"]["z_slider_value"]
+
+    return z_slider_value
 
 
 def hide_heatmap_loading(trigger, children):
@@ -301,7 +415,9 @@ def on_upload_echo_data(contents, names, last_modified, stored_uuid, file_storag
             f"{stored_uuid}_exceptions_df.pq", exceptions_df.to_parquet()
         )
 
-    return None  # dummy upload echo return
+    return None, make_new_upload_view(
+        "Files uploaded", "new ECHO files (.csv)"
+    )  # dummy upload echo return
 
 
 def on_upload_eos_data(contents, stored_uuid, file_storage):
@@ -311,7 +427,9 @@ def on_upload_eos_data(contents, stored_uuid, file_storage):
     eos_decoded = base64.b64decode(contents.split(",")[1]).decode("utf-8")
     eos_df = pd.read_csv(io.StringIO(eos_decoded), dtype="str")
     file_storage.save_file(f"{stored_uuid}_eos_df.pq", eos_df.to_parquet())
-    return None  # dummy upload eos return
+    return None, make_new_upload_view(
+        "File uploaded", "new EOS file (.csv)"
+    )  # dummy upload eos return
 
 
 def on_upload_echo_eos_data(echo_upload, names, eos_upload, stored_uuid, file_storage):
@@ -396,7 +514,7 @@ def on_summary_entry(
         io.BytesIO(file_storage.read_file(f"{stored_uuid}_bmg_val.npz"))
     )["arr_0"]
 
-    filtered_df, filtered_vals = filter_low_quality_plates(
+    filtered_df, _, filtered_vals = filter_low_quality_plates(
         bmg_df, bmg_vals, z_slider["z_slider_value"]
     )
 
@@ -465,8 +583,6 @@ def on_summary_entry(
         summary_stage_datatable,
         fig_z_score,
         fig_feature,
-        -3,  # z_score_min,
-        3,  # z_score_max,
         False,  # min input disabled
         False,  # max input disabled
         feature_min,
@@ -479,6 +595,48 @@ def on_summary_entry(
         report_data,
         False,  # next button disabled
     )
+
+
+def on_summary_entry_load_settings(
+    current_stage: int,
+    z_score_min,
+    z_score_max,
+    feature_min,
+    feature_max,
+    saved_data: dict,
+) -> float:
+    """
+    Callback for the stage 5 entry
+    Loads the data from loaded settings and change values for z-score or feature based on key
+
+    :param current_stage: current stage index of the process
+    :param z_score_min: min z-score value
+    :param z_score_max: max z-score value
+    :param feature_min: min feature value
+    :param feature_max: max feature value
+    :param saved_data: dict with loaded data
+    :return min z-score value
+    :return max z-score value
+    :return min feature value
+    :return max feature value
+    """
+
+    if current_stage != 4:
+        return no_update
+
+    z_score_min_value = z_score_min
+    z_score_max_value = z_score_max
+    feature_min_value = feature_min
+    feature_max_value = feature_max
+    if saved_data != None:
+        if saved_data["summary_stage"]["key"] == "activation":
+            feature_min_value = saved_data["summary_stage"]["key_min"]
+            feature_max_value = saved_data["summary_stage"]["key_max"]
+        elif saved_data["summary_stage"]["key"] == "z_score":
+            z_score_min_value = saved_data["summary_stage"]["key_min"]
+            z_score_max_value = saved_data["summary_stage"]["key_max"]
+
+    return z_score_min_value, z_score_max_value, feature_min_value, feature_max_value
 
 
 def on_filter_radio_or_range_update(
@@ -632,6 +790,38 @@ def on_save_results_click(
     return dcc.send_data_frame(echo_bmg_combined_df.to_csv, filename)
 
 
+def on_save_low_quality_plates_click(
+    n_clicks: int,
+    stored_uuid: str,
+    z_slider: float,
+    file_storage: FileStorage,
+) -> None:
+    """
+    Callback for the save exceptions button
+
+    :param n_clicks: number of clicks
+    :param stored_uuid: uuid of the stored data
+    :param file_storage: storage object
+    :return: None
+    """
+    z_slider = z_slider["z_slider_value"]
+    filename = f"screening_low_quality_plates_{datetime.now().strftime('%Y-%m-%d')}.csv"
+    raw_bmg = file_storage.read_file(f"{stored_uuid}_bmg_df.pq")
+    bmg_df = pd.read_parquet(pa.BufferReader(raw_bmg))
+    raw_vals = file_storage.read_file(f"{stored_uuid}_bmg_val.npz")
+    bmg_vals = np.load(io.BytesIO(raw_vals))["arr_0"]
+
+    _, low_quality_df, _ = filter_low_quality_plates(bmg_df, bmg_vals, z_slider)
+    low_quality_df = low_quality_df.rename(
+        columns={
+            "barcode": "Plate Barcode",
+            "z_factor": f"Z factor value (lower bound: {z_slider})",
+        }
+    )
+
+    return dcc.send_data_frame(low_quality_df.to_csv, filename)
+
+
 def on_save_exceptions_click(
     n_clicks: int,
     stored_uuid: str,
@@ -665,15 +855,7 @@ def on_report_generate_button_click(
     report_data_second_stage.update(report_data_third_stage)
     report_data_second_stage.update(report_data_screening_summary_plots)
     jinja_template = generate_jinja_report(report_data_second_stage)
-    return html.Div(
-        className="col",
-        children=[
-            html.H5(
-                className="text-center",
-                children=f"Report generated",
-            ),
-        ],
-    ), dict(content=jinja_template, filename=filename)
+    return dict(content=jinja_template, filename=filename)
 
 
 def on_json_generate_button_click(
@@ -695,6 +877,7 @@ def register_callbacks(elements, file_storage):
         [
             Output("bmg-filenames", "children"),
             Output("dummy-upload-bmg-data", "children"),
+            Output("upload-bmg-data", "children"),
             Output("user-uuid", "data"),
             Output({"type": elements["BLOCKER"], "index": 0}, "data"),
         ],
@@ -703,6 +886,17 @@ def register_callbacks(elements, file_storage):
         Input("upload-bmg-data", "last_modified"),
         State("user-uuid", "data"),
     )(functools.partial(upload_bmg_data, file_storage=file_storage))
+
+    callback(
+        Output("loaded-setings-screening", "data"),
+        Output("alert-upload-settings-screening", "is_open"),
+        Output("alert-upload-settings-screening-text", "children"),
+        Output("alert-upload-settings-screening", "color"),
+        Output("upload-settings-screening", "children"),
+        Output("dummy-upload-settings-screening", "children"),
+        Input("upload-settings-screening", "contents"),
+        Input("upload-settings-screening", "filename"),
+    )(functools.partial(upload_settings_data))
 
     callback(
         Output("heatmap-start-index", "data"),
@@ -750,7 +944,22 @@ def register_callbacks(elements, file_storage):
     )(functools.partial(on_plates_stats_stage_entry, file_storage=file_storage))
 
     callback(
+        Output("download-plates-heatmap", "data"),
+        Input("heatmaps-export-btn", "n_clicks"),
+        State("user-uuid", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_export_plots_button_click, file_storage=file_storage))
+
+    callback(
+        Output("z-slider", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-slider", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_plates_stats_stage_entry_load_settings))
+
+    callback(
         Output("dummy-upload-echo-data", "children"),
+        Output("upload-echo-data", "children"),
         Input("upload-echo-data", "contents"),
         Input("upload-echo-data", "filename"),
         Input("upload-echo-data", "last_modified"),
@@ -760,6 +969,7 @@ def register_callbacks(elements, file_storage):
 
     callback(
         Output("dummy-upload-eos-mapping", "children"),
+        Output("upload-eos-mapping", "children"),
         Input("upload-eos-mapping", "contents"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
@@ -786,12 +996,10 @@ def register_callbacks(elements, file_storage):
         Output("compounds-data-table", "children"),
         Output("z-score-plot", "figure"),
         Output("feature-plot", "figure"),
-        Output("z-score-min-input", "value"),
-        Output("z-score-max-input", "value"),
         Output("z-score-min-input", "disabled"),
         Output("z-score-max-input", "disabled"),
-        Output("feature-min-input", "value"),
-        Output("feature-max-input", "value"),
+        Output("feature-min-input", "value", allow_duplicate=True),
+        Output("feature-max-input", "value", allow_duplicate=True),
         Output("feature-min-input", "disabled"),
         Output("feature-max-input", "disabled"),
         Output("compounds-data-subtitle", "children"),
@@ -803,7 +1011,22 @@ def register_callbacks(elements, file_storage):
         State("user-uuid", "data"),
         State("z-slider-value", "data"),
         State("activation-inhibition-screening-options", "data"),
+        prevent_initial_call=True,
     )(functools.partial(on_summary_entry, file_storage=file_storage))
+
+    callback(
+        Output("z-score-min-input", "value"),
+        Output("z-score-max-input", "value"),
+        Output("feature-min-input", "value"),
+        Output("feature-max-input", "value"),
+        Input(elements["STAGES_STORE"], "data"),
+        State("z-score-min-input", "value"),
+        State("z-score-max-input", "value"),
+        State("feature-min-input", "value"),
+        State("feature-max-input", "value"),
+        State("loaded-setings-screening", "data"),
+    )(functools.partial(on_summary_entry_load_settings))
+
     # Z-SCORE
     callback(
         Output("z-score-plot", "figure", allow_duplicate=True),
@@ -839,13 +1062,19 @@ def register_callbacks(elements, file_storage):
         prevent_initial_call=True,
     )(functools.partial(on_save_results_click, file_storage=file_storage))
     callback(
+        Output("download-low-quality-plates-csv", "data"),
+        Input("save-low-quality-plates-button", "n_clicks"),
+        State("user-uuid", "data"),
+        State("z-slider-value", "data"),
+        prevent_initial_call=True,
+    )(functools.partial(on_save_low_quality_plates_click, file_storage=file_storage))
+    callback(
         Output("download-exceptions-csv", "data"),
         Input("save-exceptions-button", "n_clicks"),
         State("user-uuid", "data"),
         prevent_initial_call=True,
     )(functools.partial(on_save_exceptions_click, file_storage=file_storage))
     callback(
-        Output("report_callback_receiver", "children"),
         Output("download-html-raport", "data"),
         Input("generate-report-button", "n_clicks"),
         State("report-data-second-stage", "data"),

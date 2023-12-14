@@ -1,8 +1,12 @@
 import io
 import numpy as np
 import pandas as pd
+import logging
+
 from collections import namedtuple
 from enum import Enum, auto
+
+logger = logging.getLogger(__name__)
 
 
 PlateSummary = namedtuple(
@@ -159,30 +163,46 @@ def parse_bmg_file(filename: str, filecontent: io.StringIO) -> np.ndarray:
             df = pd.read_csv(filecontent, header=None)
             plate = df.to_numpy()
             break
-        well, value = line.split()
+        if not line.strip():
+            continue
+        cells = line.split()
+        if len(cells) != 2:
+            raise ValueError(
+                f"Wrong format of file {filename} - line {i} has {len(cells)} cells instead of 2"
+            )
+        well, value = cells
         i, j = well_to_ids(well)
         plate[i, j] = value
     return barcode, plate
 
 
-def parse_bmg_files(files: tuple[str, io.StringIO]) -> tuple[pd.DataFrame, np.ndarray]:
+def parse_bmg_files(
+    files: tuple[str, io.StringIO]
+) -> tuple[pd.DataFrame, np.ndarray, dict[str, str]]:
     """
     Parse file from iostring with BMG files to DataFrame
 
     :param files: tuple containing names and content of files
-    :return: DataFrame with BMG files (=plates) as rows
+    :param failed_files: dictionary with failed files
+    :return: DataFrame with BMG files (=plates) as rows,
+        plates values as np.array and failed files with errors
     """
     plate_summaries = []
     plate_values = []
+    failed_files = {}
     for filename, filecontent in files:
-        barcode, plate_array = parse_bmg_file(filename, filecontent)
-        plate = Plate(barcode, plate_array)
-        z_wo, outliers_mask = calculate_z_outliers(plate)
-        plate_summaries.append(get_summary_tuple(plate, z_wo))
-        plate_values.append([plate.plate_array, outliers_mask])
+        try:
+            barcode, plate_array = parse_bmg_file(filename, filecontent)
+            plate = Plate(barcode, plate_array)
+            z_wo, outliers_mask = calculate_z_outliers(plate)
+            plate_summaries.append(get_summary_tuple(plate, z_wo))
+            plate_values.append([plate.plate_array, outliers_mask])
+        except Exception as e:
+            logger.warning(f"Error while parsing file {filename}: {e}")
+            failed_files[filename] = str(e)
     df = pd.DataFrame(plate_summaries)
     plate_values = np.asarray(plate_values)
-    return df, plate_values
+    return df, plate_values, failed_files
 
 
 def calculate_activation_inhibition_zscore(
@@ -261,17 +281,18 @@ def get_activation_inhibition_zscore_dict(
 
 def filter_low_quality_plates(
     df: pd.DataFrame, plate_array: np.ndarray, threshold: float = 0.5
-) -> tuple[pd.DataFrame, np.ndarray]:
+) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
     """
     Remove plates with Z factor lower than threshold
 
     :param df: DataFrame with control values
     :param plate_array: array with plate values
     :param threshold: Z factor threshold value
-    :return: high quality plates
+    :return: high quality plates, low quality plates, high quality plate array
     """
     quality_mask = df.z_factor > threshold
     quality_df = df[quality_mask]
+    low_quality_df = df[~quality_mask][["barcode", "z_factor"]]
     low_quality_ids = np.where(quality_mask == False)
     quality_plates = np.delete(plate_array, low_quality_ids, axis=0)
-    return quality_df, quality_plates
+    return quality_df, low_quality_df, quality_plates

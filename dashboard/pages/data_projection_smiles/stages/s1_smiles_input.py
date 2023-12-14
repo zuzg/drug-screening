@@ -8,7 +8,7 @@ FILE_PARAMS = [
         "upload_text": [
             "Drag and Drop or ",
             html.A("Select", className="select-file"),
-            " Hit Validation file",
+            " Hit Validation file (.csv)",
         ],
         "dummy_id": "dummy-upload-activity-data",
     },
@@ -19,7 +19,7 @@ FILE_PARAMS = [
         "upload_text": [
             "Drag and Drop or ",
             html.A("Select", className="select-file"),
-            " SMILES file",
+            " SMILES file (.csv)",
         ],
         "dummy_id": "dummy-upload-smiles-data",
     },

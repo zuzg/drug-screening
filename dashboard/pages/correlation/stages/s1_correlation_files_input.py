@@ -2,6 +2,8 @@ from dash import dcc, html
 
 from dashboard.pages.components import annotate_with_tooltip
 
+import dash_bootstrap_components as dbc
+
 DESC = [
     html.Span(
         """
@@ -36,7 +38,7 @@ FILE_INPUT_COMPONENT = html.Div(
                                 [
                                     "Drag and Drop or ",
                                     html.A("Select", className="select-file"),
-                                    " Screening file #1",
+                                    " Screening file #1 (.csv)",
                                 ]
                             ),
                             multiple=False,
@@ -61,15 +63,51 @@ FILE_INPUT_COMPONENT = html.Div(
                                 [
                                     "Drag and Drop or ",
                                     html.A("Select", className="select-file"),
-                                    " Screening file #2",
+                                    " Screening file #2 (.csv)",
+                                ]
+                            ),
+                            multiple=False,
+                            className="text-center upload-box p-0 m-0",
+                        ),
+                        html.Div(id="dummy-upload-file-2"),
+                    ],
+                    type="circle",
+                ),
+            ],
+        ),
+        html.Div(
+            className="flex-grow-1",
+            children=[
+                html.H5("Settings File"),
+                dcc.Loading(
+                    children=[
+                        dcc.Upload(
+                            id="upload-settings-correlation",
+                            accept=".json",
+                            children=html.Div(
+                                [
+                                    "Drag and Drop or ",
+                                    html.A("Select", className="select-file"),
+                                    " Settings for correlation analysis (.json)",
                                 ]
                             ),
                             multiple=False,
                             className="text-center upload-box",
                         ),
-                        html.Div(id="dummy-upload-file-2"),
+                        html.Div(
+                            id="dummy-upload-settings-correlation",
+                            className="p-1",
+                        ),
                     ],
                     type="circle",
+                ),
+                dbc.Alert(
+                    html.Div(id="alert-upload-settings-correlation-text"),
+                    id="alert-upload-settings-correlation",
+                    dismissable=True,
+                    is_open=False,
+                    duration=4000,
+                    className="m-1",
                 ),
             ],
         ),
