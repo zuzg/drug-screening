@@ -16,6 +16,7 @@ class MLTrainingConfig:
 
     dataset_name: str
     data_dir: Path
+    generate_dataset: bool
     balance_dataset: bool
     hp_tuning: bool
 

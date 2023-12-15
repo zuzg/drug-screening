@@ -2,7 +2,7 @@ tmp/
 **/out/
 
 # Data
-./data
+data
 data/raw/*
 !data/raw/.gitkeep
 notebooks/data
