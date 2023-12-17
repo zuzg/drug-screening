@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV
+from sklearn.experimental import enable_halving_search_cv  # noqa
+from sklearn.model_selection import HalvingGridSearchCV
 from sklearn.pipeline import Pipeline
 import structlog
 from tdc.single_pred import Tox
@@ -65,10 +66,14 @@ class ToxicityPredictionExperiment:
         Read saved dataset to arrays
         """
         _logger.info("Reading dataset")
-        self.X_train = pd.read_csv(self.cfg.data_dir / "x_train.csv").to_numpy()
-        self.X_test = pd.read_csv(self.cfg.data_dir / "x_test.csv").to_numpy()
-        self.y_train = pd.read_csv(self.cfg.data_dir / "y_train.csv").to_numpy()
-        self.y_test = pd.read_csv(self.cfg.data_dir / "y_test.csv").to_numpy()
+        self.X_train = np.genfromtxt(
+            self.cfg.data_dir / "x_train.csv", skip_header=1, delimiter=","
+        )
+        self.X_test = np.genfromtxt(
+            self.cfg.data_dir / "x_test.csv", skip_header=1, delimiter=","
+        )
+        self.y_train = np.genfromtxt(self.cfg.data_dir / "y_train.csv", skip_header=1)
+        self.y_test = np.genfromtxt(self.cfg.data_dir / "y_test.csv", skip_header=1)
 
     def prepare_dataset(self) -> None:
         """
@@ -160,10 +165,10 @@ class ToxicityPredictionExperiment:
         """
         _logger.info("Preparing hyperparameter search")
         params = HP_DICT[model_name]
-        gs = GridSearchCV(
-            model,
+        gs = HalvingGridSearchCV(
+            estimator=model,
             param_grid=params,
-            scoring=["neg_mean_absolute_error", "neg_mean_squared_error"],
+            scoring="neg_mean_absolute_error",
             refit="neg_mean_absolute_error",
             return_train_score=True,
         )

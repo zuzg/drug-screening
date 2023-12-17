@@ -30,9 +30,6 @@ NEPTUNE_PROJECT: str = "drug-screening/toxicity-prediction"
 MODELS_DICT: Dict[str, BaseEstimator] = {
     "RandomForestRegressor": RandomForestRegressor(),
     "KNeighborsRegressor": KNeighborsRegressor(),
-    "SVR": SVR(),
-    "AdaBoostRegressor": AdaBoostRegressor(),
-    "DecisionTreeRegressor": DecisionTreeRegressor(),
     "BaggingRegressor": BaggingRegressor(),
     "PassiveAggressiveRegressor": PassiveAggressiveRegressor(),
     "MLPRegressor": MLPRegressor(),
@@ -53,9 +50,16 @@ HP_DICT: Dict[str, Dict[str, List[Any]]] = {
     "MLPRegressor": {
         "hidden_layer_sizes": [(50, 50, 50), (50, 100, 50), (100,)],
         "activation": ["logistic", "tanh", "relu"],
-        "solver": ["sgd", "adam"],
-        "alpha": [0.0001, 0.001],
         "learning_rate": ["constant", "invscaling", "adaptive"],
+    },
+    "BaggingRegressor": {
+        "n_estimators": [10, 20, 50, 100],
+        "max_samples": [0.8, 1.0],
+        "bootstrap": [True, False],
+    },
+    "KNeighborsRegressor": {
+        "n_neighbors": [3, 5, 10],
+        "weights": ["uniform", "distance"],
     },
 }
 
@@ -68,6 +72,8 @@ SCALERS_DICT: Dict[str, Optional[BaseEstimator]] = {
 
 FEATURE_SELECTORS_DICT: Dict[str, Optional[BaseEstimator]] = {
     "NoFeatureSelector": None,
-    "VarianceThreshold": VarianceThreshold(),
-    "SelectKBest": SelectKBest(r_regression, k=20),
+    "VarianceThreshold001": VarianceThreshold(0.01),
+    "VarianceThreshold01": VarianceThreshold(0.1),
+    "Select20Best": SelectKBest(r_regression, k=20),
+    "Select50Best": SelectKBest(r_regression, k=50),
 }
