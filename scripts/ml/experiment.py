@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import GridSearchCV
+from sklearn.experimental import enable_halving_search_cv  # noqa
+from sklearn.model_selection import HalvingGridSearchCV
 from sklearn.pipeline import Pipeline
 import structlog
 from tdc.single_pred import Tox
@@ -40,6 +41,40 @@ class ToxicityPredictionExperiment:
         self.X_test: np.ndarray
         self.y_test: np.ndarray
 
+    def save_ndarray(self, arr: np.ndarray, filename: str) -> None:
+        """
+        Save array to csv
+
+        :param arr: array to be saved
+        :param filename: filename
+        """
+        df = pd.DataFrame(arr)
+        df.to_csv(self.cfg.data_dir / filename, index=False)
+
+    def save_dataset(self) -> None:
+        """
+        Save processed dataset
+        """
+        _logger.info("Saving dataset")
+        self.save_ndarray(self.X_train, "x_train.csv")
+        self.save_ndarray(self.X_test, "x_test.csv")
+        self.save_ndarray(self.y_train, "y_train.csv")
+        self.save_ndarray(self.y_test, "y_test.csv")
+
+    def read_dataset(self) -> None:
+        """
+        Read saved dataset to arrays
+        """
+        _logger.info("Reading dataset")
+        self.X_train = np.genfromtxt(
+            self.cfg.data_dir / "x_train.csv", skip_header=1, delimiter=","
+        )
+        self.X_test = np.genfromtxt(
+            self.cfg.data_dir / "x_test.csv", skip_header=1, delimiter=","
+        )
+        self.y_train = np.genfromtxt(self.cfg.data_dir / "y_train.csv", skip_header=1)
+        self.y_test = np.genfromtxt(self.cfg.data_dir / "y_test.csv", skip_header=1)
+
     def prepare_dataset(self) -> None:
         """
         1. Download data from tdc
@@ -47,16 +82,21 @@ class ToxicityPredictionExperiment:
         3. Featurize
         4. Balance
         """
-        data = Tox(name=self.cfg.dataset_name, path=self.cfg.data_dir)
-        split = data.get_split()
-        train_raw = pd.concat([split["train"], split["valid"]])
-        test_raw = split["test"]
-        _logger.info(f"train: {len(train_raw)}, test: {len(test_raw)}")
-        self.X_train, self.X_test = featurize_datasets([train_raw, test_raw])
-        self.y_train, self.y_test = (
-            train_raw.Y.to_numpy(),
-            test_raw.Y.to_numpy(),
-        )
+        if self.cfg.generate_dataset:
+            data = Tox(name=self.cfg.dataset_name, path=self.cfg.data_dir)
+            split = data.get_split(method="scaffold")
+            train_raw = pd.concat([split["train"], split["valid"]])
+            test_raw = split["test"]
+            _logger.info(f"train: {len(train_raw)}, test: {len(test_raw)}")
+            self.X_train, self.X_test = featurize_datasets([train_raw, test_raw])
+            self.y_train, self.y_test = (
+                train_raw.Y.to_numpy(),
+                test_raw.Y.to_numpy(),
+            )
+            self.save_dataset()
+        else:
+            self.read_dataset()
+
         if self.cfg.balance_dataset:
             _logger.info("Balancing dataset")
             self.X_train, self.y_train = balance_dataset(self.X_train, self.y_train)
@@ -125,10 +165,10 @@ class ToxicityPredictionExperiment:
         """
         _logger.info("Preparing hyperparameter search")
         params = HP_DICT[model_name]
-        gs = GridSearchCV(
-            model,
+        gs = HalvingGridSearchCV(
+            estimator=model,
             param_grid=params,
-            scoring=["neg_mean_absolute_error", "neg_mean_squared_error"],
+            scoring="neg_mean_absolute_error",
             refit="neg_mean_absolute_error",
             return_train_score=True,
         )
@@ -159,7 +199,7 @@ class ToxicityPredictionExperiment:
             log_charts=False,
         )
         preds = pipeline.predict(X=self.X_test)
-        run["test/scores/mse"] = mean_squared_error(self.y_test, preds)
+        run["test/scores/rmse"] = mean_squared_error(self.y_test, preds, squared=False)
         run.stop()
 
     def run_trainings(self):
